@@ -1,0 +1,18 @@
+dnsql is a command to run sql queries directly on pcap files.
+
+The command also contain a very simplistic webserver in order 
+to inspect pcap files remotely. 
+
+Sample commandlines:
+
+	dnsql -s "select * from dns limit 10" sample.pcap
+	    
+	    Retrives the 10 first packets containing dns information from the file "sample.pcap"
+
+	dnsql -d -p8080 -w html/ -r pcap/
+
+	    Starts a webserver on port 8080 (-p8080) as a daemon (-d) servering files from the 
+	    directory html/ (-w html/) and pcapfiles from the directory pcap/ (-r pcap/).
+
+
+
