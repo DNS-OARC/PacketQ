@@ -1,0 +1,469 @@
+<!DOCTYPE html
+PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>Test</title>
+         
+	<script type="text/javascript" src="_lib/jquery-1.5.js"></script>
+	<script type="text/javascript" src="_lib/jquery.cookie.js"></script>
+	<script type="text/javascript" src="_lib/jquery.hotkeys.js"></script>
+	<script type="text/javascript" src="jquery.jstree.js"></script>
+    <script type="text/javascript" src="_lib/highcharts.js"></script>
+
+	<link type="text/css" rel="stylesheet" href="css/!style.css"/>
+	<link rel="stylesheet" href="css/datatables.css" type="text/css" media="all"/>
+    
+    
+    
+    
+    <!-- ui-stuff -->
+    <link type="text/css" href="css/ui-lightness/jquery-ui-1.8.9.custom.css" rel="stylesheet" />	
+	<script type="text/javascript" src="_lib/jquery-ui-1.8.9.custom.min.js"></script>
+        
+        <style type="text/css">
+			/*demo page css*/
+			body{ font: 62.5% "Trebuchet MS", sans-serif; margin:0px; background-color: background-color:#f6a828;}
+			
+			#container {position: absolute; background: #f6a828; border:0px; margin-top:0px; width: 250px; height: 100%;}
+			.demoHeaders { margin-top: 2em; }
+			#dialog_link {padding: .4em 1em .4em 4px;text-decoration: none; margin-bottom:22px;}
+			
+			<!--#checkme_link {padding: .4em 2em .4em 1px;text-decoration: none; position: relative; margin-bottom:2px;}-->
+			#getQuestion_link {text-decoration: none; text-align:center; position: relative; margin-bottom:2px;}
+			.buttons {position: relative; float:left; width:250px; background-color:#0C3}
+							
+			#dialog_link span.ui-icon {margin: 0 5px 0 0;position: absolute;left: .2em;top: 50%;margin-top: -8px;}
+			ul#icons {margin: 0; padding: 0;}
+			ul#icons li {margin: 2px; position: relative; padding: 4px 0; cursor: pointer; float: left;  list-style: none;}
+			ul#icons span.ui-icon {float: left; margin: 0 4px;}
+						
+						
+			.mytmpChart {
+				padding: 0px;
+				margin-left:0px;
+				margin-top:0px;
+				text-decoration: none;
+				margin-bottom:2px;
+				width: 860px;
+				background-color:#060;
+				position: relative;
+					
+			}			
+						
+			.alert {
+				padding: 4px;
+				border:thick;
+				margin-left:0px;
+				margin-top:0px;
+				text-decoration: none;
+				margin-bottom:2px;
+			}
+			td {
+				font-size: 10px;
+				font-family:Verdana, Geneva, sans-serif;
+			}
+
+		</style>	
+        
+	<script type="text/javascript" language="javascript" src="_lib/jquery.dataTables.js"></script>
+	<script type="text/javascript" charset="utf-8">
+	
+			var orgX = 265;
+			var orgY = 10;
+			var apiPath = "http://localhost:8080/query?";
+			var jsonFirst;					
+		
+			function getQ_table(mySource, myTitle, myQnr){
+								
+				var currentSource = apiPath + mySource;
+				
+				var aoData;
+					$.getJSON( currentSource, function (json) {
+						
+							//alert("borde vara");
+							var kalle = { "aaData": json };
+							//kalle.aoData=json;
+							// Do whatever additional processing you want on the callback, then tell DataTables 
+							var titles = kalle.aaData[0];
+							
+							//Strippa bort runbbarna nu!
+							kalle.aaData.splice(0, 1); //vi borde försöka exkludera rad 0, lirar
+							jsonFirst = kalle; 
+														
+							//Nytt per!
+							//alert("bygg tabell med qnr: " + myQnr);
+							
+							var myDivId = build_table_popup(myQnr, myTitle,titles);
+														
+							var oTable = $('#dataTable_'+myDivId).dataTable( {
+								//"bDestroy":true,	
+								//"bRetrieve": true,
+								//"bAutoWidth": true,							
+								"bProcessing": true,
+								//"bJQueryUI": false,
+								
+								 //"bServerSide": true,
+                   				 "sPaginationType": "full_numbers",
+								
+								//Slägg på wrapping....
+								"sAjaxSource": mySource,
+								"fnServerData": function ( sSource, aoData, fnCallback ) {
+									
+									//alert('jsonFirst: ' + jsonFirst!=undefined)
+									//alert('jsonFirst');
+									//alert('ska just köra callback 1 with: ' + jsonFirst.aaData[0]);
+									fnCallback(jsonFirst);
+									jsonFirst=undefined;
+									
+								}
+								
+							});
+					
+					});
+		}
+		
+				
+		function getQ_chart(mySource, myTitle, myQnr){								
+				
+				var currentSource = apiPath + mySource;
+				//alert("in getQ_chart with source: " + currentSource)
+				
+				// Fixa en popup //
+				var localDate = new Date();
+				var newDivId = myQnr + "_"+ localDate.getTime();
+				//alert('newDivId' + newDivId);
+				
+				$("<div id='"+newDivId+"' class='mytmpChart'></div>").appendTo("#theBoxes");			
+				$('#'+newDivId).dialog({					
+					autoOpen: false,
+					width: 700,
+					height: 500,
+					title: "Question: " + myTitle,
+				});
+				$('#'+newDivId).dialog('open');
+		
+				$('#'+newDivId).dialog( "option", "position", [orgX,orgY] );
+				//alert('l after 2: ' + $('#dataTable_'+prmMyQnr).width());
+				
+				//$('#'+newDivId).dialog( "option", "width", $('#'+newDivId).width() + 300);
+				//$('#'+newDivId).width() += 40; 
+				//alert('Checka...: ' + $('#'+newDivId).width());
+				
+				orgY += 10;
+				orgX += 10;
+				
+				// Slut öppna popup //
+								
+				chart = new Highcharts.Chart({
+				chart: {
+							//renderTo: newDivId,
+							renderTo: newDivId,	
+							width: 680,
+							height: 460,						 
+							type: 'area',
+							events: {
+							   load: requestData(currentSource)
+							}
+							},
+							title: {
+								text: myTitle
+							},
+				xAxis: {
+				  title: {
+					  text: 'no',
+					  style: { display: 'none' }
+				  }		
+				},  
+				yAxis: {
+				  title: {
+					  text: 'no',
+					  style: { display: 'none' }
+				  }		
+				},  
+				legend: {
+					enabled:false
+				},
+				tooltip: {
+					formatter: function() {
+						return '<b>'+ this.series.name +'</b><br/>'+
+							this.x +': '+ this.y;
+					}
+				},
+				plotOptions: {
+				},
+				series: [{
+					name: myTitle,
+					data: []
+					}]
+				});							
+		}
+		
+		
+		
+/*
+* Request data from the server, add it to the graph and set a timeout to request again
+*/
+function requestData(myUrl) {
+	
+	$.ajax({ // getJson
+        url: myUrl,
+		dataType: 'json',
+        success: function(point) {
+   
+			//Loopa 
+			tmpArr = new Array;
+			
+			//Skippa första raden
+			for(var i = 1; i <point.length; i++) {
+     			tmpArr[i-1] = point[i][1];
+			}
+			//alert('testArr after ' + testArr);	
+			chart.series[0].setData (tmpArr, false); 
+			chart.redraw();   
+        },
+		cache: false
+		
+    });
+	
+}	
+</script>
+                    
+<script type="text/javascript" charset="utf-8">	
+			
+	function build_table_popup(prmMyQnr, prmMyTitle, myTitles){
+			
+     		var dateObject = new Date();
+     		
+			//Add an unique identifier
+			prmMyQnr += "_"+ dateObject.getTime();
+									
+			var tbl = ('<table border=0 align="left" width="100%" id="dataTable_'+prmMyQnr+'">');
+		
+			tbl += '<thead>';	
+			tbl += '<tr>';			
+			
+			for (var i = 0; i < myTitles.length; i++) {	
+				tbl += '<th>'+myTitles[i]+'</th>';
+			}
+			
+			tbl +=  '</tr>';
+			tbl += '</thead>';	
+			tbl += '<tbody>';	
+			tbl += '</tbody>';	
+	
+			
+			//Detta borde inte behövas nu!
+			if($('#'+prmMyQnr).length > 0){
+				$('#'+prmMyQnr).remove();	
+			}									
+			//alert('l middle: ' + $('#'+prmMyQnr).length);
+		
+			//skapa alltid nytt fönster
+			$("<div id='"+prmMyQnr+"'>" + tbl + "</div>").appendTo("#theBoxes");
+						
+			$('#'+prmMyQnr).dialog({					
+				autoOpen: false,
+				width: 700,
+				maxWidth: 900,
+				//title: "OK, detta är innehållet i box med id: " + tmpNr,
+				title: "Fråga: " + prmMyTitle,
+			});			
+					
+			$('#'+prmMyQnr).dialog('open');
+			$('#'+prmMyQnr).dialog( "option", "position", [orgX,orgY] );
+			
+			orgY += 10;
+			orgX += 10;	
+			
+			return prmMyQnr;	
+		}
+			
+	</script>
+	        			 
+</head>
+<body topmargin="0" marginheight="0">
+<div id="container">
+
+
+<script type="text/javascript" class="source">
+
+$(function () {
+	$("#demo0").jstree({ 
+	    "themes" : {
+        "theme" : "dotse",
+        "dots" : false,
+        "icons" : false
+        },	
+		"ui" : {
+	         "select_limit" : 1
+	    },
+		"json_data" : {
+			"ajax" : {
+				"url" : "_questions.json",
+				"data" : function (n) { 
+					//alert(n)
+					return { id : n.attr ? n.attr("id") : 0 }; 
+					
+				}
+			}
+		},
+		"plugins" : [ "themes", "json_data", "ui"]		
+	});	
+});
+
+
+
+//Kolla vad som är checkat
+$(function () {
+	$("#checkme_link").click(function () { 
+		var terre;
+		terre = $("#demo1").jstree("get_checked");
+		//alert(terre.length)
+		if(terre.length == 0) alert('Inget checkat');
+		$(terre).each(function(index) {
+		    //alert(index + ': ' + $(this).text());
+		    //alert('Checkad - ' +$( this ).attr('id') );
+			
+ 		 });
+	});
+			
+	});
+	
+/*$(function () {
+    $("#demo0").jstree({
+      // Data configuration omitted
+      rules : {
+        clickable : [ "Frågor av typ DNS" ]
+      }
+    });
+});
+*/
+	
+	
+//Kolla vad en fråga är vald
+$(function () {
+	$("#getQuestion_link").click(function () { 
+		var myObj;
+		var myFiles;
+		var myFileNames = '';
+		///query?file=1/apa&file=2/apa
+		
+		
+		myFiles = $("#demo1").jstree("get_checked");
+		
+		//Vad händer om man klickcar på en hel katalog
+		//alert($(jstree("get_checked")).is(".leaf"));
+		
+		if(myFiles.length == 0){
+			alert('Choose a file');
+		}else{
+			//Fil är vald, hämta dess namn
+			
+			//Vi måste exkludera huvudmappar!! samt plocka in multipla id
+			$(myFiles).each(function(index) {
+		    	//alert('Checkad - ' +$( this ).attr('id') );
+				myFileNames += 'file=' + $( this ).attr('id') + '&';			
+ 			 });
+			
+			//myFileName = myFiles[0].attr('id');
+			//Skriva till logg!!!!
+			window.console.log('filerna är: ' + myFileNames);
+						
+			myObj = $("#demo0").jstree("get_selected");
+				
+			//get_selected ( context )
+			//alert(myObj.length);
+			//alert(myObj.text());
+			//alert(myObj.attr('myid'));
+			//alert('href - ' +myObj.attr('id') );
+			
+			
+			//Vi måste kolla om det finns en fil vald
+			
+					
+			if(myObj.attr('myid') == "" || myObj.attr('myid') == undefined){
+				alert('Please choose a question');
+			}else{
+				//alert("Kör Q med typ: " + myObj.attr('type'));
+				
+				
+				if(myObj.attr('type') == "table"){
+					//getQ_table(myFileNames + myObj.attr('myQuestionUrl'), myObj.text(), myObj.attr('myid'));
+					getQ_table(myFileNames + 'sql=' + myObj.attr('myQuestionUrl'), myObj.text(), myObj.attr('myid'));
+				}else if(myObj.attr('type') == "chart"){
+					//getQ_chart(myFileNames + myObj.attr('myQuestionUrl'), myObj.text(), myObj.attr('myid'));
+					getQ_chart(myFileNames + 'sql=' + myObj.attr('myQuestionUrl'), myObj.text(), myObj.attr('myid'));					
+				}else{
+					alert('Felaktig frågetyp!')	
+				}
+						
+							
+			}
+			
+			
+		}		
+	});
+			
+	});	
+	
+</script>
+
+
+
+
+<script type="text/javascript" class="source">
+
+$(function () {
+	$("#demo1").jstree({ 
+	"themes" : {
+         "theme" : "dotse",
+         "dots" : false,
+         "icons" : false
+         }, 
+	
+		"json_data" : {
+			"ajax" : {
+				"url" : function (n) { 
+					return  n.attr ? "/list"+n.attr("id") : "/list" ; 
+				}
+			}
+		},
+		"plugins" : [ "themes", "json_data", "checkbox", "ui" ]
+	});
+});
+
+
+//sätt tema
+$(function () {
+	//$("#demo1").jstree("set_theme","apple");
+	$("#demo0").jstree("set_theme","dotse");
+	
+});
+
+</script>
+
+
+<h2>1. Choose file/files</h2>
+<div id="demo1" class="demo"></div>
+
+
+<h2>2. Choose question</h2>
+<div id="demo0" class="demo"></div>
+
+<button id="getQuestion_link" class="ui-state-default ui-corner-all">Run question</button>
+
+<!--<a href="#" id="checkme_link">Kolla om nån fil är vald</a><br>
+<a href="#" id="getQuestion_link">Kör</a>-->
+
+
+
+</div> 
+<div id="theBoxes"></div>
+<div id="tmpChart" class="mytmpChart"></div>
+
+
+
+</body>
+</html>
