@@ -4,7 +4,7 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<title>Test</title>
+	<title>PacketQuery 1.0</title>
          
 	<script type="text/javascript" src="_lib/jquery-1.5.js"></script>
 	<script type="text/javascript" src="_lib/jquery.cookie.js"></script>
@@ -15,30 +15,25 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 	<link type="text/css" rel="stylesheet" href="css/!style.css"/>
 	<link rel="stylesheet" href="css/datatables.css" type="text/css" media="all"/>
     
-    
-    
-    
-    <!-- ui-stuff -->
     <link type="text/css" href="css/ui-lightness/jquery-ui-1.8.9.custom.css" rel="stylesheet" />	
 	<script type="text/javascript" src="_lib/jquery-ui-1.8.9.custom.min.js"></script>
         
         <style type="text/css">
-			/*demo page css*/
-			body{ font: 62.5% "Trebuchet MS", sans-serif; margin:0px; background-color: background-color:#f6a828;}
 			
-			#container {position: absolute; background: #f6a828; border:0px; margin-top:0px; width: 250px; height: 100%;}
+			body{ font: 62.5% "Trebuchet MS", sans-serif; margin:0px; background-color: background-color:#f6a828;}
+			#container {position: absolute; background: #f6a828; border:0px; margin-top:0px; width: 400px; height: 100%;}
+			#container_questions {position: absolute; background: #f6a828; margin-bottom:10px; border-color:#000; margin:5px; border:solid 0px; bo margin-top:0px; width: 250px; height: 250px; overflow: auto;overflow-x: hidden}
+			#container_files {position:absolute; background: #f6a828; border-color:#000; border:solid 0px; margin:5px; margin-top:265px; width: 250px; height: 250px; overflow: auto;overflow-x: hidden}
+			#container_buttons {position:absolute; background: #f6a828; border-color:#000; border:solid 0px; margin:5px; margin-top:525px; width: 200px; height: 25px; overflow: auto;overflow-x: hidden}
+				
 			.demoHeaders { margin-top: 2em; }
 			#dialog_link {padding: .4em 1em .4em 4px;text-decoration: none; margin-bottom:22px;}
-			
-			<!--#checkme_link {padding: .4em 2em .4em 1px;text-decoration: none; position: relative; margin-bottom:2px;}-->
 			#getQuestion_link {text-decoration: none; text-align:center; position: relative; margin-bottom:2px;}
 			.buttons {position: relative; float:left; width:250px; background-color:#0C3}
-							
 			#dialog_link span.ui-icon {margin: 0 5px 0 0;position: absolute;left: .2em;top: 50%;margin-top: -8px;}
 			ul#icons {margin: 0; padding: 0;}
 			ul#icons li {margin: 2px; position: relative; padding: 4px 0; cursor: pointer; float: left;  list-style: none;}
-			ul#icons span.ui-icon {float: left; margin: 0 4px;}
-						
+			ul#icons span.ui-icon {float: left; margin: 0 4px;}		
 						
 			.mytmpChart {
 				padding: 0px;
@@ -49,22 +44,12 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 				width: 860px;
 				background-color:#060;
 				position: relative;
-					
-			}			
-						
-			.alert {
-				padding: 4px;
-				border:thick;
-				margin-left:0px;
-				margin-top:0px;
-				text-decoration: none;
-				margin-bottom:2px;
-			}
+			}						
 			td {
 				font-size: 10px;
 				font-family:Verdana, Geneva, sans-serif;
+				cursor:pointer;
 			}
-
 		</style>	
         
 	<script type="text/javascript" language="javascript" src="_lib/jquery.dataTables.js"></script>
@@ -73,67 +58,111 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 			var orgX = 265;
 			var orgY = 10;
 			var apiPath = "http://localhost:8080/query?";
-			var jsonFirst;					
-		
+			var jsonFirst;
+			var hiddenQuestions;			
+			var clickedSelectString = "";
+			var currentLinks;
+			var currentFiletype = 'json'
+			var myFileNames = '';
+						
 			function getQ_table(mySource, myTitle, myQnr){
-								
-				var currentSource = apiPath + mySource;
+			
+				// Loop through hidden Q's and get the question we want
+				for (var i = 0; i < hiddenQuestions.questions.length; i++) {	
+					if(hiddenQuestions.questions[i].myid == myQnr){
+						currentLinks = hiddenQuestions.questions[i].link_Array;
+					}
+				}
 				
+				var currentSource = apiPath + mySource;
 				var aoData;
 					$.getJSON( currentSource, function (json) {
-						
-							//alert("borde vara");
-							var kalle = { "aaData": json };
-							//kalle.aoData=json;
-							// Do whatever additional processing you want on the callback, then tell DataTables 
-							var titles = kalle.aaData[0];
+						var theJson = { "aaData": json.data };	// Do whatever additional processing you want on the callback, then tell DataTables 
+						var titles = new Array;
+						for (var i = 0; i < json.head.length; i++) { 
+							titles[i]=json.head[i].name;
+						}
+							//Remove the column headers
+							jsonFirst = theJson; 
 							
-							//Strippa bort runbbarna nu!
-							kalle.aaData.splice(0, 1); //vi borde försöka exkludera rad 0, lirar
-							jsonFirst = kalle; 
-														
-							//Nytt per!
-							//alert("bygg tabell med qnr: " + myQnr);
-							
-							var myDivId = build_table_popup(myQnr, myTitle,titles);
+							//Här bygger vi vår tabell.
+							var myDivId = build_table_popup(myQnr, myTitle,titles);							
 														
 							var oTable = $('#dataTable_'+myDivId).dataTable( {
-								//"bDestroy":true,	
-								//"bRetrieve": true,
-								//"bAutoWidth": true,							
 								"bProcessing": true,
-								//"bJQueryUI": false,
-								
-								 //"bServerSide": true,
-                   				 "sPaginationType": "full_numbers",
-								
-								//Slägg på wrapping....
+								"sPaginationType": "full_numbers",
 								"sAjaxSource": mySource,
 								"fnServerData": function ( sSource, aoData, fnCallback ) {
-									
-									//alert('jsonFirst: ' + jsonFirst!=undefined)
-									//alert('jsonFirst');
-									//alert('ska just köra callback 1 with: ' + jsonFirst.aaData[0]);
 									fnCallback(jsonFirst);
 									jsonFirst=undefined;
+								},
+								"fnInitComplete": function (){ //This is run when the user clicks a row	
 									
+									var ThisQNr = myDivId.substring(0, myDivId.indexOf("_", 0))
+									try{
+										eval("PopupObject_" + ThisQNr);
+										//alert("Use existing object")
+									}
+									catch(error){
+										//alert("no existing object");
+										//alert("object with name: PopupObject_"+ThisQNr + ", is beeing created");
+										eval("PopupObject_" + ThisQNr + " = new Object()");
+										eval("PopupObject_" + ThisQNr + ".currentLinks = '"+ currentLinks +"'");
+									}
+									$('#dataTable_'+myDivId +' td').click(function(event) {
+										//Reset currentLinks
+										var ThisQNr2 = myDivId.substring(0, myDivId.indexOf("_", 0))
+										//alert("aktuell linkslista: " + eval("PopupObject_" + ThisQNr2).currentLinks);
+										currentLinks = eval("PopupObject_" + ThisQNr2).currentLinks;
+									})
+									
+									$("#dataTable_"+myDivId + " tbody").delegate("td", "click", function() { // Det som händer vid click på rad
+											
+											clickedSelectString = $(this).text();
+											var mySplitResult = currentLinks.split(",");
+											var aPos = oTable.fnGetPosition( this );
+	
+											/* Get the data array for this row */
+											//var aData = oTable.fnGetData( aPos[0] );
+											var myQuestion = mySplitResult[aPos[1]];
+											
+											if(myQuestion != "off"){
+																		  
+												var myDomain = $("td:eq(1)", this).text();
+												for (var i = 0; i < hiddenQuestions.questions.length; i++) { 
+															
+													if(hiddenQuestions.questions[i].question == myQuestion){																
+															
+																//Se till att det inte finns några spaces i link_Array
+																//alert("Now run this: " + hiddenQuestions.questions[i].myQuestionUrl);	
+																var myQUrl = hiddenQuestions.questions[i].myQuestionUrl;
+																var mySubId = hiddenQuestions.questions[i].myid;
+																var myTitle = hiddenQuestions.questions[i].title;
+																																
+																var modQStr = myQUrl.replace("$1", clickedSelectString);
+																getQ_table(myFileNames + 'sql=' +modQStr, myTitle, mySubId);
+																
+													}
+												}														
+											}else{
+												alert('This column is not associated with a question.')	
+											}						
+																						  
+									});
 								}
-								
-							});
-					
-					});
+						});
+							
+				});
 		}
+				
 		
 				
-		function getQ_chart(mySource, myTitle, myQnr){								
-				
+		function getQ_chart(mySource, myTitle, myQnr){					
 				var currentSource = apiPath + mySource;
-				//alert("in getQ_chart with source: " + currentSource)
 				
 				// Fixa en popup //
 				var localDate = new Date();
 				var newDivId = myQnr + "_"+ localDate.getTime();
-				//alert('newDivId' + newDivId);
 				
 				$("<div id='"+newDivId+"' class='mytmpChart'></div>").appendTo("#theBoxes");			
 				$('#'+newDivId).dialog({					
@@ -142,23 +171,15 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 					height: 500,
 					title: "Question: " + myTitle,
 				});
-				$('#'+newDivId).dialog('open');
-		
+				$('#'+newDivId).dialog('open');		
 				$('#'+newDivId).dialog( "option", "position", [orgX,orgY] );
-				//alert('l after 2: ' + $('#dataTable_'+prmMyQnr).width());
-				
-				//$('#'+newDivId).dialog( "option", "width", $('#'+newDivId).width() + 300);
-				//$('#'+newDivId).width() += 40; 
-				//alert('Checka...: ' + $('#'+newDivId).width());
-				
+						
 				orgY += 10;
 				orgX += 10;
-				
 				// Slut öppna popup //
-								
+				
 				chart = new Highcharts.Chart({
 				chart: {
-							//renderTo: newDivId,
 							renderTo: newDivId,	
 							width: 680,
 							height: 460,						 
@@ -202,9 +223,7 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 		
 		
 		
-/*
-* Request data from the server, add it to the graph and set a timeout to request again
-*/
+// Request data from the server, add it to the graph and set a timeout to request again 
 function requestData(myUrl) {
 	
 	$.ajax({ // getJson
@@ -212,190 +231,162 @@ function requestData(myUrl) {
 		dataType: 'json',
         success: function(point) {
    
-			//Loopa 
 			tmpArr = new Array;
-			
-			//Skippa första raden
-			for(var i = 1; i <point.length; i++) {
-     			tmpArr[i-1] = point[i][1];
+			//f�rsta columnen
+			for(var i = 0; i <point.data.length; i++) {
+     				tmpArr[i] = point.data[i][1];
 			}
-			//alert('testArr after ' + testArr);	
 			chart.series[0].setData (tmpArr, false); 
 			chart.redraw();   
         },
 		cache: false
-		
-    });
-	
+	});
 }	
-</script>
-                    
-<script type="text/javascript" charset="utf-8">	
-			
-	function build_table_popup(prmMyQnr, prmMyTitle, myTitles){
-			
-     		var dateObject = new Date();
-     		
-			//Add an unique identifier
-			prmMyQnr += "_"+ dateObject.getTime();
-									
-			var tbl = ('<table border=0 align="left" width="100%" id="dataTable_'+prmMyQnr+'">');
 		
-			tbl += '<thead>';	
-			tbl += '<tr>';			
+function build_table_popup(prmMyQnr, prmMyTitle, myTitles){
 			
-			for (var i = 0; i < myTitles.length; i++) {	
-				tbl += '<th>'+myTitles[i]+'</th>';
-			}
-			
-			tbl +=  '</tr>';
-			tbl += '</thead>';	
-			tbl += '<tbody>';	
-			tbl += '</tbody>';	
-	
-			
-			//Detta borde inte behövas nu!
-			if($('#'+prmMyQnr).length > 0){
-				$('#'+prmMyQnr).remove();	
-			}									
-			//alert('l middle: ' + $('#'+prmMyQnr).length);
-		
-			//skapa alltid nytt fönster
-			$("<div id='"+prmMyQnr+"'>" + tbl + "</div>").appendTo("#theBoxes");
-						
-			$('#'+prmMyQnr).dialog({					
-				autoOpen: false,
-				width: 700,
-				maxWidth: 900,
-				//title: "OK, detta är innehållet i box med id: " + tmpNr,
-				title: "Fråga: " + prmMyTitle,
-			});			
-					
-			$('#'+prmMyQnr).dialog('open');
-			$('#'+prmMyQnr).dialog( "option", "position", [orgX,orgY] );
-			
-			orgY += 10;
-			orgX += 10;	
-			
-			return prmMyQnr;	
+		var dateObject = new Date();	
+		var myModTitle;
+		if(clickedSelectString != ""){
+			myModTitle = prmMyTitle.replace("$1", clickedSelectString);
+		}else{
+			myModTitle = prmMyTitle;
 		}
-			
-	</script>
+						     		
+		//Add an unique identifier
+		prmMyQnr += "_"+ dateObject.getTime();
+												
+		var tbl = ('<table border=0 align="left" width="100%" id="dataTable_'+prmMyQnr+'">');
+		tbl += '<thead>';	
+		tbl += '<tr>';			
+		for (var i = 0; i < myTitles.length; i++) {	
+			tbl += '<th>'+myTitles[i]+'</th>';
+		}
+		tbl +=  '</tr>';
+		tbl += '</thead>';	
+		tbl += '<tbody>';	
+		tbl += '</tbody>';	
+				
+		//Detta borde inte behövas nu!
+		if($('#'+prmMyQnr).length > 0){
+			$('#'+prmMyQnr).remove();	
+		}									
+		
+		//skapa alltid nytt fönster
+		$("<div id='"+prmMyQnr+"'>" + tbl + "</div>").appendTo("#theBoxes");
+						
+		$('#'+prmMyQnr).dialog({					
+			autoOpen: false,
+			width: 700,
+			title: "Question : " + myModTitle,
+		});			
+					
+		$('#'+prmMyQnr).dialog('open');
+		$('#'+prmMyQnr).dialog( "option", "position", [orgX,orgY] );
+				
+		$('#'+prmMyQnr).bind( "dialogfocus", function(event, ui) {
+			//Do we need to di anything on focus?				
+		});
+				
+		orgY += 10;
+		orgX += 10;	
+		return prmMyQnr;	
+}
+</script>
 	        			 
 </head>
 <body topmargin="0" marginheight="0">
-<div id="container">
-
 
 <script type="text/javascript" class="source">
 
 $(function () {
-	$("#demo0").jstree({ 
+	$("#questionTree").jstree({ 
+	
 	    "themes" : {
         "theme" : "dotse",
         "dots" : false,
         "icons" : false
-        },	
+        },
 		"ui" : {
 	         "select_limit" : 1
 	    },
 		"json_data" : {
 			"ajax" : {
 				"url" : "_questions.json",
-				"data" : function (n) { 
-					//alert(n)
-					return { id : n.attr ? n.attr("id") : 0 }; 
-					
+				"data" : function (n) {	
+					return { id : n.attr ? n.attr("id") : 0 };				
 				}
 			}
 		},
-		"plugins" : [ "themes", "json_data", "ui"]		
+		"plugins" : [ "themes", "json_data", "ui"]
 	});	
+
+
+	//Check if new filetype on question-click
+	$("#questionTree").bind('select_node.jstree', function(event, data) {
+				
+		myObj = $("#questionTree").jstree("get_selected");
+		//alert(myObj.attr('filetype'));
+		
+		if(myObj.attr('filetype') != 'folder'){
+		//not cliking a folder	
+			if (currentFiletype != myObj.attr('filetype')){
+				//ML fortsätt här	
+				currentFiletype = myObj.attr('filetype');
+				//alert('uppdatera listan!!!!')	
+				$("#fileTree").jstree("refresh");
+			}
+		}
+	})
 });
 
 
-
-//Kolla vad som är checkat
-$(function () {
-	$("#checkme_link").click(function () { 
-		var terre;
-		terre = $("#demo1").jstree("get_checked");
-		//alert(terre.length)
-		if(terre.length == 0) alert('Inget checkat');
-		$(terre).each(function(index) {
-		    //alert(index + ': ' + $(this).text());
-		    //alert('Checkad - ' +$( this ).attr('id') );
-			
- 		 });
-	});
-			
-	});
-	
-/*$(function () {
-    $("#demo0").jstree({
-      // Data configuration omitted
-      rules : {
-        clickable : [ "Frågor av typ DNS" ]
-      }
-    });
+//Läs in dolda frågorna som ligger i separat fil.
+$.getJSON('_questions_hidden.json', function(data) {
+  var items = [];
+  hiddenQuestions = data;
 });
-*/
+
 	
-	
-//Kolla vad en fråga är vald
+//Kolla vad en fråga är vald- När jag klickar på fråga.
 $(function () {
 	$("#getQuestion_link").click(function () { 
 		var myObj;
 		var myFiles;
-		var myFileNames = '';
-		///query?file=1/apa&file=2/apa
+		myFileNames = '';
 		
-		
-		myFiles = $("#demo1").jstree("get_checked");
+		myFiles = $("#fileTree").jstree("get_checked");
 		
 		//Vad händer om man klickcar på en hel katalog
-		//alert($(jstree("get_checked")).is(".leaf"));
 		
 		if(myFiles.length == 0){
-			alert('Choose a file');
+			alert('Please choose one or several files');
 		}else{
 			//Fil är vald, hämta dess namn
 			
-			//Vi måste exkludera huvudmappar!! samt plocka in multipla id
+			//Get multiple file-id's
 			$(myFiles).each(function(index) {
-		    	//alert('Checkad - ' +$( this ).attr('id') );
-				myFileNames += 'file=' + $( this ).attr('id') + '&';			
+		    	myFileNames += 'file=' + $( this ).attr('id') + '&';			
  			 });
-			
-			//myFileName = myFiles[0].attr('id');
-
-						
-			myObj = $("#demo0").jstree("get_selected");
-				
-			//get_selected ( context )
-			//alert(myObj.length);
-			//alert(myObj.text());
-			//alert(myObj.attr('myid'));
-			//alert('href - ' +myObj.attr('id') );
-			
-			
-			//Vi måste kolla om det finns en fil vald
-			
+			myObj = $("#questionTree").jstree("get_selected");
 					
-			if(myObj.attr('myid') == "" || myObj.attr('myid') == undefined){
+			//Check if a question is chosen
+			if (myObj.attr('type') == "folder"){
+				alert('You have chosen a folder, not a question.');
+			}else if(myObj.attr('myid') == "" || myObj.attr('myid') == undefined){
 				alert('Please choose a question');
 			}else{
-				//alert("Kör Q med typ: " + myObj.attr('type'));
+								
+				var myLinkArr = new Object;
+				currentLinks = myObj.attr('link_Array');
 				
-				
+				//Check if table or chart
 				if(myObj.attr('type') == "table"){
-					//getQ_table(myFileNames + myObj.attr('myQuestionUrl'), myObj.text(), myObj.attr('myid'));
 					getQ_table(myFileNames + 'sql=' + myObj.attr('myQuestionUrl'), myObj.text(), myObj.attr('myid'));
 				}else if(myObj.attr('type') == "chart"){
-					//getQ_chart(myFileNames + myObj.attr('myQuestionUrl'), myObj.text(), myObj.attr('myid'));
 					getQ_chart(myFileNames + 'sql=' + myObj.attr('myQuestionUrl'), myObj.text(), myObj.attr('myid'));					
 				}else{
-					alert('Felaktig frågetyp!')	
+					alert('Wrong type of question!')	
 				}
 						
 							
@@ -405,64 +396,93 @@ $(function () {
 		}		
 	});
 			
-	});	
+});	
+
+
+
+$(function () {
+	$("#refreshFilelist").click(function () { 
+		//alert('refresh now.');
+		$("#fileTree").jstree("refresh");	
+	});
+			
+});	
+
+
+
 	
+	
+	//är detta ett bra sätt tro?
+	/*
+	$(function () {
+		$("#questionTree").click(function () { 					
+			alert('klickat på frågeträd');
+		});
+			
+	});	
+	*/
+	
+	
+	
+	/*
+	var theStatus = new Object();
+	theStatus.Home = 'mouseover';
+	theStatus['Place'] = 'click';
+	for (var i in theStatus)
+	{
+		alert('theStatus[\''+i+'\'] is ' + theStatus[i])
+	}*/
 </script>
-
-
-
-
 <script type="text/javascript" class="source">
 
 $(function () {
-	$("#demo1").jstree({ 
+	$("#fileTree").jstree({ 
 	"themes" : {
-         "theme" : "dotse",
-         "dots" : false,
-         "icons" : false
-         }, 
-	
+        "theme" : "dotse",
+        "dots" : false,
+        "icons" : false
+        }, 
+		rules : {
+        	deletable : "all"
+      	},
 		"json_data" : {
 			"ajax" : {
 				"url" : function (n) { 
-					return  n.attr ? "/list"+n.attr("id") : "/list" ; 
+				return  n.attr ? "/list"+n.attr("id") : "/list" ; 					
 				}
-			}
+			},
 		},
 		"plugins" : [ "themes", "json_data", "checkbox", "ui" ]
 	});
 });
 
-
-//sätt tema
+//sätt tema 
 $(function () {
-	//$("#demo1").jstree("set_theme","apple");
-	$("#demo0").jstree("set_theme","dotse");
-	
+	$("#questionTree").jstree("set_theme","dotse");
 });
 
 </script>
 
 
-<h2>1. Choose file/files</h2>
-<div id="demo1" class="demo"></div>
+<div id="container_questions">
+<h2>1. Choose question</h2>
+<div id="questionTree" class="demo"></div>
+</div>
 
 
-<h2>2. Choose question</h2>
-<div id="demo0" class="demo"></div>
+<div id="container_files">
+<h2>2. Choose file/files</h2>
+<div id="fileTree" class="demo"></div>
+</div> 
 
+<div id="container_buttons">
 <button id="getQuestion_link" class="ui-state-default ui-corner-all">Run question</button>
-
-<!--<a href="#" id="checkme_link">Kolla om nån fil är vald</a><br>
-<a href="#" id="getQuestion_link">Kör</a>-->
-
-
+<button id="refreshFilelist" class="ui-state-default ui-corner-all">Reload file list</button>
 
 </div> 
+
 <div id="theBoxes"></div>
 <div id="tmpChart" class="mytmpChart"></div>
-
-
 
 </body>
 </html>

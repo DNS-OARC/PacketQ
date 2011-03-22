@@ -1,0 +1,8 @@
+{ "questions" : 
+[   
+      	{"question" : "_list_domains", "title" : "List DNS based on src_addr $1", "myid" : "subQ1", "myQuestionUrl"  : "select lower(rsplit(qname,2)||'.'||rsplit(qname,1)) as Domain,src_addr,dst_addr from dns where src_addr='$1' limit 1000", "type" : "table", "link_Array" : "_list_banana,off,off"},
+        {"question" : "_list_addr", "title" : "List adresses for $1", "myid" : "subQ2", "myQuestionUrl"  : "select lower(rsplit(qname,2)||'.'||rsplit(qname,1)) as Domain,src_addr,dst_addr from dns where domain='$1' limit 1000", "type" : "chart", "link_Array" : "off,_list_domains,off"},
+        {"question" : "_list_banana", "title" : "List banana-DNS for $1", "myid" : "subQ3", "myQuestionUrl"  : "select lower(rsplit(qname,2)||'.'||rsplit(qname,1)) as CrazyStuff from dns where crazystuff='$1' limit 100", "type" : "chart", "link_Array" : "_list_addr"}
+
+]
+}

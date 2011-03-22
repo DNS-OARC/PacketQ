@@ -1,64 +1,59 @@
 [
 {
-    "data" : "DNS Questions",
-	"attr" : { "id" : "DNS" },
+    	"data" : "DNS Questions",
+	"attr" : { "id" : "DNS", "type" : "folder", "filetype" : "folder" },
 	"children" : [
 	{
-	    "data" : { "title" : "Top domains"},
-	    "attr" : { "myid" : "Q1", "myQuestionUrl" : "select count(*) as Count, lower(rsplit(qname,2)||'.'||rsplit(qname,1)) as Domain from dns group by domain order by count desc limit 1000", "type" : "table"}
+		"data" : { "title" : "Top domains"},
+		"attr" : { "myid" : "Q1", "myQuestionUrl" : "select count(*) as Count, lower(rsplit(qname,2)||'.'||rsplit(qname,1)) as Domain from dns group by domain order by count desc limit 1000", "type" : "table", "filetype" : "pcap", "link_Array" : "off,_list_addr" }
 	},
 	{
-	    "data" : { "title" : "Top Resolvers"},
-	    "attr" : { "myid" : "Q1", "myQuestionUrl" : "select count(*) as Count, if(qr=1,dst_addr,src_addr) as Source from dns group by source order by count desc limit 1000", "type" : "table"}
+		"data" : { "title" : "Top Resolvers"},
+		"attr" : { "myid" : "Q2", "myQuestionUrl" : "select count(*) as Count, if(qr=1,dst_addr,src_addr) as Source from dns group by source order by count desc limit 1000", "type" : "table", "filetype" : "json", "link_Array" : "off,off"}
 	},
 	{
-	    "data" : { "title" : "Top Record types"},
-	    "attr" : { "myid" : "Q1", "myQuestionUrl" : "select count(*) as Count, qtype as Type from dns group by type order by count desc limit 1000", "type" : "table"}
+		"data" : { "title" : "Top Record types"},
+		"attr" : { "myid" : "Q3", "myQuestionUrl" : "select count(*) as Count, qtype as Type from dns group by type order by count desc limit 1000", "type" : "table", "filetype" : "pcap", "link_Array" : "off,off"}
 	},
 	{
-	    "data" : { "title" : "Top Repeating Resolvers"},
-	    "attr" : { "myid" : "Q1", "myQuestionUrl" : "select count(*) as Count,qname,if(qr=1,dst_addr,src_addr) as Source,qtype from dns group by qname,source,qtype order by count desc limit 1000", "type" : "table"}
-	}
-    ]
+		"data" : { "title" : "Top Repeating Resolvers"},
+		"attr" : { "myid" : "Q4", "myQuestionUrl" : "select count(*) as Count,qname,if(qr=1,dst_addr,src_addr) as Source,qtype from dns group by qname,source,qtype order by count desc limit 1000", "type" : "table", "filetype" : "pcap", "link_Array" : "off,off,off"}
+	}]
 },
 {
-    "data" : "ICMP Questions",
-    "attr" : { "id" : "DNS" },
-    "children" : [
-    {
-	"data" : { "title" : "All ICMP packets"},
-	"attr" : { "myid" : "Q1", "myQuestionUrl" : "select * from icmp", "type" : "table"}
-    },
-    {
-	"data" : { "title" : "Destination Unreachable"},
-	"attr" : { "myid" : "Q1", "myQuestionUrl" : "select id as Id,src_addr as Source,dst_addr as Destination,code as Code ,desc as Description,du_src_addr as Orig_source,du_dst_addr as Orig_destination,du_protocol as Orig_protocol from icmp where type=3", "type" : "table"}
-    },
-    {
-	"data" : { "title" : "Echo (ping)"},
-	"attr" : { "myid" : "Q1", "myQuestionUrl" : "select id as Id,src_addr as Source,dst_addr as Destination,type as Type,code as Code,echo_identifier as Ping_Id, echo_sequence as Seq,desc as Description from icmp where type=0 or type=8", "type" : "table"}
-    },
-    {
-	"data" : { "title" : "Echo (ping) Grouped"},
-	"attr" : { "myid" : "Q1", "myQuestionUrl" : "select if (type=8,src_addr||' --> '||dst_addr,dst_addr||' --> '||src_addr) as Ping,sum(type==8) as echo,sum(type==0) as reply,((100*reply/echo)>>0)||'%25' as Success_rate,count(*) as cnt from icmp where type=0 or type=8 group by ping,echo_identifier", "type" : "table"}
-    }
-
-
-    ]
+	"data" : "ICMP Questions",
+    	"attr" : { "id" : "DNS", "type" : "folder", "filetype" : "folder" },
+    	"children" : [
+    	{
+		"data" : { "title" : "All ICMP packets"},
+		"attr" : { "myid" : "Q5", "myQuestionUrl" : "select * from icmp", "type" : "table", "filetype" : "pcap", "link_Array" : "off"}
+    	},
+    	{
+		"data" : { "title" : "Destination Unreachable"},
+		"attr" : { "myid" : "Q6", "myQuestionUrl" : "select id as Id,src_addr as Source,dst_addr as Destination,code as Code ,desc as Description,du_src_addr as Orig_source,du_dst_addr as Orig_destination,du_protocol as Orig_protocol from icmp where type=3", "type" : "table", "filetype" : "pcap", "link_Array" : "off"}
+    	},
+    	{
+		"data" : { "title" : "Echo (ping)"},
+		"attr" : { "myid" : "Q7", "myQuestionUrl" : "select id as Id,src_addr as Source,dst_addr as Destination,type as Type,code as Code,echo_identifier as Ping_Id, echo_sequence as Seq,desc as Description from icmp where type=0 or type=8", "type" : "table", "filetype" : "pcap", "link_Array" : "off"}
+    	},
+    	{
+		"data" : { "title" : "Echo (ping) Grouped"},
+		"attr" : { "myid" : "Q8", "myQuestionUrl" : "select if (type=8,src_addr||' --> '||dst_addr,dst_addr||' --> '||src_addr) as Ping,sum(type==8) as echo,sum(type==0) as reply,((100*reply/echo)>>0)||'%25' as Success_rate,count(*) as cnt from icmp where type=0 or type=8 group by ping,echo_identifier", "type" : "table", "filetype" : "pcap", "link_Array" : "off"}
+    	}]
 },
 {
-    "data" : "View diagrams",
-    "attr" : { "id" : "Diagram" },
-    "children" : [
-    {
-	"data" : {
-	    "title" : "Questions/second (10 sec intervals)"},
-	"attr" : { "myid" : "Q3_1", "myQuestionUrl" : "select s ,count(*)/10 as count from dns group by (s/10)>>0", "type" : "chart"}
-    },
-    {
-	"data" : {
-	    "title" : "Questions/second"},
-	"attr" : { "myid" : "Q3_2", "myQuestionUrl" : "select s ,count(*) as count from dns group by s", "type" : "chart"}
-    }					
-    ]
+	"data" : "View diagrams",
+	"attr" : { "id" : "Diagram", "type" : "folder", "filetype" : "folder" },
+	"children" : [
+	{
+		"data" : {
+		"title" : "Questions/second (10 sec intervals)"},
+		"attr" : { "myid" : "Q3_1", "myQuestionUrl" : "select s ,count(*)/10 as count from dns group by truncate(s/10)", "type" : "chart", "filetype" : "pcap", "link_Array" : "off"}
+	},
+	{
+		"data" : {
+		"title" : "Questions/second"},
+		"attr" : { "myid" : "Q3_2", "myQuestionUrl" : "select s ,count(*) as count from dns group by s", "type" : "chart", "filetype" : "pcap", "link_Array" : "off"}
+	}]
 }
 ]
