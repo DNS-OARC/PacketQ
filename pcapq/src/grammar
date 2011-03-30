@@ -1,0 +1,40 @@
+
+    Query grammar
+
+    <query>             ::= select <resultcolumns> [ from <source> ] [where <expr> ] [group by <orderingterms>] [order by <orderingterms>] [limit <digit> [offset <digit ]] ";"
+
+    <resultcolumns>     ::= <resultcolumn> | <resultcolumn>,<resultcolumns>
+
+    <resultcolumn>      ::= * | <expr> [ as <colname> ]
+
+    <colname>           ::= <identifier>
+
+    <source>            ::= tablename
+    
+    <identifier>        ::= letter {letter|digit}
+
+    <orderingterms>     ::= <orderingterm> {, <orderingterm>}
+
+    <orderingterm>      ::= <expr> [as <identifier>]
+
+    <digit>             ::= 0-9
+
+    <letter>            ::= a-zA-Z
+
+    <expr>              ::= <literal> |
+                            <colname> |
+                            <unary-op> <expr> |
+                            <expr> <binary-op> <expr> |
+                            <function> (<expr>|*) |
+                            ( <expr> ) 
+
+    <literal>           ::= "'"{ any_character }"'" | <number>
+
+    <number>		::= <digit> {<digit>} [ "." {<digit>}] | "." <digit> {<digit>} ["e" [+|-] <digit> {<digit>} ]
+
+    <unary-op>          ::= "+" | "-" | "~" | NOT
+
+    <binary-op>         ::= "||" | "*" | "/" | "%" | "+" | "-" | "<<" | ">>" | "&" | "|" | "<" | "<=" | ">" | ">=" | "=" | "==" | "!=" | "<>" | IS | IS NOT | AND | OR
+
+    <function>          ::= COUNT | AVG | SUM | MIN | MAX
+

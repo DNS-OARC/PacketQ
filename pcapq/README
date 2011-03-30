@@ -1,0 +1,57 @@
+README
+
+DNS2db is a system for gathering and storing DNS messages. The DNS
+messages are either captured directly from a network interface, 
+from the "wire", or from a previously saved file of network traffic.
+The DNS messages are then decoded and stored in one or more sqlite3
+databases for later analysis. DNS2db is designed so that it can run 
+unattended as long as there is sufficient disk space for the database
+file(s).
+
+
+Architecture
+
+DNS2db consists of two parts; tracedns and dns2sqlite. tracedns captures
+network packets, extract the DNS messages and output CSV strings
+consisting of a timestamp, IP-adresses, protocol information and the
+actual DNS message. The later is encoded as a string of hexadecimal
+values (two per byte of the original DNS message). dns2sqlite parses
+the CSV string from tracedns, dissect the message and store the 
+resulting DNS data in sqlite3 databases for later analysis.
+
+The idea behind this two stage approach was to make it easy for others
+to replace the dns2sqlite backend with something that may be more
+appropriate.
+
+
+Running DNS2db
+
+To run DNS2db edit the configuration file and run dns2db.pl 
+or the dns2db.sh start/stop script if it has been installed.
+DNS2db can also be run directly on the command line, for example:
+
+   tracedns -f 'port 53' pcapint:en0 
+   | dns2sqlite -t template_db.db -d dns2db -f /tmp -i 5
+
+This will read network data from en0 network interface and store each
+captured DNS packet in databases named "dns2db<timestamp>", located
+in a subdirctory of /tmp named "<datestamp>". The time- and datestamps
+are based on the date and time a packet was captured. You may need to
+use sudo (or su) to get permission to read from the given network source.
+
+The "-f" parameter to tracedns is a BPF filter string. If it is not given,
+tracedns will capture every packet from the given source (in this case,
+en0). However, dns2sqlite basically assume that it is given DNS messages 
+and thus a 'port 53' BPF filer is appropriate. If dns2sqlite fail to
+parse a message as a correct DNS message then that message will be 
+stored as an "unhandled message". 
+
+The "-i x" parameter to dns2sqlite tell dns2sqlite to create a new 
+database for every x minutes of data based on the timestamp from the
+captured packets. 
+
+For other options and how to create the necessary template database
+please use the "--help" option to the commands and see the INSTALL
+document.
+
+
