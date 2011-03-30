@@ -1,30 +1,33 @@
-/*! \file */ 
 /*
- * Copyright (c) 2011 .SE (The Internet Infrastructure Foundation).
- *                  All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * ##################################################################### 
- *
+ Copyright (c) 2011, .SE - The Internet Infrastructure Foundation
+ All rights reserved.
+ 
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+ 3. All advertising materials mentioning features or use of this software
+    must display the following acknowledgement:
+    This product includes software developed by the .SE - The Internet 
+    Infrastructure Foundation.
+ 4. Neither the name of .SE - The Internet Infrastructure Foundation nor the
+    names of its contributors may be used to endorse or promote products
+    derived from this software without specific prior written permission.
+ 
+ THIS SOFTWARE IS PROVIDED BY .SE - THE INTERNET INFRASTRUCTURE FOUNDATION 
+ ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
+ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED. IN NO EVENT SHALL .SE - The Internet Infrastructure Foundation
+ BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
+ GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
+ STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY 
+ WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
+ OF SUCH DAMAGE.
  */
 #ifndef SQL_H
 #define SQL_H
@@ -369,6 +372,23 @@ inline const char *ind(int in)
 
 class DB
 {
+    private:
+    class Item
+    {
+        public:
+        std::string m_function;
+        int         m_key;
+        bool operator < (const Item &r) const 
+        {
+            if (m_key<r.m_key)
+                return true;
+            if (m_key>r.m_key)
+                return false;
+            if (m_function< r.m_function)
+                return true;
+            return false;
+        }
+    };
     public:
     DB();
     ~DB();
@@ -377,9 +397,31 @@ class DB
 
     Table *create_table(const char *name);
     Table *get_table(const char *name);
+    void add_lut(const char *table, int key, const char * value)
+    {
+        Item i;
+        i.m_function = table;
+        i.m_key      = key;
+        m_lut[i]     = value;
+    }
+    const char *get_value( const char *table, int key )
+    {
+        Item i;
+        i.m_function = table;
+        i.m_key      = key;
+        std::map< Item, std::string >::iterator it = m_lut.find(i);
+        if (it!= m_lut.end())
+        {
+            const char *str = it->second.c_str();
+            return str;
+        }
+        return 0;
+    }
 
 
-    std::map<std::string,Table *> m_tables;
+    private:
+    std::map< std::string, Table * > m_tables;
+    std::map< Item, std::string > m_lut;
 };
 
 
@@ -872,7 +914,6 @@ public:
     }
     virtual int   get_int(Row *row)
     {
-//        return 453;
         return atoi(get_string(row));
     }
     virtual const char    *get_string(Row *row)
@@ -1357,6 +1398,34 @@ public:
         Variant val; 
         m_param[0]->evaluate(row, val);
         v = val.get_int();
+        return;
+    }
+};
+
+class Name_func : public OP
+{
+public:
+    Name_func(const OP &op): OP(op)
+    {
+    }
+    void evaluate(Row *row, Variant &v)
+    {
+        char sep='.';
+        Variant str,num; 
+        m_param[0]->evaluate(row, str);
+        m_param[1]->evaluate(row, num);
+       
+        int n=num.get_int();
+        const char *s = str.get_string();
+        const char *r = g_db.get_value( s, n );
+        if (!r)
+        {
+            v=num;
+            return;
+        }
+
+        Variant res( r, false );
+        v=res;
         return;
     }
 };

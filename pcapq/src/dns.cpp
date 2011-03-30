@@ -1,29 +1,33 @@
 /*
- * Copyright (c) 2011 .SE (The Internet Infrastructure Foundation).
- *                  All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * ##################################################################### 
- *
+ Copyright (c) 2011, .SE - The Internet Infrastructure Foundation
+ All rights reserved.
+ 
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+ 3. All advertising materials mentioning features or use of this software
+    must display the following acknowledgement:
+    This product includes software developed by the .SE - The Internet 
+    Infrastructure Foundation.
+ 4. Neither the name of .SE - The Internet Infrastructure Foundation nor the
+    names of its contributors may be used to endorse or promote products
+    derived from this software without specific prior written permission.
+ 
+ THIS SOFTWARE IS PROVIDED BY .SE - THE INTERNET INFRASTRUCTURE FOUNDATION 
+ ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
+ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED. IN NO EVENT SHALL .SE - The Internet Infrastructure Foundation
+ BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
+ GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
+ STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY 
+ WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
+ OF SUCH DAMAGE.
  */
 #include "packetq.h"
 #include "tcp.h"
@@ -86,6 +90,100 @@ void Parse_dns::add_columns(Table &table)
     table.add_column("do",             Coltype::_bool );
     table.add_column("edns0",          Coltype::_bool );
     table.add_column("qr",             Coltype::_bool );
+
+
+    g_db.add_lut( "qtype", 1,   "A" );
+    g_db.add_lut( "qtype", 2,   "NS" );
+    g_db.add_lut( "qtype", 3,   "MD" );
+    g_db.add_lut( "qtype", 4,   "MF" );
+    g_db.add_lut( "qtype", 5,   "CNAME" );
+    g_db.add_lut( "qtype", 6,   "SOA" );
+    g_db.add_lut( "qtype", 7,   "MB" );
+    g_db.add_lut( "qtype", 8,   "MG" );
+    g_db.add_lut( "qtype", 9,   "MR" );
+    g_db.add_lut( "qtype", 10,  "NULL" );
+    g_db.add_lut( "qtype", 11,  "WKS" );
+    g_db.add_lut( "qtype", 12,  "PTR" );
+    g_db.add_lut( "qtype", 13,  "HINFO" );
+    g_db.add_lut( "qtype", 14,  "MINFO" );
+    g_db.add_lut( "qtype", 15,  "MX" );
+    g_db.add_lut( "qtype", 16,  "TXT" );
+    g_db.add_lut( "qtype", 17,  "RP" );
+    g_db.add_lut( "qtype", 18,  "AFSDB" );
+    g_db.add_lut( "qtype", 19,  "X25" );
+    g_db.add_lut( "qtype", 20,  "ISDN" );
+    g_db.add_lut( "qtype", 21,  "RT" );
+    g_db.add_lut( "qtype", 22,  "NSAP" );
+    g_db.add_lut( "qtype", 23,  "NSAP-PTR" );
+    g_db.add_lut( "qtype", 24,  "SIG" );
+    g_db.add_lut( "qtype", 25,  "KEY" );
+    g_db.add_lut( "qtype", 26,  "PX" );
+    g_db.add_lut( "qtype", 27,  "GPOS" );
+    g_db.add_lut( "qtype", 28,  "AAAA" );
+    g_db.add_lut( "qtype", 29,  "LOC" );
+    g_db.add_lut( "qtype", 30,  "NXT" );
+    g_db.add_lut( "qtype", 31,  "EID" );
+    g_db.add_lut( "qtype", 32,  "NIMLOC" );
+    g_db.add_lut( "qtype", 33,  "SRV" );
+    g_db.add_lut( "qtype", 34,  "ATMA" );
+    g_db.add_lut( "qtype", 35,  "NAPTR" );
+    g_db.add_lut( "qtype", 36,  "KX" );
+    g_db.add_lut( "qtype", 37,  "CERT" );
+    g_db.add_lut( "qtype", 38,  "A6" );
+    g_db.add_lut( "qtype", 39,  "DNAME" );
+    g_db.add_lut( "qtype", 40,  "SINK" );
+    g_db.add_lut( "qtype", 41,  "OPT" );
+    g_db.add_lut( "qtype", 42,  "APL" );
+    g_db.add_lut( "qtype", 43,  "DS" );
+    g_db.add_lut( "qtype", 44,  "SSHFP" );
+    g_db.add_lut( "qtype", 45,  "IPSECKEY" );
+    g_db.add_lut( "qtype", 46,  "RRSIG" );
+    g_db.add_lut( "qtype", 47,  "NSEC" );
+    g_db.add_lut( "qtype", 48,  "DNSKEY" );
+    g_db.add_lut( "qtype", 49,  "DHCID" );
+    g_db.add_lut( "qtype", 50,  "NSEC3" );
+    g_db.add_lut( "qtype", 51,  "NSEC3PARAM" );
+    g_db.add_lut( "qtype", 55,  "HIP" );
+    g_db.add_lut( "qtype", 56,  "NINFO" );
+    g_db.add_lut( "qtype", 57,  "RKEY" );
+    g_db.add_lut( "qtype", 58,  "TALINK" );
+    g_db.add_lut( "qtype", 99,  "SPF" );
+    g_db.add_lut( "qtype", 100, "UINFO" );
+    g_db.add_lut( "qtype", 101, "UID" );
+    g_db.add_lut( "qtype", 102, "GID" );
+    g_db.add_lut( "qtype", 103, "UNSPEC" );
+    g_db.add_lut( "qtype", 249, "TKEY" );
+    g_db.add_lut( "qtype", 250, "TSIG" );
+    g_db.add_lut( "qtype", 251, "IXFR" );
+    g_db.add_lut( "qtype", 252, "AXFR" );
+    g_db.add_lut( "qtype", 253, "MAILB" );
+    g_db.add_lut( "qtype", 254, "MAILA" );
+    g_db.add_lut( "qtype", 255, "*" );
+    g_db.add_lut( "qtype", 256, "URI" );
+    g_db.add_lut( "qtype", 32768, "TA" );
+    g_db.add_lut( "qtype", 32769, "DLV" );
+
+    g_db.add_lut( "rcode", 0  ,"NoError" );
+    g_db.add_lut( "rcode", 1  ,"FormErr" );
+    g_db.add_lut( "rcode", 2  ,"ServFail" );
+    g_db.add_lut( "rcode", 3  ,"NXDomain" );
+    g_db.add_lut( "rcode", 4  ,"NotImp" );
+    g_db.add_lut( "rcode", 5  ,"Refused" );
+    g_db.add_lut( "rcode", 6  ,"YXDomain" );
+    g_db.add_lut( "rcode", 7  ,"YXRRSet" );
+    g_db.add_lut( "rcode", 8  ,"NXRRSet" );
+    g_db.add_lut( "rcode", 9  ,"NotAuth" );
+    g_db.add_lut( "rcode", 10 ,"NotZone" );
+    g_db.add_lut( "rcode", 16 ,"BADVERS" );
+    g_db.add_lut( "rcode", 16 ,"BADSIG" );
+    g_db.add_lut( "rcode", 17 ,"BADKEY" );
+    g_db.add_lut( "rcode", 18 ,"BADTIME" );
+    g_db.add_lut( "rcode", 19 ,"BADMODE" );
+    g_db.add_lut( "rcode", 20 ,"BADNAME" );
+    g_db.add_lut( "rcode", 21 ,"BADALG" );
+    g_db.add_lut( "rcode", 22 ,"BADTRUNC" );
+
+
 }
 
 void Parse_dns::init()
