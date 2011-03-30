@@ -249,26 +249,37 @@ int main (int argc, char * argv [])
         return 1;
     }
 
-    while (optind < argc) 
-    {
-        read_file(argv [optind]);
-        optind++;
-    }
     try
     {
-
-        g_app->m_query.ask (query.c_str());
-    }
-    catch(Error &e)
-    {
-        printf("Error: %s\n",e.m_err.c_str());
-        fflush(stdout);
+        // pass 1 make sure we read out sample 
+        g_app->m_query.ask( query.c_str() );
     }
     catch(...)
     {
-        printf("Error: an unknown error has occured !\n");
-        fflush(stdout);
     }
+
+    while (optind < argc) 
+    {
+        read_file( argv[optind] );
+        optind++;
+    }
+
+    try
+    {
+        // pass 2 now all tables are in place and the query can be properly analyzed
+        g_app->m_query.ask( query.c_str() );
+    }
+    catch(Error &e)
+    {
+        printf( "Error: %s\n", e.m_err.c_str() );
+        fflush( stdout );
+    }
+    catch(...)
+    {
+        printf( "Error: an unknown error has occured !\n" );
+        fflush( stdout );
+    }
+
 
     g_app->m_query.execute();
     Table *result = g_app->m_query.m_result;
