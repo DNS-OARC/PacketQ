@@ -5,11 +5,11 @@ to inspect pcap files remotely.
 
 Sample commandlines:
 
-	pcapq -s "select * from dns limit 10" sample.pcap
+	packetq -s "select * from dns limit 10" sample.pcap
 	    
 	    Retrives the 10 first packets containing dns information from the file "sample.pcap"
 
-	pcapq -d -p8080 -w html/ -r pcap/
+	packetq -d -p8080 -w html/ -r pcap/
 
 	    Starts a webserver on port 8080 (-p8080) as a daemon (-d) servering files from the 
 	    directory html/ (-w html/) and pcapfiles from the directory pcap/ (-r pcap/).
