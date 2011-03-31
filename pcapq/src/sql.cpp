@@ -2119,6 +2119,7 @@ void Query::reset()
         }
     }
 }
+
 Row *Query::process_select( Row *dest)
 {
 

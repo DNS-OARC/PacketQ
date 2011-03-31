@@ -2169,7 +2169,6 @@ public:
 
     Query()
     {
-        m_sample = 0;
         init();
     };
     ~Query()
@@ -2193,6 +2192,7 @@ public:
     }
     void init()
     {
+        m_sample    =  0;
         m_result    =  0;
         m_where     =  0;
         m_from      =  0;
@@ -2205,7 +2205,7 @@ public:
 	bool parse();
     bool is_streamable();
     bool execute();
-    void reset();
+    void reset();                           // resets op's
     Row *process_select( Row *dest );
     bool process_where(  Row *dest );
 

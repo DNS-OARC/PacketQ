@@ -251,8 +251,10 @@ int main (int argc, char * argv [])
 
     try
     {
-        // pass 1 make sure we read out sample 
-        g_app->m_query.ask( query.c_str() );
+        // pass 1 make sure we read out sample
+        Query q;
+        q.ask( query.c_str() );
+        g_app->m_query.set_sample( q.get_sample() );
     }
     catch(...)
     {
