@@ -47,6 +47,15 @@
 	"children" : [
 	{
 		"data" : {
+		"title" : "Questions,Recursion,IPV6,TCP/second (10 sec intervals)"},
+		"attr" : { 	"myid" : "Q3_1", 
+				"myQuestionUrl" : "select s ,count(*)/10 as Total, sum(rd)/10 as Recursion,sum(ether_type=34525)/10 as IPV6,sum(protocol=6)/10 as TCP from dns group by truncate(s/10)",
+				"type" : "chart", 
+				"filetype" : "pcap", 
+				"link_Array" : "off"}
+	},
+	{
+		"data" : {
 		"title" : "Questions/second (10 sec intervals)"},
 		"attr" : { "myid" : "Q3_1", "myQuestionUrl" : "select s ,count(*)/10 as count from dns group by truncate(s/10)", "type" : "chart", "filetype" : "pcap", "link_Array" : "off"}
 	},
