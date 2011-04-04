@@ -1,0 +1,17 @@
+[
+{
+    	"namn" : "local",
+	"url" : "/",
+	"encode_url" : "0"
+},
+{
+    	"namn" : "server",
+	"url" : "http://192.12.11.22:8080/",
+	"encode_url" : "0"
+},
+{
+    	"namn" : "proxy_srv1",
+	"url" : "/pq_proxy.php?srv=1&url=",
+	"encode_url" : "1"
+}
+]
