@@ -39,24 +39,6 @@ namespace se {
 
 bool verbose = false;
 
-#ifdef WIN32
-int get_time(){ return GetTickCount(); }
-#else
-#include <sys/time.h>
-int get_time(){
-    struct timeval tv;
-    struct timezone tz;
-    struct tm *tm;
-    gettimeofday(&tv, &tz);
-    tm=localtime(&tv.tv_sec);
-    return (tv.tv_sec%1000)*1000+tv.tv_usec/1000; 
-}
-#endif
-int start = get_time();
-int tick() {return get_time()-start;}
-
-
-
 int g_allocs=0;
 
 void Table::add_column(const char *name, const char *type)
