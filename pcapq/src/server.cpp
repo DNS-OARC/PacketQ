@@ -148,6 +148,11 @@ class Stream
         {
             m_len=0;
         }
+        bool push_front(unsigned char *data,int len)
+        {
+            m_stream.push_front(Buffer(data,len));
+            m_len+=len;
+        }
         bool write(unsigned char *data,int len)
         {
             m_stream.push_back(Buffer(data,len));
@@ -223,19 +228,30 @@ class Socket
                 while( len = m_write.read( ptr, sizeof(ptr)))
                 {
                     int res = write( m_socket, ptr, len );
-                    if (res == -1)
+                    if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
                     {
+                        m_write.push_front( ptr, len);
+                        set_want_write();
+                        return;
+                    }
+                    if (res < 0)
+                    {
+                        fprintf(stderr,"bobo\n");
                         delete this;
                         return;
                     }
-                    else
-                        m_bytes_written+=res;
+                    m_bytes_written+=res;
+                    if (res < len)
+                    {
+                        m_write.push_front( &ptr[res], len-res);
+                        set_want_write();
+                        return;
+                    }
                 }
                 if (m_close_when_empty)
                 {
                     shutdown( m_socket, SHUT_WR );
 //                    fflush(m_socket);
-//                    sleep(1);
                     delete this;
                 }
             }
