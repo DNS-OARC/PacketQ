@@ -1522,6 +1522,15 @@ public:
         return;
     }
 };
+class Trim_func : public OP
+{
+public:
+    Trim_func(const OP &op): OP(op)
+    {
+    }
+    void evaluate(Row *row, Variant &v);
+};
+
 class If_func : public OP
 {
 public:
@@ -2175,6 +2184,7 @@ public:
     {
         if (m_result) delete m_result;
         if (m_where ) delete m_where;
+        if (m_having) delete m_having;
         std::vector<OP *>::iterator it=m_result_set.begin();
         while ( it != m_result_set.end() )
         {
@@ -2195,6 +2205,7 @@ public:
         m_sample    =  0;
         m_result    =  0;
         m_where     =  0;
+        m_having    =  0;
         m_from      =  0;
         m_limit     = -1;
         m_offset    =  0;
@@ -2208,9 +2219,11 @@ public:
     void reset();                           // resets op's
     Row *process_select( Row *dest );
     bool process_where(  Row *dest );
+    bool process_having( Row *dest );
 
     std::vector<OP *>   m_result_set;
     OP                  *m_where;
+    OP                  *m_having;
     Ordering_terms      m_order_by;
     Ordering_terms      m_group_by;
     
