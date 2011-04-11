@@ -39,24 +39,6 @@ namespace se {
 
 bool verbose = false;
 
-#ifdef WIN32
-int get_time(){ return GetTickCount(); }
-#else
-#include <sys/time.h>
-int get_time(){
-    struct timeval tv;
-    struct timezone tz;
-    struct tm *tm;
-    gettimeofday(&tv, &tz);
-    tm=localtime(&tv.tv_sec);
-    return (tv.tv_sec%1000)*1000+tv.tv_usec/1000; 
-}
-#endif
-int start = get_time();
-int tick() {return get_time()-start;}
-
-
-
 int g_allocs=0;
 
 void Table::add_column(const char *name, const char *type)
@@ -107,6 +89,7 @@ Row *Table::create_row(bool auto_commit)
     Row *r = new (rr)Row(*this);
     if (auto_commit)
         m_rows.push_back(r);
+
     return r;
 }
 
@@ -911,6 +894,7 @@ class Parser
             get_from(q,it);
             get_where(q,it);
             get_group_by(q,it);
+            get_having(q,it);
             get_order_by(q,it);
             get_limit(q,it);
             if (!is( it, Token::_semicolon ))
@@ -1112,6 +1096,22 @@ class Parser
             q.m_offset=v.get_int();
             it++;
             return true;
+        }
+
+        bool get_having(Query &q, Lit &it)
+        {
+            Lit save = it;
+            if (!is (it,Token::_label,"having"))
+                return true;
+            it++;
+            OP *res=0;
+            if (res = get_expr(it,0))
+            {
+                q.m_having=res;
+                return true;
+            }
+            it=save;
+            return false;
         }
 
         bool get_where(Query &q, Lit &it)
@@ -1479,8 +1479,9 @@ public:
 					{
 						if ( (!is_escaped) && is_quote(*p))
 						{
-							if (!str.length())
+							if (!strstart)
 							{
+                                strstart=p;
 								str="";
 							}
 							else
@@ -1807,6 +1808,11 @@ OP* OP::compile(Table **table, Query &q)
             m_t = Coltype::_text;
             ret = new Name_func(*this);
         }
+        if (cmpi(get_token(),"trim") )
+        {
+            m_t = Coltype::_text;
+            ret = new Trim_func(*this);
+        }
         if (cmpi(get_token(),"rsplit") && m_param[1])
         {
             m_t = Coltype::_text;
@@ -2108,6 +2114,16 @@ bool Query::process_where(Row *dst)
     return v.get_bool();
 }
 
+bool Query::process_having(Row *dst)
+{
+    if (!m_having)
+        return true;
+
+    Variant v;
+    m_having->evaluate( dst, v );
+    return v.get_bool();
+}
+
 void Query::reset()
 {
     for (unsigned int i=0;i<m_result_set.size();i++)
@@ -2122,7 +2138,6 @@ void Query::reset()
 
 Row *Query::process_select( Row *dest)
 {
-
     Row *src = 0;
     for (unsigned int i=0;i<m_result_set.size();i++)
     {
@@ -2132,7 +2147,6 @@ Row *Query::process_select( Row *dest)
             int col = -1;
             Variant v;
             op->evaluate(dest, v);
-
             dest->set(i,v);
         }
     }
@@ -2176,10 +2190,13 @@ bool Query::execute()
                 }
             }
         }
-        OP *op=m_where;
         if(m_where)
         {
-            m_where=op->compile(tables, *this);
+            m_where=m_where->compile(tables, *this);
+        }
+        if(m_having)
+        {
+            m_having=m_having->compile(tables, *this);
         }
 
         int c=0,count=0,src_count = 0;
@@ -2199,7 +2216,7 @@ bool Query::execute()
                     c++;
                     Row *dest = m_result->create_row(false);
                     dest->m_source = *it;
-                    process_select(dest); // <-- rather silly - where should resolve needed columns represented with "as"
+                    process_select(dest); // <-- rather silly - we should resolve needed columns represented with "as"
                     if (process_where(dest))
                     {
                         m_result->commit_row(dest);
@@ -2207,7 +2224,6 @@ bool Query::execute()
                     else
                         dest->del();
                 }
-                int group = 0;
                 if ( m_group_by.exist() ) 
                 {
                     m_result->per_sort(m_group_by);
@@ -2217,7 +2233,8 @@ bool Query::execute()
                     std::list<Row *>::iterator it=m_result->m_rows.begin();
                     std::list<Row *>::iterator e=it++;
                     reset();
-                    process_select(*e);
+                    if (e!=m_result->m_rows.end())
+                        process_select(*e);
                     for (;it!=m_result->m_rows.end();it++)
                     {
                         if (sorter.eq(*it,*e))
@@ -2227,12 +2244,21 @@ bool Query::execute()
                         }
                         else
                         {
+                            if (!process_having(*e))
+                            {
+                                m_result->delete_row(*e);
+                                m_result->m_rows.erase(e);
+                            }
                             reset();
                             // proceed to next group
-                            group++;
                         }
                         process_select(*it);
                         e=it;        
+                    }
+                    if (!process_having(*e))
+                    {
+                        m_result->delete_row(*e);
+                        m_result->m_rows.erase(e);
                     }
                 }
                 else
@@ -2241,7 +2267,8 @@ bool Query::execute()
                     std::list<Row *>::iterator it=m_result->m_rows.begin();
                     std::list<Row *>::iterator e=it++;
                     reset();
-                    process_select(*e);
+                    if (e!=m_result->m_rows.end())
+                        process_select(*e);
                     for (;it!=m_result->m_rows.end();it++)
                     {
                         m_result->delete_row(*e);
@@ -2371,6 +2398,39 @@ void Column::set_offset(int o)
 {
     m_offset = o;
     m_accessor->m_offset = o;
+}
+void Trim_func::evaluate(Row *row, Variant &v)
+{
+    std::string r=" ";
+    Variant str,rem; 
+    m_param[0]->evaluate(row, str);
+    if (m_param[1])
+    {
+        m_param[1]->evaluate(row, rem);
+        r=rem.get_string();
+    }
+    std::string s=str.get_string();
+    int l = r.length();
+    while ( l && ( s.length() >= l ) )
+    {
+        int l2 = l;
+        l=0;
+        int res = s.rfind(r);
+        if (res==s.length()-l2)
+        {
+            l=l2;
+            s=s.substr(0,s.length()-l);
+        }
+        if (s.find(r)==0)
+        {
+            s=s.substr(l2,s.length()-l2);
+            l=l2;
+        }
+    }
+
+    Variant res( s.c_str(),true);
+    v=res;
+    return;
 }
 
 DB g_db;
