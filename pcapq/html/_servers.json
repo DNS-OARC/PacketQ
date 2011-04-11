@@ -5,6 +5,11 @@
 	"encode_url" : "0"
 },
 {
+    	"name" : "Kaa",
+	"url" : "http://kaa.nic.se:8080/",
+	"encode_url" : "0"
+},
+{
     	"name" : "server",
 	"url" : "http://192.12.11.22:8080/",
 	"encode_url" : "0"
