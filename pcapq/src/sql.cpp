@@ -894,8 +894,8 @@ class Parser
             get_from(q,it);
             get_where(q,it);
             get_group_by(q,it);
-            get_order_by(q,it);
             get_having(q,it);
+            get_order_by(q,it);
             get_limit(q,it);
             if (!is( it, Token::_semicolon ))
             {
@@ -1479,8 +1479,9 @@ public:
 					{
 						if ( (!is_escaped) && is_quote(*p))
 						{
-							if (!str.length())
+							if (!strstart)
 							{
+                                strstart=p;
 								str="";
 							}
 							else
