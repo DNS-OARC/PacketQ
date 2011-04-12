@@ -245,7 +245,6 @@ assemble_tcp (
    Stream_id id ( *src_ip, *dst_ip, src_port, dst_port );
    Stream   &str = g_tcp_streams[id];
    bool data_avail = false;
- 
 
    if (!str.has_content())
    {
@@ -279,15 +278,15 @@ assemble_tcp (
        int dns_size = (int(buffer[0])<<8) | buffer[1];
 
        data_avail = (fin == 1) && (rst == 0);
-       if (data_avail || dns_size+2<=size)
+       if (data_avail || dns_size+2==size)
        {
-	   *rest = size;
-	   if (*rest > 0xffff)
-	       *rest = 0xffff;
-	   data = (unsigned char*)payload.alloc(*rest);
-	   memcpy( data, buffer, *rest );
-	   str.erase();
-	   g_tcp_streams.erase(id);
+           *rest = size;
+           if (*rest > 0xffff)
+               *rest = 0xffff;
+           data = (unsigned char*)payload.alloc(*rest);
+           memcpy( data, buffer, *rest );
+           str.erase();
+           g_tcp_streams.erase(id);
        }
    }
    return data;

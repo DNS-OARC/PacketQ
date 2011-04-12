@@ -49,8 +49,11 @@ bool Parse_dns::parse(Packet &packet)
             int            dlength = packet.m_len;
             if (packet.m_ip_header.proto == IPPROTO_TCP)
             {
+                int dns_size = (int(ddata[0])<<8) | ddata[1];
                 ddata+=2;
                 dlength-=2;
+                if (dns_size!=dlength)
+                    return false;
             }
             DNSMessage message(ddata, dlength,packet.m_ip_header);
             return packet_insert(message);

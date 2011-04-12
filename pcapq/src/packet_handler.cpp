@@ -142,7 +142,7 @@ void Packet::parse()
 
         // get the assembled TCP packet and remove the individual segments.
         data += dataoffs;
-        len += dataoffs;
+        len -= dataoffs;
         unsigned int rest=len;
 
         data = assemble_tcp (g_payload,&m_ip_header.src_ip, &m_ip_header.dst_ip, m_ip_header.src_port, m_ip_header.dst_port, &rest, seq, data, rest, syn, fin, rst, ack);
