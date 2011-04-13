@@ -22,9 +22,13 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 			
 			body{ font: 62.5% "Trebuchet MS", sans-serif; margin:0px; background-color: background-color:#f6a828;}
 			#container {position: absolute; background: #f6a828; border:0px; margin-top:0px; width: 400px; height: 100%;}
-			#container_questions {position: absolute; background: #f6a828; margin-bottom:10px; border-color:#000; margin:5px; border:solid 0px; bo margin-top:0px; width: 250px; height: 250px; overflow: auto;overflow-x: hidden}
-			#container_files {position:absolute; background: #f6a828; border-color:#000; border:solid 0px; margin:5px; margin-top:265px; width: 250px; height: 250px; overflow: auto;overflow-x: hidden}
-			#container_buttons {position:absolute; background: #f6a828; border-color:#000; border:solid 0px; margin:5px; margin-top:525px; width: 200px; height: 25px; overflow: auto;overflow-x: hidden}
+			#container_serverdrop {position: absolute; background: #f6a828; margin-bottom:10px; border-color:#000; margin:5px; margin-top:10px; border:solid 0px; margin-top:0px; width: 250px; height: 100px; overflow: auto;overflow-x: hidden}
+			#container_questions {position: absolute; background: #f6a828; margin-bottom:10px; border-color:#000; margin:5px; border:solid 0px; margin-top:105px; width: 250px; height: 250px; overflow: auto;overflow-x: hidden}
+			#container_files {position:absolute; background: #f6a828; border-color:#000; border:solid 0px; margin:5px; margin-top:360px; width: 250px; height: 250px; overflow: auto;overflow-x: hidden}
+			#container_buttons {position:absolute; background: #f6a828; border-color:#000; border:solid 0px; margin:5px; padding-left:20px; padding-top:15px; margin-top:615px; width: 230px; height: 40px; overflow: auto;overflow-x: hidden}
+			
+			
+			
 				
 			.demoHeaders { margin-top: 2em; }
 			#dialog_link {padding: .4em 1em .4em 4px;text-decoration: none; margin-bottom:22px;}
@@ -50,6 +54,15 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 				font-family:Verdana, Geneva, sans-serif;
 				cursor:pointer;
 			}
+			select
+			{
+				color: #781351;
+				margin-left:20px;
+				width:200px;
+				background: #ffffff;
+				border: 1px solid #781351
+			}
+			
 		</style>	
         
 	<script type="text/javascript" language="javascript" src="_lib/jquery.dataTables.js"></script>
@@ -57,14 +70,28 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 	
 			var orgX = 265;
 			var orgY = 10;
-			var apiPath = "http://localhost:8080/query?";
+			
+			//alert("set the apipath in start of code")
+			//var apiPath = "http://localhost:8080/query?";
+			var apiPath = "/";
+			
+			//alert('init path')
+			//var apiPath = "not set";
+			
 			var jsonFirst;
-			var hiddenQuestions;			
+			var hiddenQuestions;	
+			
+			//0404
+			var theServers;
+		 
+					
 			var clickedSelectString = "";
 			var currentLinks;
 			var currentFiletype = 'json'
 			var myFileNames = '';
 						
+			
+			//Då popup ska öppnas
 			function getQ_table(mySource, myTitle, myQnr){
 			
 				// Loop through hidden Q's and get the question we want
@@ -74,7 +101,12 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 					}
 				}
 				
-				var currentSource = apiPath + mySource;
+				
+				//alert('IN getQ_table 1 with apiPath: ' + apiPath)
+				var currentSource = apiPath + "query?" + mySource;
+				//var currentSource = apiPath + "query?" + mySource;
+				//alert('IN getQ_table 2 with currentSource: ' + currentSource)
+				
 				var aoData;
 					$.getJSON( currentSource, function (json) {
 						var theJson = { "aaData": json.data };	// Do whatever additional processing you want on the callback, then tell DataTables 
@@ -158,8 +190,10 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 		
 				
 		function getQ_chart(mySource, myTitle, myQnr){					
-				var currentSource = apiPath + mySource;
 				
+				//alert('IN getQ_chart with apipath: ' + apiPath)
+				var currentSource = apiPath + "query?" + mySource;
+									
 				// Fixa en popup //
 				var localDate = new Date();
 				var newDivId = myQnr + "_"+ localDate.getTime();
@@ -223,7 +257,7 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 		
 		
 		
-// Request data from the server, add it to the graph and set a timeout to request again 
+//Request data from the server, add it to the graph and set a timeout to request again 
 function requestData(myUrl) {
 	
 	$.ajax({ // getJson
@@ -232,7 +266,7 @@ function requestData(myUrl) {
         success: function(point) {
    
 			tmpArr = new Array;
-			//f�rsta columnen
+			//första columnen
 			for(var i = 0; i <point.data.length; i++) {
      				tmpArr[i] = point.data[i][1];
 			}
@@ -344,8 +378,67 @@ $(function () {
 //Läs in dolda frågorna som ligger i separat fil.
 $.getJSON('_questions_hidden.json', function(data) {
   var items = [];
-  hiddenQuestions = data;
+  hiddenQuestions = data;  
 });
+
+
+//110404
+$.getJSON('_servers.json', function(data) {
+	 var items = [];
+	 theServers = data;
+	 
+	 //alert("apiPath before setting it a second time: " + apiPath)			
+	 //alert("The path is: " + theServers[0].url);
+	 
+	 apiPath = theServers[0].url;
+	 //alert("antal servrar " + theServers.length)
+	 
+	 //Get the list of files
+	 getList();
+	 	 
+	 //var selbox = serverForm.theServers;
+	 var selbox = document.getElementById("theServers");
+	 //alert(selbox)
+	 	 
+	 //Populera droppen
+	 for (var i = 0; i < theServers.length; i++) {
+		 
+		//alert("lägg till server i drop med namne : " + theServers[i].name);
+		
+		//apiPath = theServers[i].url;
+		//alert('set path to: ' + apiPath);
+			
+		var optn = document.createElement("OPTION");
+		optn.text = theServers[i].name;
+		optn.value = theServers[i].url;
+		if(i == 0){
+			optn.setAttribute("selected","selected");
+		}
+			
+		//alert(container_serverdrop);
+		//container_serverdrop.selectServer.theServers.options.add(optn);
+		//selbox.options[selbox.options.length] = new Option('Please select one of the options above first',' ');
+		selbox.options.add(optn);
+		}
+});
+
+
+/* 
+$.getJSON('_servers.json', function(data) {
+  var items = [];
+  hiddenQuestions = data;
+})
+
+
+
+$(function () {
+	$("#refreshFilelist").click(function () { 
+		//alert('refresh now.');
+		$("#fileTree").jstree("refresh");	
+	});
+			
+});	
+*/
 
 	
 //Kolla vad en fråga är vald- När jag klickar på fråga.
@@ -408,34 +501,14 @@ $(function () {
 			
 });	
 
-
-
 	
-	
-	//är detta ett bra sätt tro?
-	/*
-	$(function () {
-		$("#questionTree").click(function () { 					
-			alert('klickat på frågeträd');
-		});
-			
-	});	
-	*/
-	
-	
-	
-	/*
-	var theStatus = new Object();
-	theStatus.Home = 'mouseover';
-	theStatus['Place'] = 'click';
-	for (var i in theStatus)
-	{
-		alert('theStatus[\''+i+'\'] is ' + theStatus[i])
-	}*/
 </script>
 <script type="text/javascript" class="source">
 
+//ML 110406: Vad händer i function. man vill ju hämta fillistan från apiPath!
+/*
 $(function () {
+	alert("hold on, nu kör vi filetree - " + apiPath);
 	$("#fileTree").jstree({ 
 	"themes" : {
         "theme" : "dotse",
@@ -448,18 +521,55 @@ $(function () {
 		"json_data" : {
 			"ajax" : {
 				"url" : function (n) { 
-				return  n.attr ? "/list"+n.attr("id") : "/list" ; 					
+				//return  n.attr ? "/list"+n.attr("id") : "/list" ; 
+				return  n.attr ? apiPath+"list"+n.attr("id") : apiPath+"list" ; 
+									
 				}
 			},
 		},
 		"plugins" : [ "themes", "json_data", "checkbox", "ui" ]
 	});
 });
+*/
 
-//sätt tema 
+// I en separat funktion så att vi kan säkerställa att apipath är inläst innan vi hämtar listan på filer
+function getList() {
+	//alert("hold on, nu kör vi filetree - " + apiPath);
+	$("#fileTree").jstree({ 
+	"themes" : {
+        "theme" : "dotse",
+        "dots" : false,
+        "icons" : false
+        }, 
+		rules : {
+        	deletable : "all"
+      	},
+		"json_data" : {
+			"ajax" : {
+				"url" : function (n) { 
+				return  n.attr ? apiPath+"list"+n.attr("id") : apiPath+"list" ; 
+				}
+			},
+		},
+		"plugins" : [ "themes", "json_data", "checkbox", "ui" ]
+	});
+};
+
+
+
+
+//Sätt tema 
 $(function () {
 	$("#questionTree").jstree("set_theme","dotse");
 });
+
+
+function selectServer(){
+	var selbox =  document.getElementById("theServers");
+	alert('switch server to: ' + selbox.options[selbox.selectedIndex].value);
+	apiPath = selbox.options[selbox.selectedIndex].value;
+	getList();
+}
 
 </script>
 
@@ -469,20 +579,25 @@ $(function () {
 <div id="questionTree" class="demo"></div>
 </div>
 
-
 <div id="container_files">
 <h2>2. Choose file/files</h2>
 <div id="fileTree" class="demo"></div>
+</div>
+
+<div id="container_serverdrop">
+<h2>Select server (optional)</h2>
+<form name="serverForm" id="serverForm" class="serverForm">
+<select name="theServers" id="theServers" onChange="selectServer();" >
+</select>
+</form>
 </div> 
 
 <div id="container_buttons">
 <button id="getQuestion_link" class="ui-state-default ui-corner-all">Run question</button>
 <button id="refreshFilelist" class="ui-state-default ui-corner-all">Reload file list</button>
-
 </div> 
 
 <div id="theBoxes"></div>
 <div id="tmpChart" class="mytmpChart"></div>
-
 </body>
 </html>
