@@ -1,4 +1,4 @@
-packetq is a command to run sql queries directly on pcap files.
+PacketQ is a command to run sql queries directly on pcap files.
 
 The command also contain a very simplistic webserver in order 
 to inspect pcap files remotely. 
