@@ -256,6 +256,12 @@ int main (int argc, char * argv [])
         q.ask( query.c_str() );
         g_app->m_query.set_sample( q.get_sample() );
     }
+    catch(Error &e)
+    {
+        printf( "Error: %s\n", e.m_err.c_str() );
+        fflush( stdout );
+        exit(1);
+    }
     catch(...)
     {
     }
@@ -275,6 +281,7 @@ int main (int argc, char * argv [])
     {
         printf( "Error: %s\n", e.m_err.c_str() );
         fflush( stdout );
+        exit(1);
     }
     catch(...)
     {

@@ -844,11 +844,6 @@ class Parser
 
         bool analyze(Query &q)
         {
-            //std::list<Token>::iterator i = m_tokens.begin();
-            //while(i!=m_tokens.end())
-            //{
-            //    printf("%s\n",(i++)->get_token());
-            //}
             std::list<Token>::iterator it = m_tokens.begin();
             bool ok = true;
             while(ok)
@@ -894,12 +889,11 @@ class Parser
             get_from(q,it);
             get_where(q,it);
             get_group_by(q,it);
-            get_having(q,it);
             get_order_by(q,it);
             get_limit(q,it);
             if (!is( it, Token::_semicolon ))
             {
-                return false;
+                throw Error("Expected ';' but found '%s' !",it->get_token());
             }
             it++;
             i_iter=it;
@@ -1045,8 +1039,9 @@ class Parser
             if (!is (it,Token::_label,"by"))
                 return false;
             it++;
-            return get_ordering_terms(q.m_group_by,it);
-
+            bool res = get_ordering_terms(q.m_group_by,it);
+            get_having(q,it);
+            return res;
         }
         bool get_order_by( Query &q, Lit &it )
         {
