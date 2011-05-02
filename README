@@ -15,5 +15,3 @@ Sample commandlines:
 	    directory html/ (-w html/) and pcapfiles from the directory pcap/ (-r pcap/).
 
 More information is provided in our wiki on https://github.com/dotse/packetq/wiki
-
-
