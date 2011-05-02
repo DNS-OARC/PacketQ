@@ -244,8 +244,6 @@ class Output
 		add_string_q(p);
 		m_buffer[m_len++]='=';
 		m_buffer[m_len++]='"';
-		m_buffer[m_len++]=':';
-		m_buffer[m_len++]=':';
 		add_string_q(m_diglut[i&255]);
 		m_buffer[m_len++]='.';
 		add_string_q(m_diglut[(i>>8)&255]);
@@ -425,8 +423,6 @@ class Str_conv
 
 	inline void add_attr_ipv4(unsigned int i)
 	{
-		m_buffer[m_len++]=':';
-		m_buffer[m_len++]=':';
 		add_string_q(m_diglut[(i>>24)]);
 		m_buffer[m_len++]='.';
 		add_string_q(m_diglut[(i>>16)&255]);
