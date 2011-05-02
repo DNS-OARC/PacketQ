@@ -227,7 +227,7 @@ while($keep_going == 1)
 
 ########## exit cleanup
 
-syslog 'info',"Shutting down DNS2db ...\n";
+syslog 'info',"Shutting down collector ...\n";
 foreach my $pid (@tspid)
 {
 	if ($pid ne 0)

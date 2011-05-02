@@ -37,15 +37,15 @@
 namespace se {
 
 // App class
-class Pcapq 
+class PacketQ 
 {
     public:
-        Pcapq()
+        PacketQ()
         {
             m_sample_counter = 0;
             m_limit          = 0;
         }
-        ~Pcapq()
+        ~PacketQ()
         {
         }
         bool sample()
@@ -68,6 +68,6 @@ class Pcapq
 
 void read_file(const char *filename);
 
-extern Pcapq *g_app;
+extern PacketQ *g_app;
 }
 #endif

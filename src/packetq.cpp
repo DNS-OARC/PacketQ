@@ -164,7 +164,7 @@ void sigproc(int sig)
     signal(SIGPIPE, sigproc); 
 }
 
-Pcapq *g_app = new Pcapq();
+PacketQ *g_app = new PacketQ();
 
 } // end se namespace
 
