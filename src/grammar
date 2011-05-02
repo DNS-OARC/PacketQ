@@ -1,7 +1,7 @@
 
     Query grammar
 
-    <query>             ::= select <resultcolumns> [ from <source> ] [where <expr> ] [group by <orderingterms>] [order by <orderingterms>] [limit <digit> [offset <digit ]] ";"
+    <query>             ::= select <resultcolumns> [ from <source> ] [where <expr> ] [group by <orderingterms>] [order by <orderingterms> [having <expr>]] [limit <digit> [offset <digit ]] ";"
 
     <resultcolumns>     ::= <resultcolumn> | <resultcolumn>,<resultcolumns>
 
@@ -36,5 +36,5 @@
 
     <binary-op>         ::= "||" | "*" | "/" | "%" | "+" | "-" | "<<" | ">>" | "&" | "|" | "<" | "<=" | ">" | ">=" | "=" | "==" | "!=" | "<>" | IS | IS NOT | AND | OR
 
-    <function>          ::= COUNT | AVG | SUM | MIN | MAX
+    <function>          ::= COUNT | AVG | SUM | MIN | MAX | TRUNCATE | RSPLIT | IF | NAME | TRIM | LOWER | STDEV
 
