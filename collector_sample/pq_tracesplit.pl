@@ -194,7 +194,7 @@ while($keep_going == 1)
                     $day    = "0".$day   if $day  <10;
                     $month  = "0".$month if $month<10;
 
-                    my $file = "$server-$year$month$day-$hour$min$sec-$if.gz";
+                    my $file = "$server-$year$month$day-$hour$min$sec-$if.pcap.gz";
                     my $dir  = "$year/$month/$day/$hour";
                     my $cmd  = $config{command};
                     $cmd     =~ s/%F/$file/g; 
