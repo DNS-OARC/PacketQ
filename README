@@ -1,9 +1,9 @@
-PacketQ is a command to run sql queries directly on pcap files.
+PacketQ is a command line tool to run sql queries directly on pcap files.
 
-The command also contain a very simplistic webserver in order 
-to inspect pcap files remotely. 
+However, PacketQ also contain a very simplistic webserver in order 
+to inspect pcap files remotely and a simple prototype AJAX-based GUI.
 
-Sample commandlines:
+Sample command lines:
 
 	packetq -s "select * from dns limit 10" sample.pcap
 	    
