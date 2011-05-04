@@ -14,8 +14,9 @@ Sample commandlines:
 	    Starts a webserver on port 8080 (-p8080) as a daemon (-d) servering files from the 
 	    directory html/ (-w html/) and pcapfiles from the directory pcap/ (-r pcap/).
 
-To install download and unpack the source from: 
-https://github.com/dotse/PacketQ/tarball/master, then type ./configure; make; make install
+To install: download and unpack the source from: 
+https://github.com/dotse/PacketQ/tarball/master, 
+then type "./configure; make; make install"
 
 Pre-compiled binaries for Mac OS can be found at: 
 https://github.com/downloads/dotse/PacketQ/packetq_macosx_binary.gz
