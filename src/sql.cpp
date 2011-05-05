@@ -1365,6 +1365,9 @@ class Parser
                 }
                 else
                 {
+                    it++;
+                    if (q.m_first_pass)
+                        return true;
                     throw Error("Error in from statement cannot find table %s !",it->get_token());
                 }
             }
@@ -2588,6 +2591,14 @@ Table *DB::get_table(const char *name)
     if (it!=m_tables.end())
         t=it->second;
 
+    return t;
+}
+Table *DB::create_or_use_table(const char *name)
+{
+    Table *t = get_table(name);
+    if (!t)
+        t = create_table(name);
+ 
     return t;
 }
 Table *DB::create_table(const char *name)

@@ -396,6 +396,7 @@ class DB
     bool query(const char *q);
 
     Table *create_table(const char *name);
+    Table *create_or_use_table(const char *name);
     Table *get_table(const char *name);
     void add_lut(const char *table, int key, const char * value)
     {
@@ -2197,13 +2198,15 @@ public:
     }
     void set_sample(int s) { m_sample = s;    }
     int  get_sample()      { return m_sample; }
-    void ask( const char *sql )
+    void ask( const char *sql, bool first_pass=false )
     {
-        m_query = sql;
+        m_first_pass = first_pass;
+        m_query      = sql;
 		parse();
     }
     void init()
     {
+        m_first_pass=  false;
         m_sample    =  0;
         m_result    =  0;
         m_where     =  0;
@@ -2234,6 +2237,8 @@ public:
    
     Table               *m_result;
     Table               *m_from;
+
+    bool                m_first_pass;
 private:
   
     int                 m_sample;

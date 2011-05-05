@@ -269,7 +269,7 @@ int main (int argc, char * argv [])
     {
         // pass 1 make sure we read out sample
         Query q;
-        q.ask( query.c_str() );
+        q.ask( query.c_str(), true );
         g_app->m_query.set_sample( q.get_sample() );
     }
     catch(Error &e)

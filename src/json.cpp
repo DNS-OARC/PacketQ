@@ -111,7 +111,7 @@ class JParser
                     }
                     if (m_stage==_tablename)
                     {
-                        m_table = g_db.create_table(string); 
+                        m_table = g_db.create_or_use_table(string); 
                         m_stage = _tableobj;
                     }
                 }
@@ -135,7 +135,8 @@ class JParser
                     {
                         if (m_table)
                         {
-                            m_table->add_column(m_colname.c_str(), m_coltype.c_str());
+                            if( m_table->get_col_index( m_colname.c_str() )==-1 )
+                                m_table->add_column( m_colname.c_str(), m_coltype.c_str() );
                         }
                     }
                 if (type == _op &&  string[0]==',')
