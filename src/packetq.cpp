@@ -51,7 +51,7 @@
 namespace se {
 
 static void usage ( char * argv0, bool longversion ) {
-   fprintf (stdout, "usage: %s [ --select | -s select-statement ] [ --port | -p httpportnumber ] [ --csv | -c ] [ --table | -t ] [ --xml | -x ] [ --daemon | -d ] [ --webroot | -w ] [ --pcaproot | -r ] [ --help | -h ] [ --limit | -l ] pcapfile(s)...\n", argv0);
+   fprintf (stdout, "usage: %s [ --select | -s select-statement ] [ --port | -p httpportnumber ] [ --json | -j ] [ --csv | -c ] [ --table | -t ] [ --xml | -x ] [ --daemon | -d ] [ --webroot | -w ] [ --pcaproot | -r ] [ --help | -h ] [ --limit | -l ] pcapfile(s)...\n", argv0);
    if (!longversion)
        return;
 
@@ -197,6 +197,7 @@ int main (int argc, char * argv [])
             {"port", 	1, 0, 'p'},
             {"deamon",  0, 0, 'd'},
             {"csv",     0, 0, 'c'},
+            {"json",    0, 0, 'j'},
             {"table",   0, 0, 't'},
             {"xml",     0, 0, 'x'},
             {"help", 	0, 0, 'h'},
@@ -204,7 +205,7 @@ int main (int argc, char * argv [])
             {NULL, 	0, 0, 0}
         };
 
-        int c = getopt_long (argc, argv, "w:r:s:l:p:hHdvcxt", long_options, &option_index);
+        int c = getopt_long (argc, argv, "w:r:s:l:p:hHdvcxtj", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -224,6 +225,9 @@ int main (int argc, char * argv [])
                 break;
             case 'x':
                 g_app->set_output(PacketQ::xml);
+                break;
+            case 'j':
+                g_app->set_output(PacketQ::json);
                 break;
             case 'd':
                 daemon = true;
