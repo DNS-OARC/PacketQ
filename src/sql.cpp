@@ -1114,6 +1114,7 @@ class Parser
             get_group_by(q,it);
             get_order_by(q,it);
             get_limit(q,it);
+            get_as(q,it);
             if (!is( it, Token::_semicolon ))
             {
                 throw Error("Expected ';' but found '%s' !",it->get_token());
@@ -1266,6 +1267,21 @@ class Parser
             get_having(q,it);
             return res;
         }
+        bool get_as( Query &q, Lit &it )
+        {
+            Lit save = it;
+            if (!is (it,Token::_label,"as"))
+            {
+                return true;
+            }
+            it++;
+            if (!is (it,Token::_label))
+                return false;
+            q.get_result()->m_name = it->get_token();
+            it++;
+            return true;
+        }
+
         bool get_order_by( Query &q, Lit &it )
         {
             Lit save = it;
@@ -1365,9 +1381,11 @@ class Parser
                 }
                 else
                 {
-                    it++;
                     if (q.m_first_pass)
+                    {
+                        it++;
                         return true;
+                    }
                     throw Error("Error in from statement cannot find table %s !",it->get_token());
                 }
             }
@@ -2379,7 +2397,6 @@ bool Query::execute()
 {
     try
     {
-        m_result = new Table();
         Table *tables[2]={m_from,m_result};
 
         bool found_star=false;

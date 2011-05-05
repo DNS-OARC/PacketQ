@@ -2208,13 +2208,13 @@ public:
     {
         m_first_pass=  false;
         m_sample    =  0;
-        m_result    =  0;
         m_where     =  0;
         m_having    =  0;
         m_from      =  0;
         m_limit     = -1;
         m_offset    =  0;
         m_aggregate_functions = false;
+        m_result    = new Table();
     };
     void set_aggregate( bool val = true )   { m_aggregate_functions = val;  }
     bool get_aggregate()                    { return m_aggregate_functions; }
@@ -2225,6 +2225,7 @@ public:
     Row *process_select( Row *dest );
     bool process_where(  Row *dest );
     bool process_having( Row *dest );
+    Table *get_result()                     { return m_result; }
 
     std::vector<OP *>   m_result_set;
     OP                  *m_where;
@@ -2235,12 +2236,12 @@ public:
     int                 m_limit;
     int                 m_offset;
    
-    Table               *m_result;
     Table               *m_from;
 
     bool                m_first_pass;
 private:
   
+    Table               *m_result;
     int                 m_sample;
 	std::string         m_query;
     bool                m_aggregate_functions;

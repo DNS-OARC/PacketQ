@@ -806,7 +806,7 @@ class Page
 
         }
         g_app->m_query.execute();
-        Table *result = g_app->m_query.m_result;
+        Table *result = g_app->m_query.get_result();
         if (result)
             result->json();
     }

@@ -250,7 +250,6 @@ public:
                             state = _op;
                         else if (is_termination(c))
                         {
-            printf("esfrsfdf c%c d%d\n",c,c);
                             if (c<=0)
                             {
                                 m_parser.push(JParser::_end,"END");

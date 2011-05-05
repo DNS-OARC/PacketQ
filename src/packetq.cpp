@@ -307,7 +307,7 @@ int main (int argc, char * argv [])
 
 
     g_app->m_query.execute();
-    Table *result = g_app->m_query.m_result;
+    Table *result = g_app->m_query.get_result();
 
     switch( g_app->get_output() )
     {
