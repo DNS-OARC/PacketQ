@@ -1,9 +1,9 @@
-PacketQ is a command to run sql queries directly on pcap files.
+PacketQ is a command line tool to run sql queries directly on pcap files.
 
-The command also contain a very simplistic webserver in order 
-to inspect pcap files remotely. 
+However, PacketQ also contain a very simplistic webserver in order 
+to inspect pcap files remotely and a simple prototype AJAX-based GUI.
 
-Sample commandlines:
+Sample command lines:
 
 	packetq -s "select * from dns limit 10" sample.pcap
 	    
@@ -13,5 +13,12 @@ Sample commandlines:
 
 	    Starts a webserver on port 8080 (-p8080) as a daemon (-d) servering files from the 
 	    directory html/ (-w html/) and pcapfiles from the directory pcap/ (-r pcap/).
+
+To install: download and unpack the source from: 
+https://github.com/dotse/PacketQ/tarball/master, 
+then type "./configure; make; make install"
+
+Pre-compiled binaries for Mac OS can be found at: 
+https://github.com/downloads/dotse/PacketQ/packetq_macosx_binary.gz
 
 More information is provided in our wiki on https://github.com/dotse/packetq/wiki
