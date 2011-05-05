@@ -233,7 +233,9 @@ bool Parse_dns::packet_insert(DNSMessage &message)
     DNSMessage::Header &header    = message.m_header;
     IP_header          &ip_header = message.m_ip_header;
 
-    bool err=(message.m_error!=0); 
+    if(message.m_error!=0)
+        return false;
+
     if (!header.qr)
     {
         if (header.qdcount==0)

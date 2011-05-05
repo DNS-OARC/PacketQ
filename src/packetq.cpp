@@ -51,11 +51,11 @@
 namespace se {
 
 static void usage ( char * argv0, bool longversion ) {
-   fprintf (stdout, "usage: %s [ --select | -s select-statement ] [ --port | -p httpportnumber ] [ --daemon | -d ] [ --webroot | -w ] [ --pcaproot | -r ] [ --help | -h ] [ --limit | -l ] pcapfile(s)...\n", argv0);
+   fprintf (stdout, "usage: %s [ --select | -s select-statement ] [ --port | -p httpportnumber ] [ --csv | -c ] [ --table | -t ] [ --xml | -x ] [ --daemon | -d ] [ --webroot | -w ] [ --pcaproot | -r ] [ --help | -h ] [ --limit | -l ] pcapfile(s)...\n", argv0);
    if (!longversion)
        return;
 
-   fprintf (stdout, "\n    sample:\n> packetq -s \"select count(*) as mycount,protocol from dns group by protocol;\" myfile.pcap\n");
+   fprintf (stdout, "\n    sample:\n> packetq --csv -s \"select count(*) as mycount,protocol from dns group by protocol;\" myfile.pcap\n");
 }
 
 #ifdef WIN32
@@ -196,12 +196,15 @@ int main (int argc, char * argv [])
             {"pcaproot",1, 0, 'r'},
             {"port", 	1, 0, 'p'},
             {"deamon",  0, 0, 'd'},
+            {"csv",     0, 0, 'c'},
+            {"table",   0, 0, 't'},
+            {"xml",     0, 0, 'x'},
             {"help", 	0, 0, 'h'},
             {"version", 0, 0, 'v'},
             {NULL, 	0, 0, 0}
         };
 
-        int c = getopt_long (argc, argv, "w:r:s:l:p:hHdv", long_options, &option_index);
+        int c = getopt_long (argc, argv, "w:r:s:l:p:hHdvcxt", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -212,6 +215,15 @@ int main (int argc, char * argv [])
                 break;
             case 's':
                 query = optarg;
+                break;
+            case 'c':
+                g_app->set_output(PacketQ::csv);
+                break;
+            case 't':
+                g_app->set_output(PacketQ::csv_format);
+                break;
+            case 'x':
+                g_app->set_output(PacketQ::xml);
                 break;
             case 'd':
                 daemon = true;
@@ -293,10 +305,35 @@ int main (int argc, char * argv [])
     g_app->m_query.execute();
     Table *result = g_app->m_query.m_result;
 
-    printf("[\n");
-    if (result)
-        result->json();
-    printf("]\n");
+    switch( g_app->get_output() )
+    {
+        case( PacketQ::csv_format ):
+            {
+                if (result)
+                    result->csv(true);
+            }
+            break;
+        case( PacketQ::csv ):
+            {
+                if (result)
+                    result->csv();
+            }
+            break;
+        case( PacketQ::xml ):
+            {
+                if (result)
+                    result->xml();
+            }
+            break;
+        case( PacketQ::json ):
+            {
+                printf("[\n");
+                if (result)
+                    result->json();
+                printf("]\n");
+            }
+            break;
+    }
 
     delete g_app;
     return 0;

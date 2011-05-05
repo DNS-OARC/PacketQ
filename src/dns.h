@@ -128,11 +128,11 @@ class DNSMessage
             int  qclass;
             int parse(DNSMessage &m,int offs)
             {
-                offs=m.parse_dname(qname,sizeof(qname),offs);
-                qtype=m.get_ushort(offs);
-                offs+=2;
-                qclass=m.get_ushort(offs);
-                offs+=2;
+                offs     =  m.parse_dname(qname,sizeof(qname),offs);
+                qtype    =  m.get_ushort(offs);
+                offs     += 2;
+                qclass   =  m.get_ushort(offs);
+                offs     += 2;
                 return offs;
             }
         };
@@ -187,16 +187,16 @@ class DNSMessage
 
         DNSMessage(unsigned char *data,int len,IP_header &head): m_ip_header(head)
         {
-            m_opt_rr=0;
-            m_error=0;
-            m_data      = data;
-            m_length = len;
-            m_edns0=false;
-            m_do=false;
-            m_extended_rcode=0;
-            m_version=0;
-            m_z=0;
-            m_udp_size=0;
+            m_opt_rr        = 0;
+            m_error         = 0;
+            m_data          = data;
+            m_length        = len;
+            m_edns0         = false;
+            m_do            = false;
+            m_extended_rcode= 0;
+            m_version       = 0;
+            m_z             = 0;
+            m_udp_size      = 0;
 
             parse();
         }
@@ -258,6 +258,7 @@ class DNSMessage
                 offs = m_questions[q].parse(*this,offs);
                 if (offs>m_length)
                 {
+                    m_questions[q].qname[0]=0;
                     m_error=offs;
                     return;
                 }

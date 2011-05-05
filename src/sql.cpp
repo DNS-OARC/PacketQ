@@ -32,6 +32,7 @@
 #include "sql.h"
 #include "packetq.h"
 #include "output.h"
+#include <vector> 
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -660,6 +661,99 @@ void printrep(int n,char c)
     printf("%s",buf);
 }
 
+void Table::xml()
+{
+    g_output.reset();
+    int cols = (int)m_cols.size();
+    int width = 25;
+
+    g_output.add_string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    g_output.add_string("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n");
+    g_output.add_string("<html  xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n<head>\n  <title>");
+    g_output.add_string(m_name.c_str());
+    g_output.add_string("</title>\n");
+    g_output.add_string("<style type=\"text/css\">\n");
+    g_output.add_string("    th.int   { color: #0F0C00; }\n");
+    g_output.add_string("    th.float { color: #0F0900; }\n");
+    g_output.add_string("    th.text  { color: #0F0600; }\n");
+    g_output.add_string("    th.bool  { color: #0C0900; }\n");
+    g_output.add_string("</style>\n");
+    g_output.add_string("</head>\n");
+    g_output.add_string("<body>\n");
+    g_output.add_string("<table>\n");
+
+
+    g_output.add_string("<tr>");
+
+    for (int i=0;i<cols;i++)
+    {
+        const char *t="";
+        switch (m_cols[i]->m_type)
+        {
+            case(Coltype::_float):
+                t="float";
+                break;
+            case(Coltype::_int):
+                t="int";
+                break;
+            case(Coltype::_text):
+                t="text";
+                break;
+            case(Coltype::_bool):
+                t="bool";
+                break;
+        }
+        g_output.add_string("<th class=\"");
+        g_output.add_string( t );
+        g_output.add_string("\">");
+        g_output.add_string( m_cols[i]->m_name.c_str() );
+        g_output.add_string("</th>");
+    }
+    g_output.add_string("</tr>\n");
+    bool outer_comma=false;
+    for (std::list<Row *>::iterator it=m_rows.begin(); it!=m_rows.end();it++)
+    {
+        g_output.add_string("<tr>");
+        outer_comma = true;
+        bool comma  = false;
+        Row *r = *it;
+       
+        Variant v;
+        for ( int i = 0; i < cols; i++ )
+        {
+            g_output.add_string("<td>");
+            comma=true;
+            r->get(i,v);
+            switch( m_cols[i]->m_type)
+            {
+            case Coltype::_text:
+                g_output.add_string( v.get_string() );
+                break;
+            case Coltype::_int:
+                g_output.add_int( v.get_int() );
+                break;
+            case Coltype::_float:
+                {
+                    char str[100];
+                    sprintf(str,"%f", v.get_float());
+                    g_output.add_string(str);
+                }
+                break;
+            case Coltype::_bool:
+                g_output.add_string(v.get_int() == 0?"0":"1");
+                break;
+            }
+            g_output.add_string("</td> ");
+        }
+
+        g_output.add_string("</tr>\n");
+    }
+    g_output.add_string("</table>\n");
+    g_output.add_string("</body>\n");
+    g_output.add_string("</html>\n");
+    g_output.print();
+}
+
 void Table::json()
 {
     g_output.reset();
@@ -757,6 +851,135 @@ void Table::json()
     g_output.print();
 }
 
+std::string qoute_string(const std::string &s)
+{
+    std::string r="\"";
+    int len = s.length();
+    for (int i=0; i<len; i++)
+    {
+        if (s[i]== '"' || s[i]== '\\' )
+        {
+            r+='\\';
+        }
+        r+=s[i];
+    }
+    r+='"';
+    return r;
+}
+
+
+void Table::csv(bool format)
+{
+    int cols = (int)m_cols.size();
+    std::vector<int> col_len( cols );
+
+    for ( int i = 0; i < cols; i++ )
+        col_len[i] = 0;
+    int max=0;
+    char *tmp = 0;
+    if (format)
+    {
+        for (std::list<Row *>::iterator it=m_rows.begin(); it!=m_rows.end();it++)
+        {
+            for ( int i = 0; i < cols; i++ )
+            {
+                Row *r = *it;
+                int len = 0;
+
+                char buf[100];
+                Variant v;
+                r->get(i,v);
+                switch( m_cols[i]->m_type )
+                {
+                    case Coltype::_text:
+                        len = qoute_string(v.get_string()).length();
+                        break;
+                    case Coltype::_int:
+                        sprintf(buf,"%d", v.get_int());
+                        len = strlen(buf);
+                        break;
+                    case Coltype::_float:
+                        sprintf(buf,"%f", v.get_float());
+                        len = strlen(buf);
+                        break;
+                    case Coltype::_bool:
+                        len = 1;
+                        break;
+                }
+                len++;
+                if ( len > col_len[i] )
+                    col_len[i] = len;
+                if ( len > max )
+                    max = len;
+            }
+        }
+        for (int i=0;i<cols;i++)
+        {
+            int l = qoute_string(m_cols[i]->m_name).length();
+            l++;
+            if ( l > col_len[i] )
+                col_len[i] = l;
+            if ( l > max )
+                max = l;
+        }
+
+        tmp = new char[max+1];
+        for (int i = 0; i < max; i++)
+            tmp[i] = 32;
+        tmp[max] = 0; 
+    }
+
+    for (int i=0;i<cols;i++)
+    {
+        printf("%s", qoute_string(m_cols[i]->m_name).c_str());
+        if (i<cols-1)
+            if (format)
+                printf("%s,", &tmp[ qoute_string(m_cols[i]->m_name).length()+max-col_len[i]+1]);
+            else
+                printf(",");
+    }
+    printf("\n");
+    for (std::list<Row *>::iterator it=m_rows.begin(); it!=m_rows.end();it++)
+    {
+        Row *r = *it;
+       
+        Variant v;
+        for ( int i = 0; i < cols; i++ )
+        {
+            r->get(i,v);
+            char buf[200];
+            std::string out;
+            switch( m_cols[i]->m_type)
+            {
+            case Coltype::_text:
+                out = qoute_string(v.get_string());
+                break;
+            case Coltype::_int:
+                sprintf(buf, "%d", v.get_int());
+                out = buf;
+                break;
+            case Coltype::_float:
+                sprintf(buf, "%f", v.get_float());
+                out = buf;
+                break;
+            case Coltype::_bool:
+                sprintf(buf, "%s", v.get_int()==1?"true(1)":"false(0)");
+                out = buf;
+                break;
+            }
+            printf("%s", out.c_str());
+            if (i<cols-1)
+                if (format)
+                    printf("%s,", &tmp[ out.length() + max - col_len[i] + 1 ] );
+                else
+                    printf(",");
+            
+        }
+
+        printf("\n");
+    }
+    delete []tmp;
+}
 
 void Table::dump()
 {

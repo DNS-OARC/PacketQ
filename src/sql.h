@@ -824,6 +824,8 @@ class Table
     }
     void dump();
     void json();
+    void csv(bool format = false);
+    void xml();
 
     void add_column(const char *name, Coltype::Type type);
     void add_column(const char *name, const char *type);

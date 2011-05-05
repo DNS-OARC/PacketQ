@@ -40,10 +40,18 @@ namespace se {
 class PacketQ 
 {
     public:
+        enum OutputOpts
+        {
+            json,
+            csv,
+            csv_format,
+            xml 
+        };
         PacketQ()
         {
             m_sample_counter = 0;
             m_limit          = 0;
+            m_output         = json;
         }
         ~PacketQ()
         {
@@ -59,11 +67,17 @@ class PacketQ
         {
             m_limit = limit;
         }
-        int get_limit() { return m_limit;} 
+        void set_output(OutputOpts opt)
+        {
+            m_output = opt;
+        }
+        OutputOpts get_output() { return m_output; }
+        int get_limit()         { return m_limit;  } 
         Query   m_query;
     private:
-        int     m_sample_counter;
-        int     m_limit;
+        int         m_sample_counter;
+        int         m_limit;
+        OutputOpts  m_output;
 };
 
 void read_file(const char *filename);
