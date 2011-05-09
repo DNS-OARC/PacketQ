@@ -69,6 +69,7 @@ static char redirect[]="HTTP/1.1 307 Temporary Redirect\r\n"
 static char header[]="HTTP/1.1 200 OK\r\n"
     "Server: DNSQL\r\n"
     "Connection: close\r\n"
+    "Access-Control-Allow-Origin: *\r\n"
     "Content-Type: %s\r\n"
     "\r\n";
 
@@ -949,7 +950,6 @@ class Http_socket : public Socket
         }
         void on_write()
         {
-            printf("on write\n");
             set_want_write(false);           
             if (m_state==wait_child)
             {
