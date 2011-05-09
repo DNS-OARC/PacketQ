@@ -92,7 +92,6 @@ class SocketPool
             int idx = m_free;
             while (m_free<FD_SETSIZE && m_sockets[m_free])
                 m_free++;
-            //printf("a-free:%d (%d)\n",m_free,idx);
             return idx;
         }
         void remove(int s)
@@ -100,7 +99,6 @@ class SocketPool
             m_sockets[s]=0;
             if (s<m_free)
                 m_free=s;
-            //printf("r-free:%d (%d)\n",m_free,s);
         }
 
         void select();
@@ -236,7 +234,6 @@ class Socket
                     }
                     if (res < 0)
                     {
-                        fprintf(stderr,"bobo\n");
                         delete this;
                         return;
                     }
@@ -340,7 +337,7 @@ void SocketPool::select()
     int sel= ::select(max+1,&m_readset,&m_writeset,0,&timeout);
     if (sel<0)
     {
-        printf("sel -1 errno = %d %s max:%d",errno,strerror(errno),max);
+        syslog (LOG_ERR|LOG_USER, "sel -1 errno = %d %s max:%d", errno, strerror(errno), max );
         exit(-1);
     }
     if (sel) 
@@ -371,9 +368,9 @@ class Server
             if (m_socket.m_socket<0)
             {
                 if (m_socket.m_socket==EADDRINUSE)
-                    printf("Fail EADDRINUSE (%d)\n",m_socket.m_socket);
+                    syslog (LOG_ERR|LOG_USER, "Fail EADDRINUSE (%d)\n",m_socket.m_socket);
                 else
-                    printf("Fail %d port:%d\n",m_socket.m_socket,port);
+                    syslog (LOG_ERR|LOG_USER, "Fail %d port:%d\n",m_socket.m_socket,port);
                 exit(-1);
             }
         }
@@ -965,7 +962,7 @@ class Http_socket : public Socket
                 case(get_post):
                     {
                         m_state = error;
-                        printf("%s\n",m_line.c_str());
+                        syslog (LOG_INFO|LOG_USER,"%s\n",m_line.c_str());
                         int p=0;
                         if (m_line.find("GET ")!=-1) 
                         {
@@ -1113,6 +1110,7 @@ void start_server(int port,bool fork_me, const std::string &pcaproot, const std:
         }
 
     }
+    openlog("packetq",LOG_PID,LOG_USER);
 
     httpd::Server server(port,webroot,pcaproot);
     g_server = &server;
@@ -1126,14 +1124,13 @@ void start_server(int port,bool fork_me, const std::string &pcaproot, const std:
             Http_socket *s=new Http_socket(c);
             if ( s && s->failed() )
             {
-                printf("failed to create socket");
+                syslog (LOG_ERR|LOG_USER, "failed to create socket");
                 delete s;
             }
         }
     }
     g_server = 0;
-
-    printf("Done \n");
+    syslog (LOG_INFO|LOG_USER, "exiting");
     exit(EXIT_SUCCESS);
 
 }
