@@ -51,7 +51,7 @@
 namespace se {
 
 static void usage ( char * argv0, bool longversion ) {
-   fprintf (stdout, "usage: %s [ --select | -s select-statement ] [ --port | -p httpportnumber ] [ --json | -j ] [ --csv | -c ] [ --table | -t ] [ --xml | -x ] [ --daemon | -d ] [ --webroot | -w ] [ --pcaproot | -r ] [ --help | -h ] [ --limit | -l ] pcapfile(s)...\n", argv0);
+   fprintf (stdout, "usage: %s [ --select | -s select-statement ] [ --port | -p httpportnumber ] [ --json | -j ] [ --csv | -c ] [ --table | -t ] [ --xml | -x ] [ --daemon | -d ] [ --webroot | -w ] [ --pcaproot | -r ] [ --help | -h ] [ --limit | -l ] [ --maxconn | -m ] pcapfile(s)...\n", argv0);
    if (!longversion)
        return;
 
@@ -175,10 +175,10 @@ int main (int argc, char * argv [])
 {
     signal(SIGPIPE, sigproc);
     int snaplen = -1;
-    int promisc = 2; // promisc < 1 = off, promisc >= 1 on.
-    int port=0;
-    int limit = 0;
-    bool daemon=false;
+    int port    = 0;
+    int limit   = 0;
+    int max_conn= 7;
+    bool daemon = false;
 
     init_packet_handler();  // set up tables
 
@@ -192,6 +192,7 @@ int main (int argc, char * argv [])
         {
             {"select",  1, 0, 's'},
             {"limit",   1, 0, 'l'},
+            {"maxconn", 1, 0, 'm'},
             {"webroot", 1, 0, 'w'},
             {"pcaproot",1, 0, 'r'},
             {"port", 	1, 0, 'p'},
@@ -205,7 +206,7 @@ int main (int argc, char * argv [])
             {NULL, 	0, 0, 0}
         };
 
-        int c = getopt_long (argc, argv, "w:r:s:l:p:hHdvcxtj", long_options, &option_index);
+        int c = getopt_long (argc, argv, "w:r:s:l:p:hHdvcxtjm:", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -238,6 +239,11 @@ int main (int argc, char * argv [])
             case 'r':
                 pcaproot = optarg;
                 break;
+            case 'm':
+                max_conn = atoi(optarg)+1;
+                if (max_conn<2)
+                    max_conn = 2;
+                break;
             case 'l':
                 limit = atoi(optarg);
                 break;
@@ -256,7 +262,7 @@ int main (int argc, char * argv [])
     g_app->set_limit(limit);
     if (port>0)
     {
-        start_server( port, daemon, webroot, pcaproot );		
+        start_server( port, daemon, webroot, pcaproot, max_conn );		
     }
 
     if (optind >= argc) {

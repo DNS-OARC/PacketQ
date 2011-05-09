@@ -34,7 +34,7 @@
 
 namespace se {
 
-void start_server(int port,bool fork, const std::string &pcaproot, const std::string &webroot );
+void start_server(int port,bool fork, const std::string &pcaproot, const std::string &webroot, int max_conn );
 
 }
 #endif

@@ -80,27 +80,31 @@ class SocketPool
         SocketPool()
         {
             m_free =0;
-            for (int i=0;i<FD_SETSIZE;i++)
+            for (int i=0; i<FD_SETSIZE; i++)
                 m_sockets[i]=0;
+            m_socket_count = 0;
         }
-        int add(Socket *s)
+        int add( Socket *s )
         {
             if (m_free<FD_SETSIZE)
                 m_sockets[m_free]=s;
             else
                 return -1;
             int idx = m_free;
-            while (m_free<FD_SETSIZE && m_sockets[m_free])
+            while ( m_free < FD_SETSIZE && m_sockets[m_free] )
                 m_free++;
+            m_socket_count++;
             return idx;
         }
-        void remove(int s)
+        void remove( int s )
         {
             m_sockets[s]=0;
             if (s<m_free)
                 m_free=s;
+            m_socket_count--;
         }
 
+        int get_sockets() { return m_socket_count; }
         void select();
 
 
@@ -108,6 +112,7 @@ class SocketPool
         fd_set      m_writeset;
         int         m_free;
         int         m_max;
+        int         m_socket_count;
         Socket      *m_sockets[FD_SETSIZE];
 };
 
@@ -200,12 +205,13 @@ class Socket
         {
             fcntl( s, F_SETFL, fcntl( s, F_GETFL, 0 ) | O_NONBLOCK );   // Add non-blocking flag
 
-            m_bytes_written = 0;
-            m_bytes_read    = 0;
-            m_serv    = serv;
-            m_socket  = s;
-            m_sidx    = g_pool.add( this );
-            m_close_when_empty = false;
+            m_bytes_written     = 0;
+            m_bytes_read        = 0;
+            m_serv              = serv;
+            m_socket            = s;
+            m_sidx              = g_pool.add( this );
+            m_close_when_empty  = false;
+            m_file              = 0;
         }
         virtual ~Socket()
         {
@@ -254,12 +260,18 @@ class Socket
             }
             if (read)
             {
-                int avail=read_sock();
+                int avail = read_sock();
 
-                if (avail)
+                if ( avail )
                     on_read();
             }
 
+        }
+        virtual void file_write()
+        {
+        }
+        virtual void file_read()
+        {
         }
         void set_delete()
         {
@@ -297,14 +309,15 @@ class Socket
         {
             return m_want_write||m_write.len()>0;
         }
-        void set_want_write()
+        void set_want_write(bool set=true)
         {
-            m_want_write = true;
+            m_want_write = set;
         }
 
         int m_bytes_written;
         int m_bytes_read;
         int m_socket;
+        int m_file;
         int m_sidx;
         bool m_serv;
         bool m_want_write;
@@ -328,6 +341,9 @@ void SocketPool::select()
             FD_SET(m_sockets[i]->m_socket,&m_readset);
             if ( m_sockets[i]->has_data() )
                 FD_SET(m_sockets[i]->m_socket,&m_writeset);
+            if (max<m_sockets[i]->m_file)
+                max=m_sockets[i]->m_file;
+            FD_SET(m_sockets[i]->m_file,&m_readset);
         }
     }
     timeval timeout;
@@ -344,13 +360,27 @@ void SocketPool::select()
     {
         for (int i = 0; i < FD_SETSIZE; i++) 
         {
-            if (m_sockets[i]&&FD_ISSET(m_sockets[i]->m_socket, &m_readset)) 
+            if (m_sockets[i])
             {
-                m_sockets[i]->process(true);
-            }
-            if (m_sockets[i]&&FD_ISSET(m_sockets[i]->m_socket, &m_writeset)) 
-            {
-                m_sockets[i]->process(false);
+                if (m_sockets[i]->m_file)
+                {
+                    if (FD_ISSET(m_sockets[i]->m_file, &m_readset)) 
+                    {
+                        m_sockets[i]->file_read();
+                    }
+                    if (FD_ISSET(m_sockets[i]->m_file, &m_writeset)) 
+                    {
+                        m_sockets[i]->file_write();
+                    }
+                }
+                if(FD_ISSET(m_sockets[i]->m_socket, &m_readset)) 
+                {
+                    m_sockets[i]->process(true);
+                }
+                if (FD_ISSET(m_sockets[i]->m_socket, &m_writeset)) 
+                {
+                    m_sockets[i]->process(false);
+                }
             }
         }
     }
@@ -842,6 +872,7 @@ class Http_socket : public Socket
             }
             if(m_child_fd)
                 close(m_child_fd);
+            m_file = 0;
         }
         inline void print(const char *fmt,...)
         {
@@ -909,8 +940,17 @@ class Http_socket : public Socket
                 }
             }
         }
+        virtual void file_read()
+        {
+            set_want_write();           
+        }
+        virtual void file_write()
+        {
+        }
         void on_write()
         {
+            printf("on write\n");
+            set_want_write(false);           
             if (m_state==wait_child)
             {
                 char *s;
@@ -946,12 +986,12 @@ class Http_socket : public Socket
                     {
                         close(m_child_fd);
                         m_child_fd = 0;
+                        m_file     = 0;
                     }
                     set_delete();
                 }
                 else
                 {
-                    set_want_write();           
                 }
             }
         }
@@ -1060,7 +1100,8 @@ class Http_socket : public Socket
             {
                 close(fd[1]);
                 m_child_fd = fd[0];
-                m_state = wait_child;
+                m_file     = m_child_fd;
+                m_state    = wait_child;
             }
             set_want_write();
         }
@@ -1086,7 +1127,7 @@ class Http_socket : public Socket
 
 using namespace httpd;
 
-void start_server(int port,bool fork_me, const std::string &pcaproot, const std::string &webroot )
+void start_server(int port,bool fork_me, const std::string &pcaproot, const std::string &webroot, int max_conn )
 {
     pid_t   pid, sid;
     bool fg = !fork_me;
@@ -1118,16 +1159,21 @@ void start_server(int port,bool fork_me, const std::string &pcaproot, const std:
     while(true)
     {
         httpd::g_pool.select();
-        int c=server.get_connection();
-        if (c>0)
+        int cnt = g_pool.get_sockets();
+        if ( cnt<max_conn )
         {
-            Http_socket *s=new Http_socket(c);
-            if ( s && s->failed() )
+            int c=server.get_connection();
+            if (c>0)
             {
-                syslog (LOG_ERR|LOG_USER, "failed to create socket");
-                delete s;
+                Http_socket *s=new Http_socket(c);
+                if ( s && s->failed() )
+                {
+                    syslog (LOG_ERR|LOG_USER, "failed to create socket");
+                    delete s;
+                }
             }
         }
+        usleep(1000);
     }
     g_server = 0;
     syslog (LOG_INFO|LOG_USER, "exiting");
