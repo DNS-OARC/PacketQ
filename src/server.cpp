@@ -361,27 +361,24 @@ void SocketPool::select()
     {
         for (int i = 0; i < FD_SETSIZE; i++) 
         {
-            if (m_sockets[i])
+            if ( m_sockets[i] && m_sockets[i]->m_file )
             {
-                if (m_sockets[i]->m_file)
+                if ( FD_ISSET(m_sockets[i]->m_file, &m_readset) ) 
                 {
-                    if (FD_ISSET(m_sockets[i]->m_file, &m_readset)) 
-                    {
-                        m_sockets[i]->file_read();
-                    }
-                    if (FD_ISSET(m_sockets[i]->m_file, &m_writeset)) 
-                    {
-                        m_sockets[i]->file_write();
-                    }
+                    m_sockets[i]->file_read();
                 }
-                if(FD_ISSET(m_sockets[i]->m_socket, &m_readset)) 
+                if ( m_sockets[i] && FD_ISSET(m_sockets[i]->m_file, &m_writeset) ) 
                 {
-                    m_sockets[i]->process(true);
+                    m_sockets[i]->file_write();
                 }
-                if (FD_ISSET(m_sockets[i]->m_socket, &m_writeset)) 
-                {
-                    m_sockets[i]->process(false);
-                }
+            }
+            if( m_sockets[i] && FD_ISSET(m_sockets[i]->m_socket, &m_readset) ) 
+            {
+                m_sockets[i]->process(true);
+            }
+            if( m_sockets[i] && FD_ISSET(m_sockets[i]->m_socket, &m_writeset) ) 
+            {
+                m_sockets[i]->process(false);
             }
         }
     }
