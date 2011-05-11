@@ -1401,14 +1401,6 @@ class Parser
             return pre;   
         }
         
-        bool is_dbname(const std::string &name)
-        {
-            if (cmpi(name,"q"))
-                return true;
-            return false;
-        }
-
-
         // using The shunting yard algorithm
         OP *get_expr(Lit &it, int rec)
         {
@@ -1487,37 +1479,13 @@ class Parser
                 // match [[databasename .] table-name . ] column name 
                 if (expect_expr &&  is(it,Token::_label))
                 {
-                    if (is_dbname(it->get_token()))
-                    {
-                        it++;
-                        if (is(it,Token::_op,"."))
-                        {
-                           it++;
-                           if (is(it,Token::_label))
-                           {
-                                OP *op = new OP(*it);
-                                op->set_type(Token::_column);
-                                it++;
-                                success=true;
-                                operand_stack.push(op);
-                                expect_expr = false;
-                                continue;
-                           }
-                        }
-                        
-                    }
-                    else
-                    {
-                        OP *op = new OP(*it);
-                        it++;
-                        success=true;
-                        op->set_type(Token::_column);
-                        operand_stack.push(op);
-                        expect_expr = false;
-                        continue;
-                    }
-
-                    it= save;
+                    OP *op = new OP(*it);
+                    it++;
+                    success=true;
+                    op->set_type(Token::_column);
+                    operand_stack.push(op);
+                    expect_expr = false;
+                    continue;
                 }
                 // match ( expr )
                 if (!expect_expr && is(it,Token::_paren,","))
