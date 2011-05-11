@@ -32,6 +32,7 @@
 #include <errno.h> 
 #include <unistd.h> 
 #include <signal.h> 
+#include <arpa/inet.h>
 #include <sys/types.h> 
 #include <sys/socket.h> 
 #include <sys/wait.h> 
@@ -711,37 +712,76 @@ class Page
     
     void resolve()
     {
-        const char *ip=m_url.get_param("ip");
+        const char *ip   = m_url.get_param("ip");
+        const char *name = m_url.get_param("name");
 
-        printf(header,"application/json");
+        if (ip)
+        {
 
-        printf("[");
+            printf(header,"application/json");
 
-        struct addrinfo *result;
-        struct addrinfo *res;
-        int error;
+            printf("[");
 
-        error = getaddrinfo(ip, NULL, NULL, &result);
-        if (error == 0)
-        {   
-            for (res = result; res != NULL; res = res->ai_next)
+            struct addrinfo *result;
+            struct addrinfo *res;
+            int error;
+
+            error = getaddrinfo(ip, NULL, NULL, &result);
+            if (error == 0)
             {   
-                char hostname[NI_MAXHOST] = "";
+                for (res = result; res != NULL; res = res->ai_next)
+                {   
+                    char hostname[NI_MAXHOST] = "";
 
-                error = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0); 
-                if (error != 0)
-                {
-                    continue;
-                }
-                if (*hostname != '\0')
-                {
-                    printf("\"%s\"", hostname);
-                    break;
-                }
+                    error = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0); 
+                    if (error != 0)
+                    {
+                        continue;
+                    }
+                    if (*hostname != '\0')
+                    {
+                        printf("\"%s\"", hostname);
+                        break;
+                    }
+                }   
+                freeaddrinfo(result);
             }   
-            freeaddrinfo(result);
-        }   
-        printf("]\n");
+            printf("]\n");
+        }
+        else if (name)
+        {
+            char tmp[100]; 
+            printf(header,"application/json");
+
+            printf("[");
+
+            struct addrinfo *result;
+            struct addrinfo *res;
+            int error;
+
+            error = getaddrinfo(name, NULL, NULL, &result);
+            char empty[]="",line[]=",\n";
+            char *sep=empty;
+            if (error == 0)
+            {   
+                for (res = result; res != NULL; res = res->ai_next)
+                {   
+                    char hostname[NI_MAXHOST] = "";
+
+                    void *ptr = &( (struct sockaddr_in *) res->ai_addr)->sin_addr;
+                    if (res->ai_family==AF_INET6)
+                            ptr = &( (struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
+                    tmp[0]=0;
+                    inet_ntop(res->ai_family, ptr, tmp, sizeof( tmp ) );
+                    printf("%s\"%s\"", sep, tmp);
+                    sep=line;
+                }   
+                freeaddrinfo(result);
+            }   
+            printf("]\n");
+        }
+        else
+            printf("[]\n");
     }
         
     void serve_dir()
