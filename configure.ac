@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([dnsql], [0.1], [per.grana@iis.se], [dnsql])
+AC_INIT([packetq], [0.9], [per.grana@iis.se], [PacketQ],[https://github.com/dotse/packetq/wiki])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADER([config.h])
 AC_CANONICAL_TARGET

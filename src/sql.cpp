@@ -735,7 +735,7 @@ void Table::xml()
             case Coltype::_float:
                 {
                     char str[100];
-                    sprintf(str,"%f", v.get_float());
+                    sprintf(str,"%g", v.get_float());
                     g_output.add_string(str);
                 }
                 break;
@@ -834,7 +834,7 @@ void Table::json()
             case Coltype::_float:
                 {
                     char str[100];
-                    sprintf(str,"%f", v.get_float());
+                    sprintf(str,"%g", v.get_float());
                     g_output.add_string(str);
                 }
                 break;
@@ -899,7 +899,7 @@ void Table::csv(bool format)
                         len = strlen(buf);
                         break;
                     case Coltype::_float:
-                        sprintf(buf,"%f", v.get_float());
+                        sprintf(buf,"%g", v.get_float());
                         len = strlen(buf);
                         break;
                     case Coltype::_bool:
@@ -959,11 +959,11 @@ void Table::csv(bool format)
                 out = buf;
                 break;
             case Coltype::_float:
-                sprintf(buf, "%f", v.get_float());
+                sprintf(buf, "%g", v.get_float());
                 out = buf;
                 break;
             case Coltype::_bool:
-                sprintf(buf, "%s", v.get_int()==1?"true(1)":"false(0)");
+                sprintf(buf, "%s", v.get_int()==1?"1":"0");
                 out = buf;
                 break;
             }
@@ -1025,7 +1025,7 @@ void Table::dump()
                 printf(fmtd, v.get_float());
                 break;
             case Coltype::_bool:
-                printf(fmts, v.get_int()==1?"true(1)":"false(0)");
+                printf(fmts, v.get_int()==1?"1":"0");
                 break;
             }
         }
@@ -2569,27 +2569,30 @@ bool DB::query(const char *q)
     return false;
 }
 
-Table *DB::get_table(const char *name)
+Table *DB::get_table(const char *i_name)
 {
+    std::string name = lower(i_name);
     Table *t = 0;
-    std::map<std::string,Table *>::iterator it = m_tables.find(std::string(name));
+    std::map<std::string,Table *>::iterator it = m_tables.find(name);
     if (it!=m_tables.end())
         t=it->second;
 
     return t;
 }
-Table *DB::create_or_use_table(const char *name)
+Table *DB::create_or_use_table(const char *i_name)
 {
-    Table *t = get_table(name);
+    std::string name = lower(i_name);
+    Table *t = get_table(name.c_str());
     if (!t)
-        t = create_table(name);
+        t = create_table(name.c_str());
  
     return t;
 }
-Table *DB::create_table(const char *name)
+Table *DB::create_table(const char *i_name)
 {
-    Table *t = new Table(name);
-    m_tables[std::string(name)]=t;
+    std::string name = lower(i_name);
+    Table *t = new Table(name.c_str());
+    m_tables[std::string(name.c_str())]=t;
  
     return t;
 }

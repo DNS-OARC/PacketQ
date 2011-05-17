@@ -346,6 +346,13 @@ class Variant
 };
 
 
+inline std::string lower(const char *s)
+{
+    std::string str=s;
+    transform(str.begin(), str.end(),str.begin(), tolower );
+    return str;
+}
+
 inline bool cmpi(const std::string &i_a, const char *b)
 {
     std::string str=i_a;

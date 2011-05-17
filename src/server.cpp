@@ -68,7 +68,7 @@ static char redirect[]="HTTP/1.1 307 Temporary Redirect\r\n"
     "\r\n<html><head><title>moved</title></head><body><h1>moved</h1>this page has moved to /</body></html>";
 
 static char header[]="HTTP/1.1 200 OK\r\n"
-    "Server: DNSQL\r\n"
+    "Server: PacketQ builtin\r\n"
     "Connection: close\r\n"
     "Access-Control-Allow-Origin: *\r\n"
     "Content-Type: %s\r\n"
