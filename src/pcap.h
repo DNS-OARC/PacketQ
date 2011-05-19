@@ -53,6 +53,8 @@ class Pcap_file
             m_packetbuffer      = 0;
             m_packetbuffer_len  = 0;
             m_eof               = false;
+            m_snapshot_length   = 0;
+            m_gzipped           = false;
         }
         ~Pcap_file()
         {
@@ -149,7 +151,7 @@ class Pcap_file
                     return;
                 }
                 if (m_zipbuffer.m_buffer_len == m_zipbuffer.m_buffer_pos)
-                    m_zip.inflate(m_filebuffer,m_zipbuffer); 
+                    m_zip.inflate(m_filebuffer,m_zipbuffer);
             }
         }
         void set_gzipped()

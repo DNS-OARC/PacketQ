@@ -827,6 +827,9 @@ class Page
             }
             else
             {
+                bool found = false;
+                std::string str = subject;
+                transform(str.begin(), str.end(),str.begin(), tolower );
                 FILE *fp = fopen(subject.c_str(),"rb");
                 if (fp)
                 {
@@ -836,11 +839,27 @@ class Page
 		                unsigned char * data=0;
                         int s=0,us,len;
                         data = pfile.get_packet(len, s, us);
-                        printf("  %c{\n     \"data\" : \"%s\",\n     \"attr\" : { \"id\" : \"%s\", \"size\": %d, \"time\": %d },\n    \"children\" : []  }\n",
-                                comma,d->d_name,join_path(m_url.get_path(),d->d_name).substr(5).c_str(), int(statbuf.st_size),s );
-                        comma=',';
+                        if (data)
+                        {
+                            printf("  %c{\n     \"data\" : \"%s\",\n     \"attr\" : { \"id\" : \"%s\", \"size\": %d, \"time\": %d,\"type\": \"pcap\" },\n    \"children\" : []  }\n",
+                                    comma,d->d_name,join_path(m_url.get_path(),d->d_name).substr(5).c_str(), int(statbuf.st_size),s );
+                            comma = ',';
+                            found = true;
+                        }
                     }
                     fclose(fp);
+                }
+                if (!found)
+                {
+                    std::string str = subject;
+                    transform(str.begin(), str.end(),str.begin(), tolower );
+                    if ( str.rfind(".json") == str.length()-5 )
+                    {
+                        printf("  %c{\n     \"data\" : \"%s\",\n     \"attr\" : { \"id\" : \"%s\", \"size\": %d, \"type\": \"json\" },\n    \"children\" : []  }\n",
+                                comma,d->d_name,join_path(m_url.get_path(),d->d_name).substr(5).c_str(), int(statbuf.st_size) );
+                        comma=  ',';
+                        found = true;
+                    }
                 }
             }
         }

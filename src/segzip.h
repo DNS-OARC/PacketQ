@@ -58,16 +58,22 @@ class Zip
     public:
         Zip()
         {
-            m_init = true;
-            m_error = false;
+            m_init    = true;
+            m_error   = false;
+            m_run_end = false;
             m_stream.next_out = 0;
             m_stream.avail_out = 0;
+        }
+        ~Zip()
+        {
+            if (m_run_end)
+                ::inflateEnd(&m_stream);
         }
         bool inflate(Buffer &in,Buffer &out)
         {
             if (m_error)
             {
-                in.m_buffer_pos = in.m_buffer_len;
+                in.m_buffer_pos  = in.m_buffer_len;
                 out.m_buffer_len = 0;
                 return false;
             }
@@ -86,6 +92,7 @@ class Zip
                 if (inflateInit2(&m_stream,15+32)!=Z_OK)
                 {
                     m_error=true;
+                    out.m_buffer_len = 0;
                     in.m_buffer_pos = in.m_buffer_len;
                     return false;
                 }
@@ -97,9 +104,12 @@ class Zip
             
             if (ret != Z_OK)
                 ::inflateEnd(&m_stream);
+            else
+                m_run_end=true;
             if (ret != Z_OK && ret != Z_STREAM_END)
             {
                 m_error = true;
+                out.m_buffer_len = 0;
                 in.m_buffer_pos = in.m_buffer_len=0;
                 return false;
             }
@@ -110,6 +120,7 @@ class Zip
             return true;
         }
         bool m_init;
+        bool m_run_end;
         bool m_error;
         z_stream m_stream;
 };
