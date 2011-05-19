@@ -98,11 +98,16 @@ public:
     unsigned short     ethertype;
     in6addr_t          src_ip; 
     in6addr_t          dst_ip;
+    unsigned int       v4src;
+    unsigned int       v4dst;
     unsigned short     src_port; 
     unsigned short     dst_port; 
     unsigned short     proto;
-    unsigned int       length; 
     unsigned int       id; 
+    unsigned int       length; 
+    unsigned int       fragments; 
+    unsigned int       ident; 
+    unsigned int       offset; 
 };
 
 class IP_header_to_table
@@ -110,15 +115,16 @@ class IP_header_to_table
 public:
     IP_header_to_table()
     {
-        acc_id=0;
-        acc_s=0;
-        acc_us=0;
-        acc_ether_type=0;
-        acc_protocol=0;
-        acc_src_port=0;
-        acc_dst_port=0;
-        acc_src_addr=0;
-        acc_dst_addr=0;
+        acc_id         =0;
+        acc_s          =0;
+        acc_us         =0;
+        acc_ether_type =0;
+        acc_protocol   =0;
+        acc_src_port   =0;
+        acc_dst_port   =0;
+        acc_src_addr   =0;
+        acc_dst_addr   =0;
+        acc_fragments  =0;
     }
 
     void add_columns(Table &table);
@@ -132,6 +138,7 @@ private:
     Int_accessor *acc_protocol;
     Int_accessor *acc_src_port;
     Int_accessor *acc_dst_port;
+    Int_accessor *acc_fragments;
     String_accessor *acc_src_addr;
     String_accessor *acc_dst_addr;
 };
@@ -148,7 +155,8 @@ class Packet
         m_id   = id;
     }
     void parse(); 
-    void parse_assembled(); 
+    void parse_transport(unsigned char *data, int len); 
+    void parse_application(); 
     IP_header       m_ip_header;
     unsigned char  *m_data;
     int             m_len;

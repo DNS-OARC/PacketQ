@@ -45,8 +45,149 @@ Payload g_payload;
 Output g_output;
 Str_conv converter;
 
+class Fragments
+{
+public:
+    class Range
+    {
+        public:
+            bool operator < (const Range &r) const
+            {
+                if (begin<r.begin)
+                    return true;
+                return false;
+            }
+            Range(int s,int e1)
+            {
+                begin = s;
+                endp1 = e1;
+            }
+            int begin;
+            int endp1;
+    };
+    Fragments(const Fragments &f)
+    {
+//        printf( "copy Fragments\n" );
+        m_first = f.m_first;
+        m_complete = f.m_complete;
+        m_frags = f.m_frags;
+    }
+    Fragments()
+    {
+        m_complete = 0;
+        m_frags    = 0;
+    }
+    ~Fragments()
+    {
+//        printf( "delete Fragments\n", m_first.offset );
+    }
+    bool add(IP_header &head, unsigned char * data, int len)
+    {
+        if (head.offset==0)
+            m_first = head;
+        if (head.offset <0 || head.offset + len > 0x10000 || len <0 )
+            return false;
+        m_frags++;
+        if(head.fragments == 0)
+            m_complete = head.offset+len;
+        bool complete = add_range(head.offset,head.offset + len);
+        memcpy((void *)&m_buffer[head.offset], data, len);
+        if(complete)
+        {
+            m_complete = head.offset+len;
+            m_first.fragments = m_frags;
+            return true;
+        }
+        return false;
+    }
+    bool add_range(int start, int end)
+    {
 
+        m_ranges.push_back(Range(start,end));
+        m_ranges.sort();
+        bool merged=true;
+        // this is algorithmically horrid (hope there wont be tonnes of fragments)
+        while(merged)
+        {
+            merged = false;
+            std::list<Range>::iterator it = m_ranges.begin();
+            std::list<Range>::iterator last = it;
+            if (last == m_ranges.end())
+                break;
+            it++;
+            for (; it != m_ranges.end(); it++)
+            {
+                if (last->endp1 == it->begin)
+                {
+                    merged = true;
+                    last->endp1=it->endp1;
+                    m_ranges.erase(it);
+                    break;
+                }
+            }
+        }
+        if (m_ranges.size()==1 && m_ranges.begin()->endp1==m_complete && m_ranges.begin()->begin == 0)
+            return true;
+        return false;
+            
+    }
 
+    std::list <Range> m_ranges;
+    int               m_complete;
+    int               m_frags;
+    IP_header m_first;
+    unsigned char m_buffer[0x10000];
+};
+
+class Identv4
+{
+    public:
+        bool operator < (const Identv4 &rhs) const
+        {
+            if(m_src_ip < rhs.m_src_ip)
+                return true;
+            if(m_src_ip > rhs.m_src_ip)
+                return false;
+            if(m_ident < rhs.m_ident)
+                return true;
+            if(m_ident > rhs.m_ident)
+                return false;
+            if(m_protocol < rhs.m_protocol)
+                return true;
+            if(m_protocol > rhs.m_protocol)
+                return false;
+            if(m_dst_ip < rhs.m_dst_ip)
+                return true;
+            return false;
+        }
+        int m_src_ip;
+        int m_ident;
+        int m_protocol;
+        int m_dst_ip;
+};
+
+class FragmentHandler
+{
+    public:
+    void add_fragment(IP_header &head, unsigned char * data, int len,Packet &p)
+    {
+        Identv4 i;
+        i.m_src_ip   = head.v4src;
+        i.m_dst_ip   = head.v4dst;
+        i.m_protocol = head.proto;
+        i.m_ident    = head.ident;
+        Fragments &frag = m_fragments[i];
+        if( frag.add( head, data, len ) )
+        {
+            p.m_ip_header = frag.m_first;
+            p.parse_transport(frag.m_buffer, frag.m_complete);
+            m_fragments.erase(i);
+        }
+    }
+    std::map<Identv4,Fragments> m_fragments;
+};
+
+FragmentHandler m_fraghandler;
 
 int IP_header::decode(unsigned char * data,int itype, int i_id)
 {
@@ -57,7 +198,11 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
     // ip
     memset(&src_ip,0,sizeof(in6addr_t));
     memset(&dst_ip,0,sizeof(in6addr_t));
-    int version = data[0]>>4;
+    fragments = 0;
+    offset    = 0;
+    ident     = 0;
+
+    int version = data[0] >> 4;
     proto=0;
     if (version==4)
     {
@@ -65,7 +210,13 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
         proto = data[9];
         src_ip.__in6_u.__u6_addr32[3] = get_int(&data[12]);
         dst_ip.__in6_u.__u6_addr32[3] = get_int(&data[16]);
-
+        int totallen    = get_short(&data[2]);
+        length          = totallen-header_len;    
+        int flags       = get_short(&data[6]);
+        offset          = (flags & 0x1fff)<<3;
+        flags >>= 13;
+        if (flags&1)
+            fragments = 1;
         data += header_len;
         len  += header_len;
     }
@@ -117,10 +268,23 @@ void Packet::parse()
     len-=14;
 
     int consumed = m_ip_header.decode( data, ethertype,m_id );
-    m_ip_header.s			=m_s;
-    m_ip_header.us			=m_us;
+    m_ip_header.s  = m_s;
+    m_ip_header.us = m_us;
     data += consumed;
-    len-= consumed;
+    len  -= consumed;
+    if (m_ip_header.fragments > 0 || m_ip_header.offset > 0 )
+    {
+        m_fraghandler.add_fragment(m_ip_header, data, len, *this);
+        return;
+    }
+
+
+
+    parse_transport(data, len);
+}
+
+void Packet::parse_transport(unsigned char *data, int len)
+{
     // tcp/udp
     int src_port=0;
     int dst_port=0;
@@ -163,9 +327,8 @@ void Packet::parse()
     {
         m_data = data;
         m_len  = len;
-        parse_assembled();
+        parse_application();
     }
-
 }
 
 Parse_dns  *parse_dns    = 0;
@@ -179,7 +342,7 @@ bool init_packet_handler()
 
 
 
-void Packet::parse_assembled()
+void Packet::parse_application()
 {
 
     if (parse_dns->parse(*this))
@@ -199,6 +362,7 @@ void IP_header_to_table::add_columns(Table &table)
     table.add_column("src_addr",   Coltype::_text); // will start on a 64 bit boundary (put an even number of ints before this to avoid padding)
     table.add_column("dst_addr",   Coltype::_text);
     table.add_column("protocol",   Coltype::_int );
+    table.add_column("fragments",  Coltype::_int );
 
     acc_src_addr   = table.get_string_accessor("src_addr");
     acc_dst_addr   = table.get_string_accessor("dst_addr");
@@ -209,6 +373,7 @@ void IP_header_to_table::add_columns(Table &table)
     acc_s          = table.get_int_accessor("s");
     acc_us         = table.get_int_accessor("us");
     acc_id         = table.get_int_accessor("id");
+    acc_fragments  = table.get_int_accessor("fragments");
 }
 
 
@@ -224,6 +389,7 @@ void IP_header_to_table::assign(Row *row,IP_header *head)
     acc_protocol->set_i(      row, head->proto);
     acc_src_port->set_i(      row, head->src_port);
     acc_dst_port->set_i(      row, head->dst_port);
+    acc_fragments->set_i(     row, head->fragments);
     if (head->ethertype==2048)
     {
         acc_src_addr->set_i(row, v4_addr2str(head->src_ip));
