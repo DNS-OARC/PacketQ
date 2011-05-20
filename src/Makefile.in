@@ -169,7 +169,7 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-packetq_SOURCES = global.h output.h packet_handler.h tcp.h sql.h packetq.h packet_handler.cpp packetq.cpp tcp.cpp sql.cpp pcap.h pcap.cpp json.h json.cpp server.h server.cpp dns.cpp dns.h icmp.cpp icmp.h
+packetq_SOURCES = segzip.h output.h packet_handler.h tcp.h sql.h packetq.h packet_handler.cpp packetq.cpp tcp.cpp sql.cpp pcap.h pcap.cpp json.h json.cpp server.h server.cpp dns.cpp dns.h icmp.cpp icmp.h
 all: all-am
 
 .SUFFIXES:
