@@ -98,8 +98,6 @@ public:
     unsigned short     ethertype;
     in6addr_t          src_ip; 
     in6addr_t          dst_ip;
-    unsigned int       v4src;
-    unsigned int       v4dst;
     unsigned short     src_port; 
     unsigned short     dst_port; 
     unsigned short     proto;

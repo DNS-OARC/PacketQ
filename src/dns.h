@@ -350,6 +350,7 @@ class Parse_dns : public Packet_handler
     Int_accessor *acc_protocol       ;
     Int_accessor *acc_src_port       ;
     Int_accessor *acc_msg_id         ;
+    Int_accessor *acc_msg_size       ;
     Int_accessor *acc_opcode         ;
     Int_accessor *acc_rcode          ;
     Int_accessor *acc_extended_rcode ;

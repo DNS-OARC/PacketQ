@@ -139,31 +139,39 @@ public:
     unsigned char m_buffer[0x10000];
 };
 
-class Identv4
+class Ident
 {
     public:
-        bool operator < (const Identv4 &rhs) const
+        bool operator < (const Ident &rhs) const
         {
-            if(m_src_ip < rhs.m_src_ip)
-                return true;
-            if(m_src_ip > rhs.m_src_ip)
-                return false;
             if(m_ident < rhs.m_ident)
                 return true;
             if(m_ident > rhs.m_ident)
                 return false;
+            for (int i;i<4;i++)
+            {
+                if(m_src_ip.__in6_u.__u6_addr32[i] < rhs.m_src_ip.__in6_u.__u6_addr32[i])
+                    return true;
+                if(m_src_ip.__in6_u.__u6_addr32[i] > rhs.m_src_ip.__in6_u.__u6_addr32[i])
+                    return false;
+            }
             if(m_protocol < rhs.m_protocol)
                 return true;
             if(m_protocol > rhs.m_protocol)
                 return false;
-            if(m_dst_ip < rhs.m_dst_ip)
-                return true;
+            for (int i;i<4;i++)
+            {
+                if(m_dst_ip.__in6_u.__u6_addr32[i] < rhs.m_dst_ip.__in6_u.__u6_addr32[i])
+                    return true;
+                if(m_dst_ip.__in6_u.__u6_addr32[i] > rhs.m_dst_ip.__in6_u.__u6_addr32[i])
+                    return false;
+            }
             return false;
         }
-        int m_src_ip;
-        int m_ident;
-        int m_protocol;
-        int m_dst_ip;
+        in6addr_t   m_dst_ip;
+        in6addr_t   m_src_ip;
+        int         m_ident;
+        int         m_protocol;
 };
 
 class FragmentHandler
@@ -171,9 +179,9 @@ class FragmentHandler
     public:
     void add_fragment(IP_header &head, unsigned char * data, int len,Packet &p)
     {
-        Identv4 i;
-        i.m_src_ip   = head.v4src;
-        i.m_dst_ip   = head.v4dst;
+        Ident i;
+        i.m_src_ip   = head.src_ip;
+        i.m_dst_ip   = head.dst_ip;
         i.m_protocol = head.proto;
         i.m_ident    = head.ident;
         Fragments &frag = m_fragments[i];
@@ -184,7 +192,7 @@ class FragmentHandler
             m_fragments.erase(i);
         }
     }
-    std::map<Identv4,Fragments> m_fragments;
+    std::map< Ident, Fragments > m_fragments;
 };
 
 FragmentHandler m_fraghandler;
@@ -241,7 +249,8 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
         {
             if (proto == 44)
             {
-                return 0;
+                offset    = get_short(&data[2]) & 0xfff8;
+                fragments = get_short(&data[2]) & 1;
             }
             proto = data[0];
             int hdr_len = data[1]+8;
@@ -267,7 +276,7 @@ void Packet::parse()
     data+=14;
     len-=14;
 
-    int consumed = m_ip_header.decode( data, ethertype,m_id );
+    int consumed   = m_ip_header.decode( data, ethertype,m_id );
     m_ip_header.s  = m_s;
     m_ip_header.us = m_us;
     data += consumed;

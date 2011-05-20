@@ -69,6 +69,7 @@ void Parse_dns::add_columns(Table &table)
     table.add_column("qname",          Coltype::_text);
     table.add_column("aname",          Coltype::_text);
     table.add_column("msg_id",         Coltype::_int );
+    table.add_column("msg_size",       Coltype::_int );
     table.add_column("opcode",         Coltype::_int );
     table.add_column("rcode",          Coltype::_int );
     table.add_column("extended_rcode", Coltype::_int ); 
@@ -198,6 +199,7 @@ void Parse_dns::init()
     add_columns(*m_table);
 
     acc_msg_id         = m_table->get_int_accessor("msg_id");
+    acc_msg_size       = m_table->get_int_accessor("msg_size");
     acc_opcode         = m_table->get_int_accessor("opcode");
     acc_rcode          = m_table->get_int_accessor("rcode");
     acc_extended_rcode = m_table->get_int_accessor("extended_rcode");
@@ -246,6 +248,7 @@ bool Parse_dns::packet_insert(DNSMessage &message)
     m_ip_helper.assign( r, &ip_header );
 
     acc_msg_id->set_i(    r, header.id);
+    acc_msg_size->set_i(  r, message.m_length);
     acc_qr->set_i(        r, header.qr);
     acc_aa->set_i(        r, header.aa);
     acc_tc->set_i(        r, header.tc);
