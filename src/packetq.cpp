@@ -139,7 +139,7 @@ bool read_pcap_file(const char *filename)
                     {
                         if (limit && g_packet_number>limit)
                             break;
-                        Packet p(data, len, s, us, g_packet_number++);
+                        Packet p(data, len, s, us, g_packet_number++, pcap.get_link_layer_type() );
                         p.parse();
                     }
                 } while (data!=0);

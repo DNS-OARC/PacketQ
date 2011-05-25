@@ -76,10 +76,10 @@ bool Pcap_file::get_header()
 
     m_snapshot_length = get_int32();
     // check for ethernet packets
-    int link_layer_type = get_int32();
-    if (link_layer_type!=1)
+    m_link_layer_type = get_int32();
+    if (m_link_layer_type!=1 && m_link_layer_type!=101)
     {
-        printf("linklayer != 1");
+        fprintf(stderr,"PCAP file unsupported linklayer (%d)\n",m_link_layer_type);
         return false;
     }
     return true;

@@ -144,15 +144,18 @@ private:
 class Packet
 {
     public:
-    Packet(unsigned char *data,int len,int s, int us, int id)
+    Packet(unsigned char *data,int len,int s, int us, int id, int link_layer_type)
     {
         m_s    = s;
         m_us   = us;
         m_data = data;
         m_len  = len;
         m_id   = id;
+        m_link_layer_type   = link_layer_type;
     }
-    void parse(); 
+    void parse();
+    void parse_ethernet();
+    void parse_ip(unsigned char *data, int len, int ether_type);
     void parse_transport(unsigned char *data, int len); 
     void parse_application(); 
     IP_header       m_ip_header;
@@ -161,6 +164,7 @@ class Packet
     int             m_s;
     int             m_us;
     int             m_id;
+    int             m_link_layer_type;
 };
 
 class Packet_handler

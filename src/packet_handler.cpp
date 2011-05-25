@@ -214,6 +214,8 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
     proto=0;
     if (version==4)
     {
+        if (ethertype==0)
+            ethertype=0x800;
         int header_len = (data[0]&0xf)*4;
         proto = data[9];
         src_ip.__in6_u.__u6_addr32[3] = get_int(&data[12]);
@@ -230,6 +232,8 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
     }
     else if (version==6)
     {
+        if (ethertype==0)
+            ethertype=0x86DD;
         proto = data[6];
         src_ip.__in6_u.__u6_addr32[3] = get_int(&data[ 8]);
         src_ip.__in6_u.__u6_addr32[2] = get_int(&data[12]);
@@ -268,6 +272,14 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
 
 void Packet::parse()
 {
+    if (m_link_layer_type == 1)
+        parse_ethernet();
+    else
+        parse_ip( m_data, m_len, 0 );
+}
+
+void Packet::parse_ethernet()
+{
     unsigned char   *data = m_data;
     int len=m_len;
     if (len<14+5*4) return;  // check for etherframe size + ipv4 header
@@ -275,6 +287,13 @@ void Packet::parse()
     int ethertype = data[13]|(data[12]<<8);
     data+=14;
     len-=14;
+
+    parse_ip( data, len, ethertype );
+}
+
+void Packet::parse_ip(unsigned char *data, int len, int ethertype)
+{
+    if (len<5*4) return;  // check for etherframe size + ipv4 header
 
     int consumed   = m_ip_header.decode( data, ethertype,m_id );
     m_ip_header.s  = m_s;
@@ -286,8 +305,6 @@ void Packet::parse()
         m_fraghandler.add_fragment(m_ip_header, data, len, *this);
         return;
     }
-
-
 
     parse_transport(data, len);
 }

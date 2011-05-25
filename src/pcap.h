@@ -41,10 +41,6 @@ namespace se {
 
 class Pcap_file 
 {
-    class Packet
-    {
-        public:
-    };
     public:
         Pcap_file(FILE *fp)
         {
@@ -54,6 +50,7 @@ class Pcap_file
             m_packetbuffer_len  = 0;
             m_eof               = false;
             m_snapshot_length   = 0;
+            m_link_layer_type   = 0;
             m_gzipped           = false;
         }
         ~Pcap_file()
@@ -199,9 +196,11 @@ class Pcap_file
             return m_packetbuffer;
         }
         bool get_eof() {return m_eof;}
+        int  get_link_layer_type() {return m_link_layer_type;}
 
     private:
         int     m_snapshot_length;
+        int     m_link_layer_type;
         bool    m_reverse_order;
         bool    m_eof;
         bool    m_gzipped;
