@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([packetq], [1.0], [per.grana@iis.se], [PacketQ],[https://github.com/dotse/packetq/wiki])
+AC_INIT([packetq], [1.0.1.1], [per.grana@iis.se], [PacketQ],[https://github.com/dotse/packetq/wiki])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADER([config.h])
 AC_CANONICAL_TARGET
@@ -21,6 +21,8 @@ AC_PROG_CXX
 
 # Checks for libraries.
 AC_CHECK_LIB([z], [deflate])
+AC_CHECK_LIB([socket], socket)
+AC_CHECK_LIB([nsl], inet_ntop)
 
 # Checks for header files.
 AC_HEADER_STDC
