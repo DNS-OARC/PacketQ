@@ -1183,15 +1183,16 @@ class OP : public Token
         static int is_binary(const char *str)
         {
             const char *bin_ops[]={"||","*","/","%","+","-","<<",">>","&","|","<","<=",">",">=","=","==","!=","<>","is","is not","in","like","or","and"};
+            int         pre_ops[]={ 8  ,7  ,7  ,7  ,6  ,6  ,5   ,5   ,5  ,5  ,4  ,4   ,4  ,4   ,3  ,3   ,3   ,3   ,3   ,3       ,3   ,3     ,2   ,1    };
             int len = sizeof(bin_ops)/sizeof(const char *);
             int idx = len-1;
             while(idx>=0)
             {
-                if (cmpi(std::string(str),bin_ops[idx--]))
+                if (cmpi(std::string(str),bin_ops[idx]))
                 {
-                    idx = len-1-idx;
-                    return idx;
+                    return pre_ops[idx];
                 }
+                idx--;
             }
             return 0;
         }
