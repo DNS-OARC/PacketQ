@@ -263,7 +263,7 @@ unsigned char *
                 Data_segment seg( data, len);
                 str.add( syn,seq, seg);
             }
-            else if (fin == 0)
+            else 
             {
                 Data_segment seg( data, len);
                 str.add( syn,seq, seg);

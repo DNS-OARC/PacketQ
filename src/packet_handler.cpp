@@ -197,18 +197,32 @@ class FragmentHandler
 
 FragmentHandler m_fraghandler;
 
-int IP_header::decode(unsigned char * data,int itype, int i_id)
+void IP_header::reset()
 {
-    ethertype = itype;
-    id        = i_id;
-    int len=0;
-    // ether frame done (ignored mac's)
-    // ip
     memset(&src_ip,0,sizeof(in6addr_t));
     memset(&dst_ip,0,sizeof(in6addr_t));
     fragments = 0;
     offset    = 0;
     ident     = 0;
+    s         = 0;
+    us        = 0;
+    ethertype = 0;
+    src_port  = 0; 
+    dst_port  = 0; 
+    proto     = 0;
+    id        = 0; 
+    length    = 0; 
+
+}
+
+int IP_header::decode(unsigned char * data,int itype, int i_id)
+{
+    reset();
+    ethertype = itype;
+    id        = i_id;
+    int len=0;
+    // ether frame done (ignored mac's)
+    // ip
 
     int version = data[0] >> 4;
     proto=0;
@@ -312,12 +326,10 @@ void Packet::parse_ip(unsigned char *data, int len, int ethertype)
 void Packet::parse_transport(unsigned char *data, int len)
 {
     // tcp/udp
-    int src_port=0;
-    int dst_port=0;
     if (m_ip_header.proto==IPPROTO_TCP)
     {
-        src_port = get_short(data);
-        dst_port = get_short(&data[2]);
+        m_ip_header.src_port = get_short(data);
+        m_ip_header.dst_port = get_short(&data[2]);
       
 
         int seq     = get_int(&data[4]);
@@ -334,20 +346,17 @@ void Packet::parse_transport(unsigned char *data, int len)
         data += dataoffs;
         len -= dataoffs;
         unsigned int rest=len;
-
         data = assemble_tcp (g_payload,&m_ip_header.src_ip, &m_ip_header.dst_ip, m_ip_header.src_port, m_ip_header.dst_port, &rest, seq, data, rest, syn, fin, rst, ack);
         len  = rest;
     }
     else if (m_ip_header.proto==IPPROTO_UDP)
     {
-        src_port = get_short(data);
-        dst_port = get_short(&data[2]);
+        m_ip_header.src_port = get_short(data);
+        m_ip_header.dst_port = get_short(&data[2]);
 
         data+=8;
         len-=8;
     }
-    m_ip_header.src_port	=src_port;
-    m_ip_header.dst_port	=dst_port;
 
     if (data)
     {

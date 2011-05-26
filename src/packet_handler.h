@@ -92,6 +92,7 @@ class Payload
 class IP_header
 {
 public:
+    void reset();
     int decode(unsigned char *data, int ether_type,int id); 
     unsigned int       s;
     unsigned int       us;
