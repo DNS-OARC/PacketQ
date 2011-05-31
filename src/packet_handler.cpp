@@ -148,7 +148,7 @@ class Ident
                 return true;
             if(m_ident > rhs.m_ident)
                 return false;
-            for (int i;i<4;i++)
+            for (int i=0; i<4;i++)
             {
                 if(m_src_ip.__in6_u.__u6_addr32[i] < rhs.m_src_ip.__in6_u.__u6_addr32[i])
                     return true;
@@ -159,7 +159,7 @@ class Ident
                 return true;
             if(m_protocol > rhs.m_protocol)
                 return false;
-            for (int i;i<4;i++)
+            for (int i=0; i<4;i++)
             {
                 if(m_dst_ip.__in6_u.__u6_addr32[i] < rhs.m_dst_ip.__in6_u.__u6_addr32[i])
                     return true;
