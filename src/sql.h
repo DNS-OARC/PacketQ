@@ -1042,7 +1042,7 @@ public:
     void set(Row *row, const char *s)
     {
         Float_col *t=(Float_col *)this->get_ptr(row);
-        t->set(atoi(s));
+        t->set(atof(s));
     }
     void set(Row *row, Variant &v)
     {
