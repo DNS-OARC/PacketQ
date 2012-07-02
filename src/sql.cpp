@@ -761,11 +761,16 @@ void Table::json()
     int width = 25;
 
     g_output.add_string("  {\n    ");
+
     g_output.add_q_string("table_name");
     g_output.add_string(": ");
     g_output.add_q_string(m_name.c_str());
     g_output.add_string(",\n    ");
 
+    g_output.add_q_string("query");
+    g_output.add_string(": ");
+    g_output.add_q_string(m_qstring.c_str());
+    g_output.add_string(",\n    ");
 
     g_output.add_q_string("head");
     g_output.add_string(": [");

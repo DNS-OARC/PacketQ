@@ -43,7 +43,7 @@ bool Parse_dns::parse(Packet &packet)
 {
 	if (12<=packet.m_len && (  packet.m_ip_header.proto == IPPROTO_UDP || packet.m_ip_header.proto == IPPROTO_TCP) )
 	{
-        if(g_app->sample())
+        if(g_app->sample_this())
         {
             unsigned char *ddata = packet.m_data;
             int            dlength = packet.m_len;

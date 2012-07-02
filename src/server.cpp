@@ -871,7 +871,7 @@ class Page
         
     void query(const char *sql)
     {
-        g_app->m_query.ask (sql);
+        g_app->m_query->ask(sql);
         int i=0;
         while(true)
         {
@@ -889,8 +889,8 @@ class Page
             read_file(file.c_str());
 
         }
-        g_app->m_query.execute();
-        Table *result = g_app->m_query.get_result();
+        g_app->m_query->execute();
+        Table *result = g_app->m_query->get_result();
         if (result)
             result->json();
     }

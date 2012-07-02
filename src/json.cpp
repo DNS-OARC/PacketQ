@@ -48,7 +48,7 @@ class JParser
     };
     enum Stage
     {
-        _root,_rarr,_tableobj, _tablename, _head, _colname, _data, _colval
+        _root,_rarr,_tableobj, _tablename, _query, _head, _colname, _data, _colval
     };
     JParser()
     {
@@ -109,11 +109,14 @@ class JParser
                         if (m_row)
                             m_row->set(c,string);
                     }
-                    if (m_stage==_tablename)
+		    if (m_stage==_tablename)
                     {
                         m_table = g_db.create_or_use_table(string); 
                         m_stage = _tableobj;
-                    }
+		    }
+		    if (m_stage==_query) {
+			;
+		    }
                 }
             break;
             case(_object):
@@ -162,8 +165,10 @@ class JParser
                         m_stage=_data;
                     if (m_stage==_tableobj && strcmp(string,"head")==0)
                         m_stage=_head;
-                    if (m_stage==_tableobj && strcmp(string,"table_name")==0)
-                        m_stage=_tablename;
+		    if (m_stage==_tableobj && strcmp(string,"table_name")==0)
+			m_stage=_tablename;
+		    if (m_stage==_tableobj && strcmp(string,"query")==0)
+			m_stage=_query;
                     m_name[m_sp-1] = string;
                 }
                 else if (type == _op &&  string[0]==':')

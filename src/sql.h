@@ -744,10 +744,11 @@ class Column
 class Table
 {
     public:
-    Table(const char *name = 0)
+    Table(const char *name = 0, const char *query = 0)
     {
         m_row_allocator = 0;
 	m_name = name?name:"result";
+	m_qstring = query?query:"";
         m_curpos  = 0;
         m_clear_list[0]=0;
     }
@@ -849,6 +850,7 @@ class Table
     std::list<Row *> m_rows;
     int m_curpos;
     std::string m_name;
+    std::string m_qstring;
     Allocator<Row>      *m_row_allocator;
     int m_rsize;
     int m_dsize;
@@ -2187,9 +2189,9 @@ class Query
 {
 public:
 
-    Query(const char *name = 0)
+    Query(const char *name = 0, const char *query = 0)
     {
-        init(name);
+        init(name, query);
     };
     ~Query()
     {
@@ -2212,7 +2214,7 @@ public:
         m_sql      = sql;
 	parse();
     }
-    void init(const char *name = 0)
+    void init(const char *name = 0, const char *query = 0)
     {
         m_first_pass=  false;
         m_sample    =  0;
@@ -2222,7 +2224,7 @@ public:
         m_limit     = -1;
         m_offset    =  0;
         m_aggregate_functions = false;
-        m_result    = new Table(name);
+        m_result    = new Table(name, query);
     };
     void set_aggregate( bool val = true )   { m_aggregate_functions = val;  }
     bool get_aggregate()                    { return m_aggregate_functions; }
