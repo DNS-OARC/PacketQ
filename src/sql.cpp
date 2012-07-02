@@ -809,9 +809,9 @@ void Table::json()
     for (std::list<Row *>::iterator it=m_rows.begin(); it!=m_rows.end();it++)
     {
         if (outer_comma)
-            g_output.add_string(",\n[");
+            g_output.add_string(",\n      [");
         else
-            g_output.add_string("\n[");
+            g_output.add_string("\n      [");
         outer_comma = true;
         bool comma  = false;
         Row *r = *it;
@@ -1896,7 +1896,7 @@ bool Query::parse()
 {
     Parser p;
     Lexer l(p);
-    l.lex(m_query.c_str());
+    l.lex(m_sql.c_str());
 //		p.dump();
     if (!p.analyze(*this))
     {

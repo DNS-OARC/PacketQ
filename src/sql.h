@@ -747,7 +747,7 @@ class Table
     Table(const char *name = 0)
     {
         m_row_allocator = 0;
-        m_name =  name?name:"result";
+	m_name = name?name:"result";
         m_curpos  = 0;
         m_clear_list[0]=0;
     }
@@ -2187,9 +2187,9 @@ class Query
 {
 public:
 
-    Query()
+    Query(const char *name = 0)
     {
-        init();
+        init(name);
     };
     ~Query()
     {
@@ -2209,10 +2209,10 @@ public:
     void ask( const char *sql, bool first_pass=false )
     {
         m_first_pass = first_pass;
-        m_query      = sql;
-		parse();
+        m_sql      = sql;
+	parse();
     }
-    void init()
+    void init(const char *name = 0)
     {
         m_first_pass=  false;
         m_sample    =  0;
@@ -2222,7 +2222,7 @@ public:
         m_limit     = -1;
         m_offset    =  0;
         m_aggregate_functions = false;
-        m_result    = new Table();
+        m_result    = new Table(name);
     };
     void set_aggregate( bool val = true )   { m_aggregate_functions = val;  }
     bool get_aggregate()                    { return m_aggregate_functions; }
@@ -2251,7 +2251,7 @@ private:
   
     Table               *m_result;
     int                 m_sample;
-	std::string         m_query;
+    std::string         m_sql;
     bool                m_aggregate_functions;
 };
 
