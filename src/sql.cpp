@@ -1528,6 +1528,13 @@ class Parser
                     it->set_token("is not");
 
                 }
+		// bin op
+		if (!expect_expr && is(it,Token::_op,"not") && is(next,Token::_op,"like")  )
+		{
+		    it++;
+		    it->set_token("not like");
+
+		}
                 if (!expect_expr && is(it,Token::_op) && OP::is_binary(it->get_token()))
                 {
                     OP *bop=new OP(*it);
@@ -2083,6 +2090,11 @@ OP* OP::compile(Table **table, Query &q)
             m_t = Coltype::_text;
             ret = new Lower_func(*this);
         }
+	if (cmpi(get_token(),"len"))
+	{
+	    m_t = Coltype::_int;
+	    ret = new Len_func(*this);
+	}
         if (cmpi(get_token(),"truncate"))
         {
             m_t = Coltype::_int;
@@ -2208,6 +2220,16 @@ OP* OP::compile(Table **table, Query &q)
             m_t = Coltype::_bool;
             ret = new Bin_op_eq(*this);
         }
+	if (cmpi(get_token(),"like"))
+	{
+	    m_t = Coltype::_bool;
+	    ret = new Bin_op_like(*this);
+	}
+	if (cmpi(get_token(),"not like"))
+	{
+	    m_t = Coltype::_bool;
+	    ret = new Bin_op_not_like(*this);
+	}
         if (cmpi(get_token(),"!="))
         {
             m_t = Coltype::_bool;

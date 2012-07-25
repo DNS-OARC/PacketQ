@@ -73,7 +73,7 @@ void Parse_dns::add_columns(Table &table)
     table.add_column("opcode",         Coltype::_int );
     table.add_column("rcode",          Coltype::_int );
     table.add_column("extended_rcode", Coltype::_int ); 
-    table.add_column("version",        Coltype::_int );
+    table.add_column("edns_version",   Coltype::_int );
     table.add_column("z",              Coltype::_int );
     table.add_column("udp_size",       Coltype::_int );
     table.add_column("qd_count",       Coltype::_int );
@@ -203,7 +203,7 @@ void Parse_dns::init()
     acc_opcode         = m_table->get_int_accessor("opcode");
     acc_rcode          = m_table->get_int_accessor("rcode");
     acc_extended_rcode = m_table->get_int_accessor("extended_rcode");
-    acc_version        = m_table->get_int_accessor("version");
+    acc_edns_version   = m_table->get_int_accessor("edns_version");
     acc_z              = m_table->get_int_accessor("z");
     acc_udp_size       = m_table->get_int_accessor("udp_size");
     acc_qd_count       = m_table->get_int_accessor("qd_count");
@@ -270,7 +270,7 @@ bool Parse_dns::packet_insert(DNSMessage &message)
         acc_edns0->set_i(             r, 1);
         acc_do->set_i(                r, message.m_do);
         acc_extended_rcode->set_i(    r, message.m_extended_rcode);
-        acc_version->set_i(           r, message.m_version);
+        acc_edns_version->set_i(      r, message.m_edns_version);
         acc_z->set_i(                 r, message.m_z);
         acc_udp_size->set_i(          r, message.m_udp_size);
     }
