@@ -57,7 +57,38 @@ static void usage ( char * argv0, bool longversion ) {
    if (!longversion)
        return;
 
-   fprintf (stdout, "\n	   sample:\n> packetq --csv -s \"select count(*) as mycount,protocol from dns group by protocol;\" myfile.pcap\n");
+   fprintf (stdout, "\n    sample:\n> packetq --csv -s \"select count(*) as mycount,protocol from dns group by protocol;\" myfile.pcap\n");
+   fprintf (stdout, "\n" \
+		    "    column names for use in the sql statements:\n\n" \
+		    "      qname\n" \
+		    "      aname\n" \
+		    "      msg_id\n" \
+		    "      msg_size\n" \
+		    "      opcode\n" \
+		    "      rcode\n" \
+		    "      extended_rcode\n" \
+		    "      edns_version\n" \
+		    "      z\n" \
+		    "      udp_size\n" \
+		    "      qd_count\n" \
+		    "      an_count\n" \
+		    "      ns_count\n" \
+		    "      ar_count\n" \
+		    "      qtype\n" \
+		    "      qclass\n" \
+		    "      atype\n" \
+		    "      aclass\n" \
+		    "      attl\n" \
+		    "      aa\n" \
+		    "      tc\n" \
+		    "      rd\n" \
+		    "      cd\n" \
+		    "      ra\n" \
+		    "      ad\n" \
+		    "      do\n" \
+		    "      edns0\n" \
+		    "      qr\n");
+
 }
 
 #ifdef WIN32
