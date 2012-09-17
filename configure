@@ -574,8 +574,8 @@ SHELL=${CONFIG_SHELL-/bin/sh}
 # Identity of this package.
 PACKAGE_NAME='packetq'
 PACKAGE_TARNAME='PacketQ'
-PACKAGE_VERSION='1.0.3.4'
-PACKAGE_STRING='packetq 1.0.3.4'
+PACKAGE_VERSION='1.0.4.0'
+PACKAGE_STRING='packetq 1.0.4.0'
 PACKAGE_BUGREPORT='per.grana@iis.se'
 
 ac_unique_file="config.h.in"
@@ -2218,7 +2218,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE='PacketQ'
- VERSION='1.0.3.4'
+ VERSION='1.0.4.0'
 
 
 cat >>confdefs.h <<_ACEOF

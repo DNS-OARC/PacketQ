@@ -180,7 +180,7 @@ class DNSMessage
         bool             m_edns0;
         bool             m_do;
         int              m_extended_rcode;
-        int              m_version;
+        int              m_edns_version;
         int              m_z;
         int              m_udp_size;
 
@@ -194,7 +194,7 @@ class DNSMessage
             m_edns0         = false;
             m_do            = false;
             m_extended_rcode= 0;
-            m_version       = 0;
+            m_edns_version  = 0;
             m_z             = 0;
             m_udp_size      = 0;
 
@@ -309,7 +309,7 @@ class DNSMessage
                 unsigned long ttl = m_opt_rr->ttl;
                 m_do=(ttl>>15)&1;
                 m_extended_rcode=ttl>>24;
-                m_version=(ttl>>16)&0xff;
+                m_edns_version=(ttl>>16)&0xff;
                 m_z=ttl&0x7fff;
                 m_udp_size=m_opt_rr->rr_class;
 
@@ -354,7 +354,7 @@ class Parse_dns : public Packet_handler
     Int_accessor *acc_opcode         ;
     Int_accessor *acc_rcode          ;
     Int_accessor *acc_extended_rcode ;
-    Int_accessor *acc_version        ;
+    Int_accessor *acc_edns_version   ;
     Int_accessor *acc_z              ;
     Int_accessor *acc_udp_size       ;
     Int_accessor *acc_qd_count       ;

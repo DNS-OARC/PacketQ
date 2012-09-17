@@ -871,7 +871,7 @@ class Page
         
     void query(const char *sql)
     {
-        g_app->m_query.ask (sql);
+        g_app->m_query->ask(sql);
         int i=0;
         while(true)
         {
@@ -889,8 +889,8 @@ class Page
             read_file(file.c_str());
 
         }
-        g_app->m_query.execute();
-        Table *result = g_app->m_query.get_result();
+        g_app->m_query->execute();
+        Table *result = g_app->m_query->get_result();
         if (result)
             result->json();
     }
@@ -1064,11 +1064,11 @@ class Http_socket : public Socket
                         {
                             if ( (p=m_line.find(" HTTP/1.1"))!=-1)
                             {
-                                m_version = 1;
+                                m_http_version = 1;
                             }
                             else if ( (p=m_line.find(" HTTP/1.0"))!=-1)
                             {
-                                m_version = 0;
+                                m_http_version = 0;
                             }
                             else
                             {
@@ -1081,11 +1081,11 @@ class Http_socket : public Socket
                         {
                             if ( (p=m_line.find(" HTTP/1.1"))!=-1)
                             {
-                                m_version = 1;
+                                m_http_version = 1;
                             }
                             else if ( (p=m_line.find(" HTTP/1.0"))!=-1)
                             {
-                                m_version = 0;
+                                m_http_version = 0;
                             }
                             else
                             {
@@ -1171,7 +1171,7 @@ class Http_socket : public Socket
 
         int         m_child_read;
 
-        int         m_version; // 0 = HTTP/1.0 1 = HTTP/1.1 
+        int         m_http_version; // 0 = HTTP/1.0 1 = HTTP/1.1 
 
         int         m_emptyline;
         std::string m_line;
