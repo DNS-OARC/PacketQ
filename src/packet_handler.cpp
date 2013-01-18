@@ -224,9 +224,9 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
     // ether frame done (ignored mac's)
     // ip
 
-    int version = data[0] >> 4;
+    int ip_version = data[0] >> 4;
     proto=0;
-    if (version==4)
+    if (ip_version==4)
     {
         if (ethertype==0)
             ethertype=0x800;
@@ -244,7 +244,7 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
         data += header_len;
         len  += header_len;
     }
-    else if (version==6)
+    else if (ip_version==6)
     {
         if (ethertype==0)
             ethertype=0x86DD;

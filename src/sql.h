@@ -43,12 +43,17 @@
 #include <map>
 #include <algorithm>
 #include <stdexcept>
+#include <sys/types.h>
+#include <regex.h>
 #include "string.h"
 #include "stdarg.h"
+
 
 #ifdef WIN32
 #define snprintf _snprintf
 #endif
+
+#define RE_LEN	64
 
 namespace se {
 
@@ -744,10 +749,11 @@ class Column
 class Table
 {
     public:
-    Table(const char *name = 0)
+    Table(const char *name = 0, const char *query = 0)
     {
         m_row_allocator = 0;
-        m_name =  name?name:"result";
+	m_name = name?name:"result";
+	m_qstring = query?query:"";
         m_curpos  = 0;
         m_clear_list[0]=0;
     }
@@ -849,6 +855,7 @@ class Table
     std::list<Row *> m_rows;
     int m_curpos;
     std::string m_name;
+    std::string m_qstring;
     Allocator<Row>      *m_row_allocator;
     int m_rsize;
     int m_dsize;
@@ -1182,8 +1189,8 @@ class OP : public Token
     public:
         static int is_binary(const char *str)
         {
-            const char *bin_ops[]={"||","*","/","%","+","-","<<",">>","&","|","<","<=",">",">=","=","==","!=","<>","is","is not","in","like","or","and"};
-            int         pre_ops[]={ 8  ,7  ,7  ,7  ,6  ,6  ,5   ,5   ,5  ,5  ,4  ,4   ,4  ,4   ,3  ,3   ,3   ,3   ,3   ,3       ,3   ,3     ,2   ,1    };
+            const char *bin_ops[]={"||","*","/","%","+","-","<<",">>","&","|","<","<=",">",">=","=","==","!=","<>","is","is not","in","like","not like","or","and"};
+            int         pre_ops[]={ 8  ,7  ,7  ,7  ,6  ,6  ,5   ,5   ,5  ,5  ,4  ,4   ,4  ,4   ,3  ,3   ,3   ,3   ,3   ,3       ,3   ,3     ,3         ,2   ,1    };
             int len = sizeof(bin_ops)/sizeof(const char *);
             int idx = len-1;
             while(idx>=0)
@@ -1533,6 +1540,25 @@ public:
         return;
     }
 };
+
+class Len_func : public OP
+{
+    public:
+	Len_func(const OP &op): OP(op)
+	{
+	}
+	void evaluate(Row *row, Variant &v)
+	{
+	    Variant str; 
+	    m_param[0]->evaluate(row, str);
+	    const char *src = str.get_string();
+	    int l = strlen(src);
+	    Variant res(l);
+	    v = res;
+	    return;
+	}
+};
+
 class Trim_func : public OP
 {
 public:
@@ -2088,7 +2114,98 @@ public:
         return;
     }
 };
+class Bin_op_like : public OP
+{
+    private:
+	regex_t m_re;	
+	char	m_re_str[RE_LEN];
+	bool	m_compiled;
+	int	m_err;
+    public:
+	Bin_op_like(const OP &op): OP(op){
+	    m_err = 0;
+	    m_compiled = false;
+	}
+	void regex_from_like(const char* s, char* r, int l)
+	{
+	    char* start = r;
+	    char* stop = r+l-4;
+	    if ( r < stop ) {
+		*r++ = '^';
+		while ( r < stop and *s)
+		{
+//		    printf("s: %s\n", s);
+		    if (*s == '\\') {
+			s++;
+			if (*s) {
+			    *r = *s;
+			} else {
+			    s--;
+			}
+		    } else if ( *s == '.' ) {
+			*r++ = '\\'; *r = '.';		    
+		    } else if ( *s == '*' ) {
+			*r++ = '\\'; *r = '*';		    
+		    } else if ( *s == '%' ) {
+			*r++ = '.'; *r = '*';		    
+		    } else if ( *s == '_' ) {
+			*r = '.';
+		    } else {
+			*r = *s;
+		    }
+		    s++;
+		    r++;
+//		    printf("r: %s\n\n", start);
+		}
+		*r++ = '$';
+		*r = '\0';
+	    }
+//	    printf("r: %s\n\n", start);
+//	    printf("Done\n\n");
+	}
+	void evaluate(Row *row, Variant &v)
+	{
+	    Variant lhs,rhs;
+	    m_left ->evaluate(row, lhs);
+	    m_right->evaluate(row, rhs);
+	    const char* lstr = lhs.get_string();
+	    const char* rstr = rhs.get_string();
+	    if (!m_compiled) {
+		m_compiled = true;	// Set this before we try; no need to try again if we fail
+		regex_from_like(rstr, m_re_str, RE_LEN);
+		m_err = regcomp(&m_re, m_re_str, REG_NOSUB);
+		if (m_err) {
+		    char errstr[RE_LEN];
+		    regerror(m_err, &m_re, errstr, RE_LEN);
+		    printf("Error compiling regex: %s: %s", m_err, errstr);
+		}
+	    }
+	    if (m_err) {
+		v = false;
+	    } else {
+		v = bool(regexec(&m_re, lstr, 0, 0, 0) == 0);
+	    }
+	    return;
+	}
+	~Bin_op_like()
+	{
+	    if (m_compiled) {
+		regfree(&m_re);
+	    }
+	}
 
+};
+class Bin_op_not_like : public Bin_op_like
+{
+    public:
+	Bin_op_not_like(const OP &op): Bin_op_like(op){}
+	void evaluate(Row *row, Variant &v)
+	{
+	    Bin_op_like::evaluate(row, v);
+	    v = !bool(v.get_bool());
+	    return;
+	}
+};
 ////////////////// unary ops
 
 class Un_op_not : public OP
@@ -2187,9 +2304,9 @@ class Query
 {
 public:
 
-    Query()
+    Query(const char *name = 0, const char *query = 0)
     {
-        init();
+        init(name, query);
     };
     ~Query()
     {
@@ -2209,10 +2326,10 @@ public:
     void ask( const char *sql, bool first_pass=false )
     {
         m_first_pass = first_pass;
-        m_query      = sql;
-		parse();
+        m_sql      = sql;
+	parse();
     }
-    void init()
+    void init(const char *name = 0, const char *query = 0)
     {
         m_first_pass=  false;
         m_sample    =  0;
@@ -2222,7 +2339,7 @@ public:
         m_limit     = -1;
         m_offset    =  0;
         m_aggregate_functions = false;
-        m_result    = new Table();
+        m_result    = new Table(name, query);
     };
     void set_aggregate( bool val = true )   { m_aggregate_functions = val;  }
     bool get_aggregate()                    { return m_aggregate_functions; }
@@ -2251,7 +2368,7 @@ private:
   
     Table               *m_result;
     int                 m_sample;
-	std::string         m_query;
+    std::string         m_sql;
     bool                m_aggregate_functions;
 };
 

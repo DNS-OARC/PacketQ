@@ -761,11 +761,16 @@ void Table::json()
     int width = 25;
 
     g_output.add_string("  {\n    ");
+
     g_output.add_q_string("table_name");
     g_output.add_string(": ");
     g_output.add_q_string(m_name.c_str());
     g_output.add_string(",\n    ");
 
+    g_output.add_q_string("query");
+    g_output.add_string(": ");
+    g_output.add_q_string(m_qstring.c_str());
+    g_output.add_string(",\n    ");
 
     g_output.add_q_string("head");
     g_output.add_string(": [");
@@ -809,9 +814,9 @@ void Table::json()
     for (std::list<Row *>::iterator it=m_rows.begin(); it!=m_rows.end();it++)
     {
         if (outer_comma)
-            g_output.add_string(",\n[");
+            g_output.add_string(",\n      [");
         else
-            g_output.add_string("\n[");
+            g_output.add_string("\n      [");
         outer_comma = true;
         bool comma  = false;
         Row *r = *it;
@@ -1523,6 +1528,13 @@ class Parser
                     it->set_token("is not");
 
                 }
+		// bin op
+		if (!expect_expr && is(it,Token::_op,"not") && is(next,Token::_op,"like")  )
+		{
+		    it++;
+		    it->set_token("not like");
+
+		}
                 if (!expect_expr && is(it,Token::_op) && OP::is_binary(it->get_token()))
                 {
                     OP *bop=new OP(*it);
@@ -1896,7 +1908,7 @@ bool Query::parse()
 {
     Parser p;
     Lexer l(p);
-    l.lex(m_query.c_str());
+    l.lex(m_sql.c_str());
 //		p.dump();
     if (!p.analyze(*this))
     {
@@ -2078,6 +2090,11 @@ OP* OP::compile(Table **table, Query &q)
             m_t = Coltype::_text;
             ret = new Lower_func(*this);
         }
+	if (cmpi(get_token(),"len"))
+	{
+	    m_t = Coltype::_int;
+	    ret = new Len_func(*this);
+	}
         if (cmpi(get_token(),"truncate"))
         {
             m_t = Coltype::_int;
@@ -2203,6 +2220,16 @@ OP* OP::compile(Table **table, Query &q)
             m_t = Coltype::_bool;
             ret = new Bin_op_eq(*this);
         }
+	if (cmpi(get_token(),"like"))
+	{
+	    m_t = Coltype::_bool;
+	    ret = new Bin_op_like(*this);
+	}
+	if (cmpi(get_token(),"not like"))
+	{
+	    m_t = Coltype::_bool;
+	    ret = new Bin_op_not_like(*this);
+	}
         if (cmpi(get_token(),"!="))
         {
             m_t = Coltype::_bool;
