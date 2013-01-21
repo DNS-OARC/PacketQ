@@ -103,7 +103,7 @@ $(function() {
 	});
 	
 	//Load server file
-	$.getJSON('_servers.json', function(data) {
+	$.getJSON('_servers.json.php', function(data) {
 		var items = [];
 		var theServers = data;
 		apiPath = theServers[0].url;
