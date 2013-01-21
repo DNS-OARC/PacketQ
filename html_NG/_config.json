@@ -1,0 +1,12 @@
+[
+{
+    "http_bl_api_key" : "123",
+	"alert_load_time" : 5,
+	
+	"serie" : [
+		{ "file_prefix" : "em0" },
+		{ "file_prefix" : "em1" }
+	]
+
+}
+]

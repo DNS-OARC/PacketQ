@@ -1,0 +1,264 @@
+[
+	{
+	"data" : "Basic DNS Queries",
+	"attr" : { "id" : "DNS", "type" : "folder", "filetype" : "folder" },
+	"children" : [
+		{
+			"data" : { "title" : "Top 1000 lvl2 Domains"},
+			"attr" : { 
+				"myid" : "Q1_1",
+				"myQuestionUrl" : "select count(*) as Count, lower(rsplit(qname,2)||'.'||rsplit(qname,1)) as Domain from dns group by domain order by count desc limit 1000",
+				"type" : "table",	
+				"filetype" : "pcap",
+				"sort" : "count",
+				"sort_type" : "desc",
+				"link_Array" : [ 
+					{ "name" : "Domain", "question" : "detailed_2lvl_domain" }
+				]
+			}
+		},
+		{
+			"data" : { "title" : "Top 1000 Qnames"},
+			"attr" : { 
+				"myid" : "Q1_2",
+				"myQuestionUrl" : "select count(*) as Count, lower(qname) as Qname from dns group by qname order by count desc limit 1000",
+				"type" : "table",	
+				"filetype" : "pcap",
+				"sort" : "count",
+				"sort_type" : "desc",
+				"link_Array" : [ 
+					{ "name" : "Qname", "question" : "detailed_qname" }
+				]
+			}
+		},
+		{
+			"data" : { "title" : "Top 1000 Resolvers"},
+			"attr" : { 
+				"myid" : "Q1_3", 
+				"myQuestionUrl" : "select count(*) as Count, if(qr=1,dst_addr,src_addr) as Source from dns group by source order by count desc limit 1000",
+				"type" : "table",
+				"filetype" : "pcap",
+				"sort" : "Count",
+				"sort_type" : "desc",
+				"link_Array" : [ 
+					{ "name" : "Source", "question" : "detailed_ip" }
+				]
+			}
+		},
+		{
+			"data" : { "title" : "Top Record Types"},
+			"attr" : { 
+				"myid" : "Q1_4", 
+				"myQuestionUrl" : "select count(*) as Count, NAME( 'qtype' , qtype ) as Type from dns group by type order by count desc limit 1000",
+				"type" : "table",
+		 		"filetype" : "pcap",
+				"sort" : "count",
+				"sort_type" : "desc"
+			}
+		},
+		{
+			"data" : { "title" : "1000 last Queries"},
+			"attr" : { 
+				"myid" : "Q1_4", 
+				"myQuestionUrl" : "select * from dns order by id desc limit 1000",
+				"type" : "table",
+		 		"filetype" : "pcap",
+				"sort" : "count",
+				"sort_type" : "desc"
+			}
+		},		{
+			"data" : { "title" : "Top Repeating Resolvers"},
+			"attr" : { 
+				"myid" : "Q1_5", 
+				"myQuestionUrl" : "select count(*) as Count, qname, if(qr=1,dst_addr,src_addr) as Source,qtype from dns group by qname,source,qtype order by count desc limit 1000",
+				 "type" : "table",
+				 "filetype" : "pcap",
+				 "sort" : "count",
+				 "sort_type" : "desc",
+				"link_Array" : [ 
+					{ "name" : "qname", "question" : "detailed_qname" },
+					{ "name" : "Source", "question" : "detailed_ip" }
+				]
+			}
+		}
+	]
+	},
+
+
+	{
+	"data" : "DNS graphs",
+	"attr" : { "id" : "Diagram", "type" : "folder", "filetype" : "folder" },
+	"children" : [
+		{
+			"data" : {
+			"title" : "Questions,Recursion,IPV6,TCP/second (10 sec intervals)"},
+			"attr" : { 	
+				"myid" : "Q3_1", 
+				"myQuestionUrl" : "select s ,count(*)/10 as Total, sum(rd)/10 as Recursion,sum(ether_type=34525)/10 as IPV6,sum(protocol=6)/10 as TCP from dns group by truncate(s/10)",
+				"type" : "chart", 
+				"filetype" : "pcap", 
+				"link_Array" : "off",
+				"get_diagram" : [ 
+					{ "name" : "Total", "type" : "area" },
+        			{ "name" : "Recursion", "type" : "line" }
+				]
+			}
+		},
+		{
+			"data" : {
+			"title" : "Questions/second (10 sec intervals)"},
+			"attr" : { 
+				"myid" : "Q3_2", 
+				"myQuestionUrl" : "select s ,count(*)/10 as count from dns group by truncate(s/10)", 
+				"type" : "chart", 
+				"filetype" : "pcap", 
+				"link_Array" : "off",
+				"get_diagram" : [ 
+					{ "name" : "count", "type" : "area" }
+				]
+			}
+		},
+		{
+			"data" : {
+			"title" : "Questions/second"},
+			"attr" : { 
+				"myid" : "Q3_3", 
+				"myQuestionUrl" : "select s ,count(*) as count from dns group by s", 
+				"type" : "chart", 
+				"filetype" : "json", 
+				"link_Array" : "off",
+				"get_diagram" : [ 
+					{ "name" : "count", "type" : "area" }
+				]
+			}
+		}]
+	
+},
+{
+	"data" : "Custom Query",
+	"attr" : { "id" : "Diagram", "type" : "folder", "filetype" : "folder" },
+	"children" : [
+	{
+		"data" : {
+		"title" : "Custom diagram query"},
+		"attr" : { 
+			"myid" : "CQ1_1", 
+			"myQuestionUrl" : "", 
+			"type" : "chart", 
+			"filetype" : "show_all", 
+			"link_Array" : "off" 
+		}
+	},
+	{
+		"data" : {
+		"title" : "Custom list query"},
+		"attr" : { 
+			"myid" : "CQ1_2", 
+			"myQuestionUrl" : "", 
+			"type" : "table", 
+			"filetype" : "show_all", 
+			"link_Array" : "off,off" 
+		}
+	}
+	]
+  
+},
+
+
+{
+	"data" : "Input Queries",
+	"attr" : { "id" : "HQ", "type" : "folder", "filetype" : "folder" },
+	"children" : [
+	{
+		"data" : { "title" : "Detailed Queries (for one 2lvl domain)"},
+		"attr" : { 
+			"myid" : "detailed_2lvl_domain", 
+			"myQuestionUrl" : "select count(*) as Count, NAME( 'qtype' , qtype ) as Type, qname, lower(rsplit(qname,2)||'.'||rsplit(qname,1)) as Domain, if(qr=1,dst_addr,src_addr) as Source from dns where domain='$1' group by type,qname,domain,source order by count desc limit 1000",
+			"type" : "table",
+			"filetype" : "pcap",
+			"sort" : "Count",
+			"sort_type" : "desc",
+			"link_Array" : [ 
+				{ "name" : "qname", "question" : "detailed_qname" },
+				{ "name" : "Source", "question" : "detailed_ip" }
+			]
+		}
+	},
+	{
+		"data" : { "title" : "Detailed Queries (for one qname)"},
+		"attr" : { 
+			"myid" : "detailed_qname", 
+			"myQuestionUrl" : "select count(*) as Count, NAME( 'qtype' , qtype ) as Type, qname, if(qr=1,dst_addr,src_addr) as Source from dns where qname='$1' group by type,qname,source order by count desc limit 1000",
+			"type" : "table",
+			"filetype" : "pcap",
+			"sort" : "Count",
+			"sort_type" : "desc",
+			"link_Array" : [ 
+				{ "name" : "Source", "question" : "detailed_ip" }
+			]
+		}
+	},
+	{
+		"data" : {"title" : "Detailed Queries (for one host)"},
+		"attr" : { 
+			"myid" : "detailed_ip", 
+			"myQuestionUrl" : "select count(*) as Count, NAME( 'qtype' , qtype ) as Type, qname, lower(rsplit(qname,2)||'.'||rsplit(qname,1)) as Domain, if(qr=1,dst_addr,src_addr) as Source from dns where source='$1' group by type,qname,domain,source order by count desc limit 1000", 
+			"type" : "table",
+			"filetype" : "pcap",
+			"sort" : "Count",
+			"sort_type" : "desc",
+			"link_Array" : [ 
+				{ "name" : "Domain", "question" : "detailed_2lvl_domain" },
+				{ "name" : "qname", "question" : "detailed_qname" }
+			]
+		}	
+	}
+	]
+  
+},
+{
+"data" : "Basic ICMP Queries",
+"attr" : { "id" : "DNS", "type" : "folder", "filetype" : "folder" },
+"children" : [
+	{
+		"data" : { "title" : "All ICMP packets"},
+		"attr" : { 
+			"myid" : "Q2_1", 
+			"myQuestionUrl" : "select * from icmp", "type" : "table",
+			"filetype" : "pcap", 
+			"link_Array" : "off"
+		}
+	},
+	{
+		"data" : { "title" : "Destination Unreachable"},
+		"attr" : { 
+			"myid" : "Q2_2", 
+			"myQuestionUrl" : "select id as Id,src_addr as Source,dst_addr as Destination,code as Code ,desc as Description,du_src_addr as Orig_source,du_dst_addr as Orig_destination,du_protocol as Orig_protocol from icmp where type=3", 
+			"type" : "table", 
+			"filetype" : "pcap", 
+			"link_Array" : "off"
+		}
+	},
+	{
+		"data" : { "title" : "Echo (ping)"},
+		"attr" : { 
+			"myid" : "Q2_3", 
+			"myQuestionUrl" : "select id as Id,src_addr as Source,dst_addr as Destination,type as Type,code as Code,echo_identifier as Ping_Id, echo_sequence as Seq,desc as Description from icmp where type=0 or type=8", 
+			"type" : "table", 
+			"filetype" : "pcap", 
+			"link_Array" : "off"
+		}
+	},
+	{
+		"data" : { "title" : "Echo (ping) Grouped"},
+		"attr" : { 
+			"myid" : "Q2_4", 
+			"myQuestionUrl" : "select if (type=8,src_addr||' --> '||dst_addr,dst_addr||' --> '||src_addr) as Ping,sum(type==8) as echo,sum(type==0) as reply,((100*reply/echo)>>0)||'%25' as Success_rate,count(*) as cnt from icmp where type=0 or type=8 group by ping,echo_identifier", 
+			"type" : "table", 
+			"filetype" : "pcap", 
+			"link_Array" : "off"
+		}
+	}
+]
+}
+]

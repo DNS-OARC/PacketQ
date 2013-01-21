@@ -1,0 +1,64 @@
+@charset "utf-8";
+/* CSS Document */
+
+	* {
+		margin: 0;
+		outline: none !important;
+	}
+	
+	body {
+		margin: 0px;
+		padding: 0px;	
+		text-align: center;
+		font-family: Trebuchet MS, Tahoma, Verdana, sans-serif;
+		font-size:10px;
+		color:#000000;
+		background-color:#FFFFFF;
+	}
+	
+	.floatleft {
+		float:left;
+	}
+	
+	.floatright {
+		float:right;
+	}
+	
+	.clear {
+		clear:both;
+	}
+	
+	/* DIVS */
+	.header { margin: 0 auto; width:900px; text-align:left; margin-top:20px; height:70px; }
+	
+	/* TABLES */
+	.table_question { width:100%; }
+	
+	/* IMAGES */
+	.logo { float:left; border-right:1px solid #eeeeee; padding-right:20px; }
+	
+	/* MENU */
+	#toolbar { padding: 5px 10px; text-align:right; }
+	
+	/* TEXTS */
+	.server_title { border-bottom:1px solid #999; }
+	
+	/* FORM, INPUT, TEXTAREA, ETC */
+	input { font-family:"Trebuchet MS", Arial, Helvetica, sans-serif; }
+	.f1 { padding:3px;  width:250px; }
+	
+	/* TOOLTIP */
+	.tooltip{ background: none repeat scroll 0 0 #fbfbfb; border: 1px solid #CCC; color: #333; font-size: 12px; padding: 2px 10px; position: absolute; z-index: 2000; display: none;
+-moz-border-radius: 5px; border-radius: 5px; }
+	
+	/* COMMON */
+	.tac { text-align:center; }
+	.mt10 { margin-top:10px; }
+	.mt2 { margin-top:2px; }
+	.ofyh { overflow-y:hidden; }
+	.ofh { overflow:hidden; }
+	.tal { text-align:left; }
+	.cp { cursor:pointer; }
+	.ui-progressbar { margin-top:170px; }
+	.ui-progressbar-value { background-image: url(../images/pbar-ani.gif); }
+	.w150 { width:150px; }
