@@ -102,6 +102,7 @@ public:
     unsigned short     src_port; 
     unsigned short     dst_port; 
     unsigned short     proto;
+    unsigned short     ip_ttl;
     unsigned int       id; 
     unsigned int       length; 
     unsigned int       fragments; 
@@ -119,6 +120,7 @@ public:
         acc_us         =0;
         acc_ether_type =0;
         acc_protocol   =0;
+        acc_ip_ttl     =0;
         acc_src_port   =0;
         acc_dst_port   =0;
         acc_src_addr   =0;
@@ -135,6 +137,7 @@ private:
     Int_accessor *acc_us;
     Int_accessor *acc_ether_type;
     Int_accessor *acc_protocol;
+    Int_accessor *acc_ip_ttl;
     Int_accessor *acc_src_port;
     Int_accessor *acc_dst_port;
     Int_accessor *acc_fragments;
