@@ -19,7 +19,7 @@ https://github.com/dotse/PacketQ/tarball/master,
 then type "./configure; make; make install"
 
 Pre-compiled binaries for Mac OS can be found at: 
-https://github.com/downloads/dotse/PacketQ/packetq_macosx_binary.gz
+https://github.com/dotse/PacketQ/raw/master/bin/macos/packetq.zip
 
 More information is provided in our wiki on https://github.com/dotse/packetq/wiki
 We also have a public mailing-list at http://lists.iis.se/mailman/listinfo/packetq
