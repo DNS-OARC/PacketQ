@@ -211,6 +211,7 @@ void IP_header::reset()
     dst_port  = 0; 
     proto     = 0;
     ip_ttl    = 0;
+    ip_id     = 0;
     id        = 0; 
     length    = 0; 
 
@@ -234,6 +235,7 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
         int header_len = (data[0]&0xf)*4;
         proto = data[9];
 	ip_ttl = data[8];
+        ip_id = get_short(&data[4]);
         src_ip.__in6_u.__u6_addr32[3] = get_int(&data[12]);
         dst_ip.__in6_u.__u6_addr32[3] = get_int(&data[16]);
         int totallen    = get_short(&data[2]);
@@ -252,6 +254,7 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
             ethertype=0x86DD;
         proto = data[6];
 	ip_ttl = data[7];
+        ip_id = 0;
         src_ip.__in6_u.__u6_addr32[3] = get_int(&data[ 8]);
         src_ip.__in6_u.__u6_addr32[2] = get_int(&data[12]);
         src_ip.__in6_u.__u6_addr32[1] = get_int(&data[16]);
@@ -401,6 +404,7 @@ void IP_header_to_table::add_columns(Table &table)
     table.add_column("dst_addr",   Coltype::_text);
     table.add_column("protocol",   Coltype::_int );
     table.add_column("ip_ttl",     Coltype::_int );
+    table.add_column("ip_id",     Coltype::_int );
     table.add_column("fragments",  Coltype::_int );
 
     acc_src_addr   = table.get_string_accessor("src_addr");
@@ -408,6 +412,7 @@ void IP_header_to_table::add_columns(Table &table)
     acc_ether_type = table.get_int_accessor("ether_type");
     acc_protocol   = table.get_int_accessor("protocol");
     acc_ip_ttl     = table.get_int_accessor("ip_ttl");
+    acc_ip_id      = table.get_int_accessor("ip_id");
     acc_src_port   = table.get_int_accessor("src_port");
     acc_dst_port   = table.get_int_accessor("dst_port");
     acc_s          = table.get_int_accessor("s");
@@ -428,6 +433,7 @@ void IP_header_to_table::assign(Row *row,IP_header *head)
     acc_ether_type->set_i(    row, head->ethertype);
     acc_protocol->set_i(      row, head->proto);
     acc_ip_ttl->set_i(        row, head->ip_ttl);
+    acc_ip_id->set_i(         row, head->ip_id);
     acc_src_port->set_i(      row, head->src_port);
     acc_dst_port->set_i(      row, head->dst_port);
     acc_fragments->set_i(     row, head->fragments);
