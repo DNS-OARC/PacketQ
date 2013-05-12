@@ -287,30 +287,32 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
     return len;
 }
 
-void Packet::parse()
+bool Packet::parse()
 {
     if (m_link_layer_type == 1)
-        parse_ethernet();
+        return parse_ethernet();
     else
-        parse_ip( m_data, m_len, 0 );
+        return parse_ip( m_data, m_len, 0 );
 }
 
-void Packet::parse_ethernet()
+bool Packet::parse_ethernet()
 {
     unsigned char   *data = m_data;
     int len=m_len;
-    if (len<14+5*4) return;  // check for etherframe size + ipv4 header
+    if (len<14+5*4)
+        return false;  // check for etherframe size + ipv4 header
 
     int ethertype = data[13]|(data[12]<<8);
     data+=14;
     len-=14;
 
-    parse_ip( data, len, ethertype );
+    return parse_ip( data, len, ethertype );
 }
 
-void Packet::parse_ip(unsigned char *data, int len, int ethertype)
+bool Packet::parse_ip(unsigned char *data, int len, int ethertype)
 {
-    if (len<5*4) return;  // check for etherframe size + ipv4 header
+    if (len<5*4)
+        return false;  // check for etherframe size + ipv4 header
 
     int consumed   = m_ip_header.decode( data, ethertype,m_id );
     m_ip_header.s  = m_s;
@@ -320,13 +322,13 @@ void Packet::parse_ip(unsigned char *data, int len, int ethertype)
     if (m_ip_header.fragments > 0 || m_ip_header.offset > 0 )
     {
         m_fraghandler.add_fragment(m_ip_header, data, len, *this);
-        return;
+        return false;
     }
 
-    parse_transport(data, len);
+    return parse_transport(data, len);
 }
 
-void Packet::parse_transport(unsigned char *data, int len)
+bool Packet::parse_transport(unsigned char *data, int len)
 {
     // tcp/udp
     if (m_ip_header.proto==IPPROTO_TCP)
@@ -365,7 +367,7 @@ void Packet::parse_transport(unsigned char *data, int len)
     {
         m_data = data;
         m_len  = len;
-        parse_application();
+        return parse_application();
     }
 }
 
@@ -380,13 +382,13 @@ bool init_packet_handler()
 
 
 
-void Packet::parse_application()
+bool Packet::parse_application()
 {
 
-    if (parse_dns->parse(*this))
-        ;
-    else if (parse_icmp->parse(*this));
-
+    if (m_application_protocol == "dns")
+        return parse_dns->parse(*this);
+    else if (m_application_protocol == "icmp")
+        return parse_icmp->parse(*this);
 }
 
 void IP_header_to_table::add_columns(Table &table)

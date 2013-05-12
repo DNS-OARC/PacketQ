@@ -38,6 +38,7 @@
 #include "tcp.h"
 #include <assert.h>
 #include <cctype>
+#include <string>
 
 #define IPPROTO_ICMP 1
 
@@ -148,7 +149,8 @@ private:
 class Packet
 {
     public:
-    Packet(unsigned char *data,int len,int s, int us, int id, int link_layer_type)
+    Packet(unsigned char *data,int len,int s, int us, int id, int link_layer_type, const std::string &application_protocol, Row &destination_row)
+        : m_application_protocol(application_protocol), m_destination_row(destination_row)
     {
         m_s    = s;
         m_us   = us;
@@ -157,11 +159,11 @@ class Packet
         m_id   = id;
         m_link_layer_type   = link_layer_type;
     }
-    void parse();
-    void parse_ethernet();
-    void parse_ip(unsigned char *data, int len, int ether_type);
-    void parse_transport(unsigned char *data, int len); 
-    void parse_application(); 
+    bool parse();
+    bool parse_ethernet();
+    bool parse_ip(unsigned char *data, int len, int ether_type);
+    bool parse_transport(unsigned char *data, int len);
+    bool parse_application();
     IP_header       m_ip_header;
     unsigned char  *m_data;
     int             m_len;
@@ -169,6 +171,8 @@ class Packet
     int             m_us;
     int             m_id;
     int             m_link_layer_type;
+    const std::string &m_application_protocol;
+    Row &m_destination_row;
 };
 
 class Packet_handler

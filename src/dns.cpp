@@ -56,7 +56,7 @@ bool Parse_dns::parse(Packet &packet)
                     return false;
             }
             DNSMessage message(ddata, dlength,packet.m_ip_header);
-            return packet_insert(message);
+            return fill_in_row(message, packet.m_destination_row);
         }
 	}
    return false; 
@@ -230,7 +230,7 @@ void Parse_dns::init()
     acc_aname          = m_table->get_string_accessor("aname");
 }
 
-bool Parse_dns::packet_insert(DNSMessage &message)
+bool Parse_dns::fill_in_row(DNSMessage &message, Row &destination_row)
 {
     DNSMessage::Header &header    = message.m_header;
     IP_header          &ip_header = message.m_ip_header;
@@ -244,7 +244,7 @@ bool Parse_dns::packet_insert(DNSMessage &message)
             return false;
     }
 
-    Row *r = m_table->create_row();
+    Row *r = &destination_row;
     m_ip_helper.assign( r, &ip_header );
 
     acc_msg_id->set_i(    r, header.id);

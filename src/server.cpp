@@ -52,7 +52,8 @@
 #include <list>
 #include <string>
 #include "packetq.h" 
-#include "pcap.h" 
+#include "pcap.h"
+#include "reader.h"
 
 #define MAXHOSTNAME 256
 namespace se {
@@ -872,6 +873,9 @@ class Page
     void query(const char *sql)
     {
         g_app->m_query->ask(sql);
+
+        std::vector<std::string> in_files;
+
         int i=0;
         while(true)
         {
@@ -884,12 +888,14 @@ class Page
             const char *f = m_url.get_param(param);
             if (!f)
                 break;
-            std::string file="";
-            file = join_path(g_server->m_pcaproot, f);
-            read_file(file.c_str());
+            std::string file = join_path(g_server->m_pcaproot, f);
+            in_files.push_back(file);
 
         }
-        g_app->m_query->execute();
+
+        Reader reader(in_files, g_app->get_limit());
+
+        g_app->m_query->execute(reader);
         Table *result = g_app->m_query->get_result();
         if (result)
             result->json();

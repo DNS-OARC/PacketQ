@@ -336,7 +336,7 @@ class Parse_dns : public Packet_handler
 
     const char *table_name() const;
     virtual void add_columns(Table &table);
-    bool packet_insert(DNSMessage &message);
+    bool fill_in_row(DNSMessage &message, Row &destination_Row);
     virtual bool parse(Packet &packet);
     private:
     void init();

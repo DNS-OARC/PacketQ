@@ -46,7 +46,7 @@ bool Parse_icmp::parse(Packet &packet)
     if (packet.m_ip_header.ethertype != 2048) // we dont support ICMPv6 yet
         return false;
         
-    Row *r = m_table->create_row();
+    Row *r = &packet.m_destination_row;
     m_ip_helper.assign( r, &packet.m_ip_header );
     
 

@@ -339,7 +339,7 @@ class Variant
         }
         return false;
     }
-    
+
     private:
         union {
             mutable const char *m_str;
@@ -604,7 +604,7 @@ template <typename T>
 class Allocator
 {
     public:
-    Allocator(int size, int buffersize): m_size(size),m_buffersize(buffersize)
+    Allocator(int size, int buffersize): m_buffersize(buffersize), m_size(size)
     {
         add_buffer();
     }
@@ -720,8 +720,10 @@ class Allocator
 class Column
 {
     public:
+        static const bool HIDDEN = true;
+
         static Coldef m_coldefs[Coltype::_max];
-        Column(const char *name,Coltype::Type type);
+        Column(const char *name,Coltype::Type type, bool hidden);
         ~Column();
         // called at startup by DB
         static void init_defs()
@@ -740,6 +742,7 @@ class Column
         Coltype::Type        m_type;
         Coldef      &m_def;
         Accessor    *m_accessor;
+        bool m_hidden;
     private:
         int         m_offset;
 };
@@ -752,8 +755,8 @@ class Table
     Table(const char *name = 0, const char *query = 0)
     {
         m_row_allocator = 0;
-	m_name = name?name:"result";
-	m_qstring = query?query:"";
+        m_name = name?name:"result";
+        m_qstring = query?query:"";
         m_curpos  = 0;
         m_clear_list[0]=0;
     }
@@ -841,8 +844,9 @@ class Table
     void csv(bool format = false);
     void xml();
 
-    void add_column(const char *name, Coltype::Type type);
-    void add_column(const char *name, const char *type);
+    // returns index of newly added column
+    int add_column(const char *name, Coltype::Type type, bool hidden=false);
+    int add_column(const char *name, const char *type, bool hidden=false);
     void merge_sort(Ordering_terms &order);
     void per_sort(Ordering_terms &order);
     void group(Ordering_terms &order,Table *source);
@@ -867,10 +871,7 @@ class Row
     public:
         Row(Table &table) : m_table(table)
         {
-            int *p=m_table.m_clear_list;
-            while(*p)
-                m_data[*p++]=0;
-            m_source = 0;
+            cleared();
         }
         ~Row()
         {
@@ -878,6 +879,15 @@ class Row
                 destroy(i);
          //   delete []m_data;
         }
+
+        Row &cleared()
+        {
+            int *p=m_table.m_clear_list;
+            while(*p)
+                m_data[*p++]=0;
+            return *this;
+        }
+
         void operator delete (void* ptr, void* voidptr2) throw()
         {
         }
@@ -915,7 +925,6 @@ class Row
 
 
     Table  &m_table;
-    Row    *m_source;
     char   m_data[4];
 };
 
@@ -1065,6 +1074,11 @@ public:
     {
         set(row,int(i));
     }
+    inline void set(Row *row, double f)
+    {
+        Float_col *t=(Float_col *)this->get_ptr(row);
+        t->set(f);
+    }
 };
 class Bool_accessor : public Accessor
 {
@@ -1210,22 +1224,22 @@ class OP : public Token
                 m_param[i] =op.m_param[i];
             m_left      =op.m_left;
             m_right     =op.m_right;
-            m_src_idx   =op.m_src_idx;
-            m_src_row   =op.m_src_row;
+            m_row_index   =op.m_row_index;
             m_t         =op.m_t;
             m_name      =op.m_name;
+            m_has_aggregate_function = op.m_has_aggregate_function;
 
             precedence();
         }
-            OP(const Token &tok) : Token(tok.get_type(),tok.get_token())
+        OP(const Token &tok) : Token(tok.get_type(),tok.get_token())
         {
             for ( int i = 0 ; i < max_param() ; i++ )
                 m_param[i] = 0;
             m_left = m_right = 0;
-            m_src_idx   = -1;
-            m_src_row   = 0;
+            m_row_index   = 0;
             m_t         = Coltype::_int;
             m_name      = "";
+            m_has_aggregate_function = false;
 
             precedence();
         }
@@ -1286,20 +1300,22 @@ class OP : public Token
         }
         Coltype::Type ret_type() {return m_t;}
 
-        virtual void evaluate(Row *row, Variant &v);
-        virtual void reset_op()
-        {
-        }
-        void reset();
-        OP *compile(Table **tabs, Query &q);
-        int             m_src_idx;
-        int             m_src_row;
+        // add a hidden column for storing intermediate results
+        Accessor *add_intermediate_column(Table * table, std::string name, Coltype::Type type);
+
+        virtual void evaluate(Row **rows, Variant &v);
+        virtual void evaluate_aggregate_operands(Row **rows);
+        virtual void combine_aggregate(Row *base_row, Row *other_row);
+        OP *compile(const std::vector<Table *> &tables,
+                    const std::vector<int> &search_order, Query &q);
+        int             m_row_index;
         std::string     m_name;
         int             m_precedence;
         OP              *m_param[max_func_param];
         OP              *m_left;
         OP              *m_right;
         Coltype::Type    m_t;
+        bool             m_has_aggregate_function;
 };
 
 ////////////////// column accessors
@@ -1307,68 +1323,57 @@ class OP : public Token
 class Column_access_int : public OP
 {
 public:
-    Column_access_int(const OP &op,Int_accessor *a): OP(op),m_accessor(a)
+    Column_access_int(const OP &op, int offset): OP(op)
     {
+        m_accessor.m_offset = offset;
     }
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
-        if (m_src_row)
-            m_accessor->get(row,v);
-        else
-            m_accessor->get(row->m_source,v);
-        return;
+        m_accessor.get(rows[m_row_index], v);
     }
-    Int_accessor *m_accessor;
+    Int_accessor m_accessor;
 };
 
 class Column_access_bool : public OP
 {
 public:
-    Column_access_bool(const OP &op,Bool_accessor *a): OP(op),m_accessor(a)
+    Column_access_bool(const OP &op, int offset): OP(op)
     {
+        m_accessor.m_offset = offset;
     }
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
-        if (m_src_row)
-            m_accessor->get(row,v);
-        else
-            m_accessor->get(row->m_source,v);
-        return;
+        m_accessor.get(rows[m_row_index], v);
     }
-    Bool_accessor *m_accessor;
+    Bool_accessor m_accessor;
 };
 
 class Column_access_float : public OP
 {
 public:
-    Column_access_float(const OP &op,Float_accessor *a): OP(op),m_accessor(a)
+    Column_access_float(const OP &op, int offset): OP(op)
     {
+        m_accessor.m_offset = offset;
     }
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
-        if (m_src_row)
-            m_accessor->get(row,v);
-        else
-            m_accessor->get(row->m_source,v);
-        return;
+        m_accessor.get(rows[m_row_index], v);
     }
-    Float_accessor *m_accessor;
+    Float_accessor m_accessor;
 };
 
 class Column_access_string : public OP
 {
 public:
-    Column_access_string(const OP &op,String_accessor *a): OP(op),m_accessor(a)
+    Column_access_string(const OP &op, int offset): OP(op)
     {
+        m_accessor.m_offset = offset;
     }
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
-        if (!m_src_row)
-            row = row->m_source;
-        v.set_no_copy(m_accessor->get_string_i(row));
-        return;
+        v.set_no_copy(m_accessor.get_string_i(rows[m_row_index]));
     }
-    String_accessor *m_accessor;
+    String_accessor m_accessor;
 };
 
 ///////////////// Static numbers
@@ -1381,7 +1386,7 @@ public:
         m_val = atoi(get_token());
     }
     int m_val;
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         v = m_val;
         return;
@@ -1396,7 +1401,7 @@ public:
         m_val = atof(get_token());
     }
     double m_val;
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         v = m_val;
         return;
@@ -1411,10 +1416,10 @@ public:
     Truncate_func(const OP &op): OP(op)
     {
     }
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant val; 
-        m_param[0]->evaluate(row, val);
+        m_param[0]->evaluate(rows, val);
         v = val.get_int();
         return;
     }
@@ -1426,12 +1431,12 @@ public:
     Name_func(const OP &op): OP(op)
     {
     }
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         char sep='.';
         Variant str,num; 
-        m_param[0]->evaluate(row, str);
-        m_param[1]->evaluate(row, num);
+        m_param[0]->evaluate(rows, str);
+        m_param[1]->evaluate(rows, num);
        
         int n=num.get_int();
         const char *s = str.get_string();
@@ -1454,10 +1459,10 @@ public:
     Lower_func(const OP &op): OP(op)
     {
     }
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant str; 
-        m_param[0]->evaluate(row, str);
+        m_param[0]->evaluate(rows, str);
         const char *src = str.get_string();
         int l = strlen(src);
         char *s = new char[l+1];
@@ -1482,16 +1487,16 @@ public:
     Rsplit_func(const OP &op): OP(op)
     {
     }
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         char sep='.';
         Variant str,num; 
-        m_param[0]->evaluate(row, str);
-        m_param[1]->evaluate(row, num);
+        m_param[0]->evaluate(rows, str);
+        m_param[1]->evaluate(rows, num);
         if (m_param[2])
         {
             Variant vsep;
-            m_param[2]->evaluate(row, vsep);
+            m_param[2]->evaluate(rows, vsep);
             const char *s = vsep.get_string();
             if (s)
                 sep=s[0];
@@ -1547,10 +1552,10 @@ class Len_func : public OP
 	Len_func(const OP &op): OP(op)
 	{
 	}
-	void evaluate(Row *row, Variant &v)
+	void evaluate(Row **rows, Variant &v)
 	{
 	    Variant str; 
-	    m_param[0]->evaluate(row, str);
+	    m_param[0]->evaluate(rows, str);
 	    const char *src = str.get_string();
 	    int l = strlen(src);
 	    Variant res(l);
@@ -1565,7 +1570,7 @@ public:
     Trim_func(const OP &op): OP(op)
     {
     }
-    void evaluate(Row *row, Variant &v);
+    void evaluate(Row **rows, Variant &v);
 };
 
 class If_func : public OP
@@ -1574,239 +1579,286 @@ public:
     If_func(const OP &op): OP(op)
     {
     }
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant cond; 
-        m_param[0]->evaluate(row, cond);
+        m_param[0]->evaluate(rows, cond);
         if (cond.get_bool())
-            m_param[1]->evaluate(row, v);
+            m_param[1]->evaluate(rows, v);
         else
-            m_param[2]->evaluate(row, v);
+            m_param[2]->evaluate(rows, v);
         return;
     }
 };
+
+// Aggregate functions, generally these store their calculations in hidden
+// columns
 
 class Min_func_int : public OP
 {
 public:
-    Min_func_int(const OP &op): OP(op)
+    Min_func_int(const OP &op, Table *dest_table): OP(op)
     {
+        m_has_aggregate_function = true;
+        min_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".min", Coltype::_int));
     }
-    virtual void reset_op()
+    virtual void evaluate_aggregate_operands(Row **rows)
     {
-        m_min=0;
-        m_set=false;
+        Variant p;
+        m_param[0]->evaluate(rows, p);
+        min_accessor->set(rows[m_row_index], p.get_int());
     }
-    int     m_min;
-    bool    m_set;
-    void evaluate(Row *row, Variant &v)
+    virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        Variant rhs; 
-        m_param[0]->evaluate(row, rhs);
-        int val =rhs.get_int();
-        if (!m_set || val < m_min)
-            m_min = val;
-        m_set = true;
-        v = m_min;
-        return;
+        int min = std::min(min_accessor->get_int(base_row), min_accessor->get_int(next_row));
+        min_accessor->set(base_row, min);
     }
-};
+    void evaluate(Row **rows, Variant &v)
+    {
+        min_accessor->get(rows[m_row_index], v);
+    }
 
-class Max_func_int : public OP
-{
-public:
-    Max_func_int(const OP &op): OP(op)
-    {
-    }
-    virtual void reset_op()
-    {
-        m_max=0;
-        m_set=false;
-    }
-    int     m_max;
-    bool    m_set;
-    void evaluate(Row *row, Variant &v)
-    {
-        Variant rhs; 
-        m_param[0]->evaluate(row, rhs);
-        int val =rhs.get_int();
-        if (!m_set || val > m_max)
-            m_max = val;
-        m_set = true;
-        v = m_max;
-        return;
-    }
+    Int_accessor *min_accessor;
 };
 
 class Min_func_float : public OP
 {
 public:
-    Min_func_float(const OP &op): OP(op)
+    Min_func_float(const OP &op, Table *dest_table): OP(op)
     {
+        m_has_aggregate_function = true;
+        min_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".min", Coltype::_float));
     }
-    virtual void reset_op()
+    virtual void evaluate_aggregate_operands(Row **rows)
     {
-        m_min = 0.;
-        m_set = false;
+        Variant p;
+        m_param[0]->evaluate(rows, p);
+        min_accessor->set(rows[m_row_index], p);
     }
-    double  m_min;
-    bool    m_set;
-    void evaluate(Row *row, Variant &v)
+    virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        Variant rhs; 
-        m_param[0]->evaluate(row, rhs);
-        double val =rhs.get_float();
-        if (!m_set || val < m_min)
-            m_min = val;
-        m_set = true;
-        v = m_min;
-        return;
+        float min = std::min(min_accessor->get_float(base_row), min_accessor->get_float(next_row));
+        min_accessor->set(base_row, min);
     }
+    void evaluate(Row **rows, Variant &v)
+    {
+        min_accessor->get(rows[m_row_index], v);
+    }
+
+    Float_accessor *min_accessor;
+};
+
+class Max_func_int : public OP
+{
+public:
+    Max_func_int(const OP &op, Table *dest_table): OP(op)
+    {
+        m_has_aggregate_function = true;
+        max_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".max", Coltype::_int));
+    }
+    virtual void evaluate_aggregate_operands(Row **rows)
+    {
+        Variant p;
+        m_param[0]->evaluate(rows, p);
+        max_accessor->set(rows[m_row_index], p.get_int());
+    }
+    virtual void combine_aggregate(Row *base_row, Row *next_row)
+    {
+        int max = std::max(max_accessor->get_int(base_row), max_accessor->get_int(next_row));
+        max_accessor->set(base_row, max);
+    }
+    void evaluate(Row **rows, Variant &v)
+    {
+        max_accessor->get(rows[m_row_index], v);
+    }
+
+    Int_accessor *max_accessor;
 };
 
 class Max_func_float : public OP
 {
 public:
-    Max_func_float(const OP &op): OP(op)
+    Max_func_float(const OP &op, Table *dest_table): OP(op)
     {
+        m_has_aggregate_function = true;
+        max_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".max", Coltype::_float));
     }
-    virtual void reset_op()
+    virtual void evaluate_aggregate_operands(Row **rows)
     {
-        m_max = 0.;
-        m_set = false;
+        Variant p;
+        m_param[0]->evaluate(rows, p);
+        max_accessor->set(rows[m_row_index], p);
     }
-    double  m_max;
-    bool    m_set;
-    void evaluate(Row *row, Variant &v)
+    virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        Variant rhs; 
-        m_param[0]->evaluate(row, rhs);
-        double val =rhs.get_float();
-        if (!m_set || val > m_max)
-            m_max = val;
-        m_set = true;
-        v = m_max;
-        return;
+        float max = std::max(max_accessor->get_float(base_row), max_accessor->get_float(next_row));
+        max_accessor->set(base_row, max);
     }
+    void evaluate(Row **rows, Variant &v)
+    {
+        max_accessor->get(rows[m_row_index], v);
+    }
+
+    Float_accessor *max_accessor;
 };
 
 class Stdev_func : public OP
 {
 public:
-    Stdev_func(const OP &op): OP(op)
+    Stdev_func(const OP &op, Table *dest_table): OP(op)
     {
+        m_has_aggregate_function = true;
+        sum_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".sum", Coltype::_float));
+        sum_squared_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".sumsquared", Coltype::_float));
+        count_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".count", Coltype::_int));
     }
-    virtual void reset_op()
+    virtual void evaluate_aggregate_operands(Row **rows)
     {
-        m_counter   = 0 ;
-        m_sum       = 0.;
-        m_sum_sq    = 0.;
-    }
-    void evaluate(Row *row, Variant &v)
-    {
-        m_counter++;
-        Variant rhs; 
-        m_param[0]->evaluate(row, rhs);
+        Variant p;
+        m_param[0]->evaluate(rows, p);
+        double val = p.get_float();
 
-        double r    =  rhs.get_float();
-        m_sum       += r;
-        m_sum_sq    += r*r;
-        double c    =  m_counter;
-        double mean =  m_sum / c ;
-        double var  =  m_sum_sq / c - mean*mean;
-        v = sqrt(var);
-        return;
+        sum_accessor->set(rows[m_row_index], val);
+        sum_squared_accessor->set(rows[m_row_index], val * val);
+        count_accessor->set(rows[m_row_index], 1);
     }
-private:
-    int     m_counter;
-    double  m_sum;
-    double  m_sum_sq;
+    virtual void combine_aggregate(Row *base_row, Row *next_row)
+    {
+        float sum = sum_accessor->get_float(base_row) + sum_accessor->get_float(next_row);
+        sum_accessor->set(base_row, sum);
+
+        float sum_squared = sum_squared_accessor->get_float(base_row) + sum_squared_accessor->get_float(next_row);
+        sum_squared_accessor->set(base_row, sum_squared);
+
+        int count = count_accessor->get_int(base_row) + count_accessor->get_int(next_row);
+        count_accessor->set(base_row, count);
+    }
+    void evaluate(Row **rows, Variant &v)
+    {
+        double c = count_accessor->get_int(rows[m_row_index]);
+        double mean = sum_accessor->get_float(rows[m_row_index]) / c;
+        double variance = sum_squared_accessor->get_float(rows[m_row_index]) / c - mean * mean;
+
+        v = sqrt(variance);
+    }
+
+    Float_accessor *sum_accessor, *sum_squared_accessor;
+    Int_accessor *count_accessor;
 };
 
 class Avg_func : public OP
 {
 public:
-    Avg_func(const OP &op): OP(op)
+    Avg_func(const OP &op, Table *dest_table): OP(op)
     {
+        m_has_aggregate_function = true;
+        sum_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".sum", Coltype::_float));
+        count_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".count", Coltype::_int));
     }
-    virtual void reset_op()
+    virtual void evaluate_aggregate_operands(Row **rows)
     {
-        m_counter   = 0 ;
-        m_sum       = 0.;
+        Variant p;
+        m_param[0]->evaluate(rows, p);
+        sum_accessor->set(rows[m_row_index], p.get_float());
+
+        count_accessor->set(rows[m_row_index], 1);
     }
-    void evaluate(Row *row, Variant &v)
+    virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        m_counter++;
-        Variant rhs; 
-        m_param[0]->evaluate(row, rhs);
-        m_sum+=rhs.get_float();
-        v = m_sum / double(m_counter);
-        return;
+        float sum = sum_accessor->get_float(base_row) + sum_accessor->get_float(next_row);
+        sum_accessor->set(base_row, sum);
+
+        int count = count_accessor->get_int(base_row) + count_accessor->get_int(next_row);
+        count_accessor->set(base_row, count);
     }
-private:
-    int     m_counter;
-    double  m_sum;
+    void evaluate(Row **rows, Variant &v)
+    {
+        v = sum_accessor->get_float(rows[m_row_index]) / count_accessor->get_int(rows[m_row_index]);
+    }
+
+    Float_accessor *sum_accessor;
+    Int_accessor *count_accessor;
 };
 
 class Sum_func_int : public OP
 {
 public:
-    Sum_func_int(const OP &op): OP(op)
+    Sum_func_int(const OP &op, Table *dest_table): OP(op)
     {
+        m_has_aggregate_function = true;
+        sum_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".sum", Coltype::_int));
     }
-    virtual void reset_op()
+    virtual void evaluate_aggregate_operands(Row **rows)
     {
-        m_sum = 0;
+        Variant p;
+        m_param[0]->evaluate(rows, p);
+
+        sum_accessor->set(rows[m_row_index], p.get_int());
     }
-    int m_sum;
-    void evaluate(Row *row, Variant &v)
+    virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        Variant rhs; 
-        m_param[0]->evaluate(row, rhs);
-        m_sum += rhs.get_int();
-        v = m_sum;
-        return;
+        int sum = sum_accessor->get_int(base_row) + sum_accessor->get_int(next_row);
+        sum_accessor->set(base_row, sum);
     }
+    void evaluate(Row **rows, Variant &v)
+    {
+        v = sum_accessor->get_int(rows[m_row_index]);
+    }
+
+    Int_accessor *sum_accessor;
 };
 
 class Sum_func_float : public OP
 {
 public:
-    Sum_func_float(const OP &op): OP(op)
+    Sum_func_float(const OP &op, Table *dest_table): OP(op)
     {
+        m_has_aggregate_function = true;
+        sum_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".sum", Coltype::_int));
     }
-    virtual void reset_op()
+    virtual void evaluate_aggregate_operands(Row **rows)
     {
-        m_sum=0;
+        Variant p;
+        m_param[0]->evaluate(rows, p);
+
+        sum_accessor->set(rows[m_row_index], p.get_int());
     }
-    double m_sum;
-    void evaluate(Row *row, Variant &v)
+    virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        Variant rhs; 
-        m_param[0]->evaluate(row, rhs);
-        m_sum+=rhs.get_float();
-        v = m_sum;
-        return;
+        float sum = sum_accessor->get_float(base_row) + sum_accessor->get_float(next_row);
+        sum_accessor->set(base_row, sum);
     }
+    void evaluate(Row **rows, Variant &v)
+    {
+        v = sum_accessor->get_float(rows[m_row_index]);
+    }
+
+    Float_accessor *sum_accessor;
 };
 
 class Count_func : public OP
 {
 public:
-    Count_func(const OP &op): OP(op)
+    Count_func(const OP &op, Table *dest_table): OP(op)
     {
+        m_has_aggregate_function = true;
+        count_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".count", Coltype::_int));
     }
-    virtual void reset_op()
+    virtual void evaluate_aggregate_operands(Row **rows)
     {
-        m_counter=0;
+        count_accessor->set(rows[m_row_index], 1);
     }
-    int m_counter;
-    void evaluate(Row *row, Variant &v)
+    virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        m_counter++;
-        v = m_counter;
-        return;
+        int count = count_accessor->get_int(base_row) + count_accessor->get_int(next_row);
+        count_accessor->set(base_row, count);
     }
+    void evaluate(Row **rows, Variant &v)
+    {
+        v = count_accessor->get_int(rows[m_row_index]);
+    }
+
+    Int_accessor *count_accessor;
 };
 
 //////////////// Binary ops
@@ -1816,11 +1868,11 @@ class Bin_op_eq : public OP
 {
 public:
     Bin_op_eq(const OP &op): OP(op){}
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
-        m_left ->evaluate(row, lhs);
-        m_right->evaluate(row, rhs);
+        m_left ->evaluate(rows, lhs);
+        m_right->evaluate(rows, rhs);
         v = bool(lhs==rhs);
         return;
     }
@@ -1829,11 +1881,11 @@ class Bin_op_not_eq : public OP
 {
 public:
     Bin_op_not_eq(const OP &op):OP(op){}
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
-        m_left ->evaluate(row, lhs);
-        m_right->evaluate(row, rhs);
+        m_left ->evaluate(rows, lhs);
+        m_right->evaluate(rows, rhs);
         v = !bool(lhs==rhs);
         return;
     }
@@ -1842,16 +1894,16 @@ class Bin_op_or : public OP
 {
 public:
     Bin_op_or(const OP &op): OP(op){}
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         v=false;
-        m_left->evaluate(row, v);
+        m_left->evaluate(rows, v);
         if (v.get_bool())
         {
             v = true;
             return;
         }
-        m_right->evaluate(row, v);
+        m_right->evaluate(rows, v);
         if(v.get_bool())
             v = true;
         return;
@@ -1862,16 +1914,16 @@ class Bin_op_and : public OP
 {
 public:
     Bin_op_and(const OP &op): OP(op){}
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         v=false;
-        m_left->evaluate(row, v);
+        m_left->evaluate(rows, v);
         if (!v.get_bool())
         {
             v = false;
             return;
         }
-        m_right->evaluate(row, v);
+        m_right->evaluate(rows, v);
         if(v.get_bool())
             v = true;
         return;
@@ -1881,11 +1933,11 @@ class Bin_op_lt : public OP
 {
 public:
     Bin_op_lt(const OP &op): OP(op){}
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
-        m_left ->evaluate(row, lhs);
-        m_right->evaluate(row, rhs);
+        m_left ->evaluate(rows, lhs);
+        m_right->evaluate(rows, rhs);
         v = bool(lhs < rhs);
         return;
     }
@@ -1894,11 +1946,11 @@ class Bin_op_gt : public OP
 {
 public:
     Bin_op_gt(const OP &op): OP(op){}
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
-        m_left ->evaluate(row, lhs);
-        m_right->evaluate(row, rhs);
+        m_left ->evaluate(rows, lhs);
+        m_right->evaluate(rows, rhs);
         v = bool(rhs < lhs);
         return;
     }
@@ -1907,11 +1959,11 @@ class Bin_op_lteq : public OP
 {
 public:
     Bin_op_lteq(const OP &op): OP(op){}
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
-        m_left ->evaluate(row, lhs);
-        m_right->evaluate(row, rhs);
+        m_left ->evaluate(rows, lhs);
+        m_right->evaluate(rows, rhs);
         v = !bool(rhs < lhs);
         return;
     }
@@ -1920,11 +1972,11 @@ class Bin_op_gteq : public OP
 {
 public:
     Bin_op_gteq(const OP &op): OP(op){}
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
-        m_left ->evaluate(row, lhs);
-        m_right->evaluate(row, rhs);
+        m_left ->evaluate(rows, lhs);
+        m_right->evaluate(rows, rhs);
         v = !bool(lhs < rhs);
         return;
     }
@@ -1933,11 +1985,11 @@ class Bin_op_add : public OP
 {
 public:
     Bin_op_add(const OP &op): OP(op){}
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
-        m_left ->evaluate(row, lhs);
-        m_right->evaluate(row, rhs);
+        m_left ->evaluate(rows, lhs);
+        m_right->evaluate(rows, rhs);
         v = int(lhs.get_int() + rhs.get_int());
         return;
     }
@@ -1946,11 +1998,11 @@ class Bin_op_add_float : public OP
 {
 public:
     Bin_op_add_float(const OP &op): OP(op){}
-    void evaluate(Row *row, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
-        m_left ->evaluate(row, lhs);
-        m_right->evaluate(row, rhs);
+        m_left ->evaluate(rows, lhs);
+        m_right->evaluate(rows, rhs);
         v = lhs.get_float() + rhs.get_float();
         return;
     }
@@ -1959,7 +2011,7 @@ class Bin_op_sub : public OP
 {
 public:
     Bin_op_sub(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
@@ -1972,7 +2024,7 @@ class Bin_op_sub_float : public OP
 {
 public:
     Bin_op_sub_float(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
@@ -1986,7 +2038,7 @@ class Bin_op_mul : public OP
 {
 public:
     Bin_op_mul(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
@@ -1999,7 +2051,7 @@ class Bin_op_mul_float : public OP
 {
 public:
     Bin_op_mul_float(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
@@ -2012,7 +2064,7 @@ class Bin_op_div : public OP
 {
 public:
     Bin_op_div(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
@@ -2025,7 +2077,7 @@ class Bin_op_modulo : public OP
 {
 public:
     Bin_op_modulo(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
@@ -2038,7 +2090,7 @@ class Bin_op_arithmetic_shift_left : public OP
 {
 public:
     Bin_op_arithmetic_shift_left(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
@@ -2051,7 +2103,7 @@ class Bin_op_arithmetic_shift_right : public OP
 {
 public:
     Bin_op_arithmetic_shift_right(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
@@ -2064,7 +2116,7 @@ class Bin_op_bitwise_and : public OP
 {
 public:
     Bin_op_bitwise_and(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
@@ -2077,7 +2129,7 @@ class Bin_op_bitwise_or : public OP
 {
 public:
     Bin_op_bitwise_or(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
@@ -2090,7 +2142,7 @@ class Bin_op_concatenate : public OP
 {
 public:
     Bin_op_concatenate(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
@@ -2163,11 +2215,11 @@ class Bin_op_like : public OP
 //	    printf("r: %s\n\n", start);
 //	    printf("Done\n\n");
 	}
-	void evaluate(Row *row, Variant &v)
+	void evaluate(Row **rows, Variant &v)
 	{
 	    Variant lhs,rhs;
-	    m_left ->evaluate(row, lhs);
-	    m_right->evaluate(row, rhs);
+	    m_left ->evaluate(rows, lhs);
+	    m_right->evaluate(rows, rhs);
 	    const char* lstr = lhs.get_string();
 	    const char* rstr = rhs.get_string();
 	    if (!m_compiled) {
@@ -2199,9 +2251,9 @@ class Bin_op_not_like : public Bin_op_like
 {
     public:
 	Bin_op_not_like(const OP &op): Bin_op_like(op){}
-	void evaluate(Row *row, Variant &v)
+	void evaluate(Row **rows, Variant &v)
 	{
-	    Bin_op_like::evaluate(row, v);
+	    Bin_op_like::evaluate(rows, v);
 	    v = !bool(v.get_bool());
 	    return;
 	}
@@ -2212,7 +2264,7 @@ class Un_op_not : public OP
 {
 public:
     Un_op_not(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant rhs; 
         m_right->evaluate(rows, rhs);
@@ -2225,7 +2277,7 @@ class Un_op_neg : public OP
 {
 public:
     Un_op_neg(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant rhs; 
         m_right->evaluate(rows, rhs);
@@ -2238,7 +2290,7 @@ class Un_op_neg_float : public OP
 {
 public:
     Un_op_neg_float(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant rhs; 
         m_right->evaluate(rows, rhs);
@@ -2251,7 +2303,7 @@ class Un_op_ones_complement : public OP
 {
 public:
     Un_op_ones_complement(const OP &op): OP(op){}
-    void evaluate(Row *rows, Variant &v)
+    void evaluate(Row **rows, Variant &v)
     {
         Variant rhs; 
         m_right->evaluate(rows, rhs);
@@ -2294,11 +2346,12 @@ class Ordering_terms
         {
             return m_terms.size()>0;
         }
-        void compile(Table *t, Table *s, Query &q);
+        void compile(const std::vector<Table *> &tables, const std::vector<int> &search_order, Query &q);
 
         std::vector<OP_dir>   m_terms;
 };
 
+class Reader;
 
 class Query
 {
@@ -2327,7 +2380,7 @@ public:
     {
         m_first_pass = first_pass;
         m_sql      = sql;
-	parse();
+        parse();
     }
     void init(const char *name = 0, const char *query = 0)
     {
@@ -2338,18 +2391,17 @@ public:
         m_from      =  0;
         m_limit     = -1;
         m_offset    =  0;
-        m_aggregate_functions = false;
         m_result    = new Table(name, query);
     };
-    void set_aggregate( bool val = true )   { m_aggregate_functions = val;  }
-    bool get_aggregate()                    { return m_aggregate_functions; }
-	bool parse();
-    bool is_streamable();
-    bool execute();
-    void reset();                           // resets op's
-    Row *process_select( Row *dest );
-    bool process_where(  Row *dest );
-    bool process_having( Row *dest );
+    bool parse();
+    bool execute(Reader &reader);
+    void process_select(Row **rows, Row *dest, Accessor **result_accessors);
+    bool process_where(Row **rows);
+    bool process_having(Row **rows);
+    void combine_aggregate_in_select(Row *base_row, Row *other_row);
+    void process_aggregate_in_select(Row **rows, Row *dest, Accessor **result_accessors);
+    void replace_star_with_columns();
+    bool has_aggregate_functions();
     Table *get_result()                     { return m_result; }
 
     std::vector<OP *>   m_result_set;

@@ -45,8 +45,8 @@
 #include "sql.h"
 #include "packetq.h"
 #include "pcap.h"
-#include "json.h"
 #include "server.h"
+#include "reader.h"
 
 #define NUM_QUERIES	32
 
@@ -131,65 +131,6 @@ int getopt_long (int argc, char * argv[], const char *str, option *opt, int *opt
 }
 
 #endif
-
-int g_packet_number=1;
-
-bool read_json_file(const char *filename)
-{
-    bool res= false;
-    FILE *fp = fopen(filename,"rb");
-    if (fp)
-    {
-	{ // <-- scope for Json_file
-	    Json_file json(fp);
-
-	    if (json.read_file())
-		res=true;
-	}
-	fclose(fp);
-    }
-    return res;
-}
-bool read_pcap_file(const char *filename)
-{
-    bool res= false;
-    FILE *fp = fopen(filename,"rb");
-    if (fp)
-    {
-	{ // <-- scope for Pcap_file
-	    Pcap_file pcap(fp);
-
-	    if (pcap.get_header())
-	    {
-		res = true;
-		unsigned char * data=0;
-		int limit = g_app->get_limit();
-		do
-		{
-		    int s,us,len;
-		    data = pcap.get_packet(len, s, us);
-		    if (len && data)
-		    {
-			if (limit && g_packet_number>limit)
-			    break;
-			Packet p(data, len, s, us, g_packet_number++, pcap.get_link_layer_type() );
-			p.parse();
-		    }
-		} while (data!=0);
-	    }
-	}
-	fclose(fp);
-    }
-    return res;
-}
-
-void read_file(const char *filename)
-{
-    if (!read_pcap_file(filename))
-    {
-	read_json_file(filename);
-    }
-}
 
 void sigproc(int sig)
 {
@@ -326,18 +267,22 @@ int main (int argc, char * argv [])
     {
     }
 
-    while (optind < argc) 
+    std::vector<std::string> in_files;
+
+    while (optind < argc)
     {
-	read_file( argv[optind] );
+        in_files.push_back(argv[optind]);
 	optind++;
     }
+
+    Reader reader(in_files, g_app->get_limit());
 
     if ( g_app->get_output() == PacketQ::json ) {
 	printf("[\n");
     }
     for (int i=0; i < qcount; i++ ) {
 	char tablename[32];
-	sprintf(tablename, "result-%d", i);
+	snprintf(tablename, 32, "result-%d", i);
 	try
 	{
 	    // pass 2 now all tables are in place and the query can be properly analyzed
@@ -356,7 +301,7 @@ int main (int argc, char * argv [])
 	    fflush( stdout );
 	}
 
-	g_app->m_query->execute();
+	g_app->m_query->execute(reader);
 	Table *result = g_app->m_query->get_result();
 
 	switch( g_app->get_output() )
