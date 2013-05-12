@@ -877,7 +877,7 @@ class Row
     public:
         Row(Table &table) : m_table(table)
         {
-            cleared();
+            clear();
         }
         ~Row()
         {
@@ -886,11 +886,19 @@ class Row
          //   delete []m_data;
         }
 
-        Row &cleared()
+        void clear()
         {
-            int *p=m_table.m_clear_list;
+            int *p = m_table.m_clear_list;
             while(*p)
                 m_data[*p++]=0;
+        }
+
+        Row &cleared()
+        {
+            // make sure text columns are whacked
+            for (unsigned int i=0; i<m_table.m_cols.size(); i++)
+                destroy(i);
+            clear();
             return *this;
         }
 
