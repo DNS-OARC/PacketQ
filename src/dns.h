@@ -38,11 +38,12 @@
 #include "tcp.h"
 #include "packet_handler.h"
 #include <assert.h>
-#include <cctype>
 
 #define IPPROTO_ICMP 1
 
 namespace se {
+
+extern char visible_char_map[256];
 
 class DNSMessage
 {
@@ -234,10 +235,7 @@ class DNSMessage
 
                 while(n-->0)
                 {
-                    int c=get_ubyte(offs++);
-                    if (!isgraph(c))
-                        c='$';
-                    out[p++]=c;
+                    out[p++] = visible_char_map[get_ubyte(offs++)];
                 }
                 out[p++]='.';
                 n=get_ubyte(offs++);
@@ -316,8 +314,8 @@ class DNSMessage
             }
         }
 
-        // returns 16 bit number at byte offser offs
         unsigned int  get_ubyte (int offs)                     { if(offs>=m_length)return 0;  return int(m_data[offs]); }
+        // returns 16 bit number at byte offset offs
         unsigned int  get_ushort(int offs)                     { if(offs>=m_length)return 0;  return (int(m_data[offs])<<8)|int(m_data[offs+1]); }
         bool           get_bit   (int offs,int bit)             { if(offs>=m_length)return 0;  return ((get_ushort(offs)<<bit)&0x8000)==0x8000; }
         unsigned int  get_bits  (int offs,int bit,int bits) { if(offs>=m_length)return 0;  return ((get_ushort(offs)<<bit)&0xffff)>>(16-bits); }

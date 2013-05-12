@@ -34,10 +34,19 @@
 #include "packet_handler.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <cctype>
 #include "output.h"
 #include "dns.h"
 
 namespace se {
+
+char visible_char_map[256];
+
+void fill_in_visible_char_map()
+{
+    for (int i = 0; i < 256; ++i)
+        visible_char_map[i] = isgraph(i) ? i : '$';
+}
 
 bool Parse_dns::parse(Packet &packet)
 {
@@ -192,6 +201,8 @@ void Parse_dns::add_columns(Table &table)
 
 void Parse_dns::init()
 {
+    fill_in_visible_char_map();
+
     // create table
     m_table = g_db.create_table("dns");
     if (!m_table)
