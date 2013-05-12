@@ -2541,6 +2541,9 @@ bool Query::execute(Reader &reader)
             m_having=m_having->compile(tables, search_results_only, *this);
         }
 
+        if ( m_group_by.exist() )
+            m_group_by.compile(tables, search_results_last, *this);
+
         bool aggregate_functions = has_aggregate_functions();
 
         int count=0;
@@ -2556,26 +2559,35 @@ bool Query::execute(Reader &reader)
             {
                 std::unordered_map<std::string, Row*> groups;
 
-                if ( m_group_by.exist() ) 
-                    m_group_by.compile(tables, search_results_last, *this);
+                rows[dest_i] = 0;
                 while (reader.read_next(m_from->m_name, rows[0]->cleared()))
                 {
-                    // FIXME: only create one where necessary
-                    rows[dest_i] = m_result->create_row(false);
+                    // fill in groups
+                    if (rows[dest_i])
+                        rows[dest_i]->cleared();
+                    else
+                        rows[dest_i] = m_result->create_row(false);
+
                     process_select(rows, rows[dest_i], result_accessors);
                     if (process_where(rows))
                     {
                         std::string key = group_by_key(m_group_by, rows);
                         auto existing = groups.find(key);
                         if (existing != groups.end())
+                        {
                             combine_aggregate_in_select(existing->second, rows[dest_i]);
+                        }
                         else
+                        {
                             groups[key] = rows[dest_i];
+                            rows[dest_i] = 0;
+                        }
                     }
-                    else
-                        rows[dest_i]->del();
                 }
+                if (rows[dest_i])
+                    rows[dest_i]->del();
 
+                // put groups into result
                 for (auto i = groups.begin(); i != groups.end(); ++i)
                 {
                     rows[dest_i] = i->second;
@@ -2592,6 +2604,7 @@ bool Query::execute(Reader &reader)
                 rows[dest_i] = m_result->create_row(false);
                 while (reader.read_next(m_from->m_name, rows[src_i]->cleared()))
                 {
+                    // fill in result
                     process_select(rows, rows[dest_i], result_accessors);
                     if (process_where(rows))
                     {
