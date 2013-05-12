@@ -177,6 +177,12 @@ class Variant
         m_type = Coltype::_float;
         m_free_str = 0;
     }
+    ~Variant()
+    {
+        if (m_type == Coltype::_text)
+            freestr();
+    }
+
     inline void freestr()
     {
         if (m_free_str)
