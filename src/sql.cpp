@@ -2510,7 +2510,10 @@ bool Query::execute(Reader &reader)
 {
     try
     {
-        std::vector<Table *> tables = { m_from, m_result };
+        std::vector<Table *> tables;
+        if (m_from)
+            tables.push_back(m_from);
+        tables.push_back(m_result);
         std::vector<int> search_results_last = { 0, 1 };
         std::vector<int> search_results_only = { 1 };
 
