@@ -683,7 +683,6 @@ void Table::xml()
 {
     g_output.reset();
     int cols = (int)m_cols.size();
-    int width = 25;
 
     g_output.add_string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     g_output.add_string("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n");
@@ -731,12 +730,9 @@ void Table::xml()
         g_output.add_string("</th>");
     }
     g_output.add_string("</tr>\n");
-    bool outer_comma=false;
     for (std::list<Row *>::iterator it=m_rows.begin(); it!=m_rows.end();it++)
     {
         g_output.add_string("<tr>");
-        outer_comma = true;
-        bool comma  = false;
         Row *r = *it;
        
         Variant v;
@@ -746,7 +742,6 @@ void Table::xml()
                 continue;
 
             g_output.add_string("<td>");
-            comma=true;
             r->get(i,v);
             switch( m_cols[i]->m_type)
             {
@@ -782,7 +777,6 @@ void Table::json(bool trailing_comma)
 {
     g_output.reset();
     int cols = (int)m_cols.size();
-    int width = 25;
 
     g_output.add_string("  {\n    ");
 
@@ -1271,8 +1265,7 @@ class Parser
         bool get_ordering_terms(Ordering_terms &ordering, std::list<Token>::iterator &it)
         {
             OP *op;
-            bool cont = true;
-            while(op=get_expr(it,0)) 
+            while(op=get_expr(it,0))
             {
                 bool asc=true;
                 if (it->get_type() == Token::_label)
@@ -1307,7 +1300,6 @@ class Parser
         }
         bool get_group_by( Query &q, Lit &it )
         {
-            Lit save = it;
             if (!is (it,Token::_label,"group"))
             {
                 return true;
@@ -1322,7 +1314,6 @@ class Parser
         }
         bool get_as( Query &q, Lit &it )
         {
-            Lit save = it;
             if (!is (it,Token::_label,"as"))
             {
                 return true;
@@ -1337,7 +1328,6 @@ class Parser
 
         bool get_order_by( Query &q, Lit &it )
         {
-            Lit save = it;
             if (!is (it,Token::_label,"order"))
             {
                 return true;
@@ -1419,7 +1409,6 @@ class Parser
 
         bool get_from(Query &q, Lit &it)
         {
-            Lit save = it;
             if (!is (it,Token::_label,"from"))
                 return false;
             it++;
@@ -1886,7 +1875,6 @@ public:
 	}
     bool parse_num(const char p)
     {
-        bool cont = true;
         switch(num_state)
         {
             case(_nan):
@@ -2829,7 +2817,8 @@ Column::Column(const char *name,Coltype::Type type, bool hidden): m_name(name) ,
 }
 Column::~Column()
 {
-    if (m_accessor) delete m_accessor;
+    if (m_accessor)
+        delete m_accessor;
 }
 void Column::set_offset(int o)
 {

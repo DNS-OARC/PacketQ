@@ -205,13 +205,9 @@ class DNSMessage
         {
             int p=0;
             int savedoffs=0;
-            bool exit=false;
             int n=get_ubyte(offs++);
             if (n==0)
-            {
                 out[p++]='.';
-                exit=true;
-            }
 
             while(n>0)
             {

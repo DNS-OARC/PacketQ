@@ -154,12 +154,12 @@ class Stream
         {
             m_len=0;
         }
-        bool push_front(unsigned char *data,int len)
+        void push_front(unsigned char *data,int len)
         {
             m_stream.push_front(Buffer(data,len));
             m_len+=len;
         }
-        bool write(unsigned char *data,int len)
+        void write(unsigned char *data,int len)
         {
             m_stream.push_back(Buffer(data,len));
             m_len+=len;
@@ -425,7 +425,6 @@ class Server
         { 
             int s,res; 
             sockaddr_in sa; 
-            struct hostent *hp; 
             memset(&sa, 0, sizeof(struct sockaddr_in));
 
             sa.sin_family = AF_INET;
@@ -767,8 +766,6 @@ class Page
             {   
                 for (res = result; res != NULL; res = res->ai_next)
                 {   
-                    char hostname[NI_MAXHOST] = "";
-
                     void *ptr = &( (struct sockaddr_in *) res->ai_addr)->sin_addr;
                     if (res->ai_family==AF_INET6)
                             ptr = &( (struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
@@ -1015,7 +1012,6 @@ class Http_socket : public Socket
             set_want_write(false);           
             if (m_state==wait_child)
             {
-                char *s;
                 unsigned char buffer[4096];
                 int status;
                 bool done  = true;

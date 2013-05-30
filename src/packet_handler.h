@@ -186,7 +186,7 @@ class Packet_handler
     virtual bool parse(Packet &packet)=0;
 };
 
-bool init_packet_handler();
+void init_packet_handler();
 }
 #endif
 

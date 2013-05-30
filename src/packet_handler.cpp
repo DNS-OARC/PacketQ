@@ -369,12 +369,14 @@ bool Packet::parse_transport(unsigned char *data, int len)
         m_len  = len;
         return parse_application();
     }
+
+    return false;
 }
 
 Parse_dns  *parse_dns    = 0;
 Parse_icmp *parse_icmp   = 0;
 
-bool init_packet_handler()
+void init_packet_handler()
 {
     parse_dns  = new Parse_dns();
     parse_icmp = new Parse_icmp();
@@ -389,6 +391,8 @@ bool Packet::parse_application()
         return parse_dns->parse(*this);
     else if (m_application_protocol == "icmp")
         return parse_icmp->parse(*this);
+
+    return false;
 }
 
 void IP_header_to_table::add_columns(Table &table)

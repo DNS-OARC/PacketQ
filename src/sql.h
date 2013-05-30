@@ -947,6 +947,8 @@ public:
     Accessor() : m_v(0)
     {
     }
+    virtual ~Accessor() { }
+    
     inline char *get_ptr(Row *row) 
     {
         return row->m_data+m_offset;   
@@ -1256,12 +1258,15 @@ class OP : public Token
 
             precedence();
         }
-        ~OP()
+        virtual ~OP()
         {
             for ( int i = 0 ; i < max_param(); i++ )
-                if (m_param[i]    ) delete m_param[i];
-            if (m_left    ) delete m_left;
-            if (m_right   ) delete m_right;
+                if (m_param[i])
+                    delete m_param[i];
+            if (m_left)
+                delete m_left;
+            if (m_right)
+                delete m_right;
         }
         static int max_param()
         {
@@ -1446,7 +1451,6 @@ public:
     }
     void evaluate(Row **rows, Variant &v)
     {
-        char sep='.';
         Variant str,num; 
         m_param[0]->evaluate(rows, str);
         m_param[1]->evaluate(rows, num);
@@ -2195,7 +2199,6 @@ class Bin_op_like : public OP
 	}
 	void regex_from_like(const char* s, char* r, int l)
 	{
-	    char* start = r;
 	    char* stop = r+l-4;
 	    if ( r < stop ) {
 		*r++ = '^';
@@ -2244,7 +2247,7 @@ class Bin_op_like : public OP
 		if (m_err) {
 		    char errstr[RE_LEN];
 		    regerror(m_err, &m_re, errstr, RE_LEN);
-		    printf("Error compiling regex: %s: %s", m_err, errstr);
+		    printf("Error compiling regex: %d: %s", m_err, errstr);
 		}
 	    }
 	    if (m_err) {

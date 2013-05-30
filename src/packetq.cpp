@@ -148,7 +148,6 @@ using namespace se;
 int main (int argc, char * argv []) 
 {
     signal(SIGPIPE, sigproc);
-    int snaplen = -1;
     int port	= 0;
     int limit	= 0;
     int max_conn= 7;
