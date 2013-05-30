@@ -850,9 +850,8 @@ class Table
     void csv(bool format = false);
     void xml();
 
-    // returns index of newly added column
-    int add_column(const char *name, Coltype::Type type, bool hidden=false);
-    int add_column(const char *name, const char *type, bool hidden=false);
+    Column *add_column(const char *name, Coltype::Type type, bool hidden=false);
+    Column *add_column(const char *name, const char *type, bool hidden=false);
     void merge_sort(Ordering_terms &order);
     void per_sort(Ordering_terms &order);
     void group(Ordering_terms &order,Table *source);

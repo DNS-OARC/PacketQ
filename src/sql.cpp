@@ -35,6 +35,7 @@
 #include "reader.h"
 #include <vector>
 #include <unordered_map>
+#include <utility>
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -44,7 +45,7 @@ bool verbose = false;
 
 int g_allocs=0;
 
-int Table::add_column(const char *name, const char *type, bool hidden)
+Column *Table::add_column(const char *name, const char *type, bool hidden)
 {
     if (!type)
         return add_column(name,Coltype::_text, hidden);
@@ -57,7 +58,8 @@ int Table::add_column(const char *name, const char *type, bool hidden)
     else
         return add_column(name,Coltype::_text, hidden);
 }
-int Table::add_column(const char *name, Coltype::Type type, bool hidden)
+
+Column *Table::add_column(const char *name, Coltype::Type type, bool hidden)
 {
     Column *col = new Column(name, type, hidden);
     col->set_offset(Table::align( m_curpos, col->m_def.m_align ));
@@ -69,8 +71,8 @@ int Table::add_column(const char *name, Coltype::Type type, bool hidden)
         *cl++=m_curpos-1;
         *cl=0;
     }
-    m_cols.push_back( col );
-    return m_cols.size() - 1;
+    m_cols.push_back(col);
+    return col;
 }
 
 void Table::delete_row(Row *row)
@@ -1967,8 +1969,27 @@ bool Query::parse()
 Accessor *OP::add_intermediate_column(Table *dest_table, std::string name_suffix, Coltype::Type type)
 {
     std::string name = std::string(get_name()) + name_suffix;
-    int col_index = dest_table->add_column(name.c_str(), type, Column::HIDDEN);
-    return dest_table->m_cols[col_index]->m_accessor;
+    Column *column = dest_table->add_column(name.c_str(), type, Column::HIDDEN);
+    return column->m_accessor;
+}
+
+// return column and index in tables, or 0 for column if column isn't found
+std::pair<Column *, int> lookup_column_in_tables(const std::vector<Table *> &tables,
+                                                  const std::vector<int> &search_order,
+                                                  const char *name)
+{
+    if (strcmp(name, "*") == 0)
+        return std::pair<Column *, int>(0, 0);
+
+    for (auto i = search_order.begin(); i != search_order.end(); ++i)
+    {
+        Table *table = tables[*i];
+        int col_index = table->get_col_index(name);
+        if (col_index >= 0)
+            return std::pair<Column *, int>(table->m_cols[col_index], *i);
+    }
+
+    return std::pair<Column *, int>(0, 0);
 }
 
 OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &search_order, Query &q)
@@ -2003,24 +2024,16 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
 
     if (get_type()==_column)
     {
-        int col_index = -1;
-        if ( cmpi(get_token(),"*") )
-           return 0;
+        auto lookup = lookup_column_in_tables(tables, search_order, get_token());
+        Column *column = lookup.first;
+        m_row_index = lookup.second;
 
-        for (unsigned int i = 0; i < tables.size(); ++i)
-        {
-            col_index = tables[i]->get_col_index(get_token());
-            m_row_index = i;
-            if (col_index >= 0)
-                break;
-        }
+        if (!column)
+            throw Error("Column '%s' not found", get_token());
 
-        if (col_index < 0)
-            throw Error( "Column '%s' not found", get_token() );
+        int offset = column->get_offset();
 
-        m_t = tables[m_row_index]->m_cols[col_index]->m_type;
-
-        int offset = tables[m_row_index]->m_cols[col_index]->get_offset();
+        m_t = column->m_type;
 
         switch(m_t)
         {
@@ -2503,6 +2516,45 @@ void Query::replace_star_column_with_all_columns()
     }
 }
 
+// return any column access ops found in the ops tree
+std::vector<OP *> find_column_ops(std::vector<OP *> ops)
+{
+    std::vector<OP *> res;
+
+    while (!ops.empty())
+    {
+        OP *op = ops.back();
+        ops.pop_back();
+
+        if (op->m_left)
+            ops.push_back(op->m_left);
+        if (op->m_right)
+            ops.push_back(op->m_right);
+        for (int i = 0; i < op->max_param(); ++i)
+            if (op->m_param[i])
+                ops.push_back(op->m_param[i]);
+
+        if (op->get_type() == Token::_column)
+        {
+            bool found = false;
+
+            for (auto i = res.begin(); i != res.end(); ++i)
+            {
+                if ((*i)->get_token() == op->get_token())
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+                res.push_back(op);
+        }
+    }
+
+    return res;
+}
+
 bool Query::has_aggregate_functions()
 {
     // this assumes the ops have been compiled
@@ -2518,43 +2570,83 @@ bool Query::execute(Reader &reader)
     try
     {
         std::vector<Table *> tables;
+        std::vector<int> search_results_last, search_results_first, search_results_only;
+
         if (m_from)
             tables.push_back(m_from);
         tables.push_back(m_result);
-        std::vector<int> search_results_last = { 0, 1 };
-        std::vector<int> search_results_only = { 1 };
+
+        for (int i = 0; i < int(tables.size()); ++i)
+            search_results_last.push_back(i);
+        for (int i = int(tables.size()) - 1; i >= 0; --i)
+            search_results_first.push_back(i);
+
+        search_results_only.push_back(tables.size() - 1);
 
         std::vector<Row *> row_ptrs(tables.size());
         Row **rows = &row_ptrs[0];
-        const int src_i = 0, dest_i = 1;
-
-        replace_star_column_with_all_columns();
 
         std::vector<Accessor *> result_accessors_vector;
-        for (std::vector<OP *>::iterator it=m_result_set.begin();it!=m_result_set.end();it++)
-        {
-            *it = (*it)->compile(tables, search_results_last, *this);
 
-            // add select column to result table
-            OP *op = *it;
-            int col_index = m_result->add_column(op->get_name(), op->ret_type());
-            result_accessors_vector.push_back(m_result->m_cols[col_index]->m_accessor);
+        for (auto i = m_result->m_cols.begin(); i < m_result->m_cols.end(); ++i)
+
+        // compile select
+        replace_star_column_with_all_columns();
+
+        for (auto i = m_result_set.begin(); i != m_result_set.end(); ++i)
+        {
+            *i = (*i)->compile(tables, search_results_last, *this);
+            Column *col = m_result->add_column((*i)->get_name(), (*i)->ret_type());
+            result_accessors_vector.push_back(col->m_accessor);
         }
 
-        Accessor **result_accessors = &result_accessors_vector[0];
-
+        // compile remaining components
         if (m_where)
-        {
             m_where=m_where->compile(tables, search_results_last, *this);
-        }
 
         if (m_having)
-        {
             m_having=m_having->compile(tables, search_results_only, *this);
+
+        if (m_group_by.exist())
+            m_group_by.compile(tables, search_results_last, *this);
+
+        if (m_order_by.exist())
+        {
+            // copy any missing columns to result table as hidden so we can
+            // order by them
+            std::vector<OP *> ops;
+            for (auto i = m_order_by.m_terms.begin(); i != m_order_by.m_terms.end(); ++i)
+                ops.push_back(i->m_op);
+
+
+            std::vector<OP *> column_ops = find_column_ops(ops);
+
+            for (auto i = column_ops.begin(); i != column_ops.end(); ++i)
+            {
+                const char *name = (*i)->get_token();
+                auto lookup = lookup_column_in_tables(tables, search_results_first, name);
+                if (lookup.first and lookup.second < int(tables.size()) - 1) {
+                    // found, but not in result table
+                    OP *copying_op = new OP(**i);
+                    copying_op = copying_op->compile(tables, search_results_last, *this);
+                    m_result_set.push_back(copying_op);
+                    Column *col = m_result->add_column(copying_op->get_name(), copying_op->ret_type(), Column::HIDDEN);
+                    result_accessors_vector.push_back(col->m_accessor);
+                }
+            }
+
+            // we only provide access to result table for "order by"; in order
+            // to make the sort thing work correctly the result table currently
+            // has to be at index 0
+            std::vector<Table *> tables_result_only = { m_result };
+            std::vector<int> tables_result_only_search = { 0 };
+            m_order_by.compile(tables_result_only, tables_result_only_search, *this);
         }
 
-        if ( m_group_by.exist() )
-            m_group_by.compile(tables, search_results_last, *this);
+
+        // execute
+
+        Accessor **result_accessors = &result_accessors_vector[0];
 
         bool aggregate_functions = has_aggregate_functions();
 
@@ -2564,6 +2656,8 @@ bool Query::execute(Reader &reader)
         if (m_from)
         {
             reader.seek_to_start();
+
+            const int src_i = 0, dest_i = tables.size() - 1;
 
             rows[src_i] = m_from->create_row(false);
 
@@ -2648,7 +2742,7 @@ bool Query::execute(Reader &reader)
         }
         else
         {
-            rows[src_i] = 0;
+            const int dest_i = tables.size() - 1;
             rows[dest_i] = m_result->create_row(false);
             process_select(rows, rows[dest_i], result_accessors);
             if (process_where(rows))
@@ -2656,13 +2750,9 @@ bool Query::execute(Reader &reader)
             else
                 rows[dest_i]->del();
         }
+
         if (m_order_by.exist())
-        {
-            std::vector<Table *> tables_result_only = { m_result };
-            std::vector<int> tables_result_only_search = { 0 };
-            m_order_by.compile(tables_result_only, tables_result_only_search, *this);
             m_result->per_sort(m_order_by);
-        }
 
         if (m_limit>=0 && !limiter)
             m_result->limit(m_limit,m_offset);
