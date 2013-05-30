@@ -2414,7 +2414,7 @@ public:
     bool process_having(Row **rows);
     void combine_aggregate_in_select(Row *base_row, Row *other_row);
     void process_aggregate_in_select(Row **rows, Row *dest, Accessor **result_accessors);
-    void replace_star_with_columns();
+    void replace_star_column_with_all_columns();
     bool has_aggregate_functions();
     Table *get_result()                     { return m_result; }
 

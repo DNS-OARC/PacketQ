@@ -2472,12 +2472,12 @@ std::string group_by_key(Ordering_terms &group_by, Row **rows)
     return res;
 }
 
-void Query::replace_star_with_columns()
+void Query::replace_star_column_with_all_columns()
 {
     bool found_star = false;
     for (std::vector<OP *>::iterator it=m_result_set.begin();it!=m_result_set.end();it++)
     {
-        if (strcmp((*it)->get_token(), "*")) {
+        if (strcmp((*it)->get_token(), "*") == 0) {
             found_star = true;
             break;
         }
@@ -2488,10 +2488,11 @@ void Query::replace_star_with_columns()
         m_result_set.clear();
         if (m_from)
         {
-            std::size_t cols = m_from->m_cols.size();
-            m_result_set.resize(cols);
-            for (std::size_t i = 0; i < cols; ++i)
-                m_result_set[i] = new OP( Token(Token::_column, m_from->m_cols[i]->m_name.c_str() ) );
+            for (std::size_t i = 0; i < m_from->m_cols.size(); ++i) {
+                if (!m_from->m_cols[i]->m_hidden) {
+                    m_result_set.push_back(new OP(Token(Token::_column, m_from->m_cols[i]->m_name.c_str())));
+                }
+            }
         }
     }
 }
@@ -2520,6 +2521,8 @@ bool Query::execute(Reader &reader)
         std::vector<Row *> row_ptrs(tables.size());
         Row **rows = &row_ptrs[0];
         const int src_i = 0, dest_i = 1;
+
+        replace_star_column_with_all_columns();
 
         std::vector<Accessor *> result_accessors_vector;
         for (std::vector<OP *>::iterator it=m_result_set.begin();it!=m_result_set.end();it++)
