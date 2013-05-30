@@ -846,7 +846,7 @@ class Table
         return 0;
     }
     void dump();
-    void json();
+    void json(bool trailing_comma);
     void csv(bool format = false);
     void xml();
 

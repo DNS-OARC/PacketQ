@@ -898,7 +898,7 @@ class Page
         g_app->m_query->execute(reader);
         Table *result = g_app->m_query->get_result();
         if (result)
-            result->json();
+            result->json(false);
     }
     Url m_url;
 };

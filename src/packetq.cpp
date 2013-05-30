@@ -327,7 +327,7 @@ int main (int argc, char * argv [])
 	    case( PacketQ::json ):
 		{
 		    if (result)
-			result->json();
+			result->json(i<(qcount-1));
 		}
 		break;
 	}

@@ -776,7 +776,7 @@ void Table::xml()
     g_output.print();
 }
 
-void Table::json()
+void Table::json(bool trailing_comma)
 {
     g_output.reset();
     int cols = (int)m_cols.size();
@@ -797,15 +797,17 @@ void Table::json()
     g_output.add_q_string("head");
     g_output.add_string(": [");
 
+    bool append_comma = false;
     for (int i=0;i<cols;i++)
     {
         if (m_cols[i]->m_hidden)
             continue;
 
-        if (i!=0)
+        if (append_comma)
             g_output.add_string(",\n");
         else
             g_output.add_string("\n");
+	    append_comma = true;
         g_output.add_string("      { ");
         g_output.add_q_string("name");
         g_output.add_string(": ");
@@ -880,7 +882,11 @@ void Table::json()
         g_output.add_string("]");
     }
     g_output.add_string("\n    ]\n");
-    g_output.add_string("  }\n");
+    if (trailing_comma) {
+	g_output.add_string("  },\n");
+    } else {
+	g_output.add_string("  }\n");	
+    }
     g_output.print();
 }
 
