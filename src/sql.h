@@ -1749,7 +1749,9 @@ public:
     }
     void evaluate(Row **rows, Variant &v)
     {
-        double c = count_accessor->get_int(rows[m_row_index]);
+        int c = count_accessor->get_int(rows[m_row_index]);
+        if (c == 0)
+            c = 1;
         double mean = sum_accessor->get_float(rows[m_row_index]) / c;
         double variance = sum_squared_accessor->get_float(rows[m_row_index]) / c - mean * mean;
 
