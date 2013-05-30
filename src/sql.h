@@ -1828,14 +1828,14 @@ public:
     Sum_func_float(const OP &op, Table *dest_table): OP(op)
     {
         m_has_aggregate_function = true;
-        sum_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".sum", Coltype::_int));
+        sum_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".sum", Coltype::_float));
     }
     virtual void evaluate_aggregate_operands(Row **rows)
     {
         Variant p;
         m_param[0]->evaluate(rows, p);
 
-        sum_accessor->set(rows[m_row_index], p.get_int());
+        sum_accessor->set(rows[m_row_index], p.get_float());
     }
     virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
