@@ -729,7 +729,7 @@ class Column
         static const bool HIDDEN = true;
 
         static Coldef m_coldefs[Coltype::_max];
-        Column(const char *name,Coltype::Type type, bool hidden);
+        Column(const char *name,Coltype::Type type, int id, bool hidden);
         ~Column();
         // called at startup by DB
         static void init_defs()
@@ -749,6 +749,7 @@ class Column
         Coldef      &m_def;
         Accessor    *m_accessor;
         bool m_hidden;
+        int m_id;           // numeric id used by parsers for speed
     private:
         int         m_offset;
 };
@@ -797,6 +798,16 @@ class Table
         }
         return -1;
     }
+    int get_column_id(const char *col)
+    {
+        for (auto i = m_cols.begin(); i != m_cols.end(); ++i)
+        {
+            if (cmpii((*i)->m_name, col))
+                return (*i)->m_id;
+        }
+        return -1;
+    }
+
     String_accessor *get_string_accessor(const char *col)
     {
         int i=0;
@@ -850,8 +861,8 @@ class Table
     void csv(bool format = false);
     void xml();
 
-    Column *add_column(const char *name, Coltype::Type type, bool hidden=false);
-    Column *add_column(const char *name, const char *type, bool hidden=false);
+    Column *add_column(const char *name, Coltype::Type type, int id=-1, bool hidden=false);
+    Column *add_column(const char *name, const char *type, int id=-1, bool hidden=false);
     void merge_sort(Ordering_terms &order);
     void per_sort(Ordering_terms &order);
     void group(Ordering_terms &order,Table *source);
@@ -1251,7 +1262,7 @@ class OP : public Token
             for ( int i = 0 ; i < max_param() ; i++ )
                 m_param[i] = 0;
             m_left = m_right = 0;
-            m_row_index   = 0;
+            m_row_index   = -1;
             m_t         = Coltype::_int;
             m_name      = "";
             m_has_aggregate_function = false;
@@ -2362,7 +2373,7 @@ class Ordering_terms
         };
         bool exist()
         {
-            return m_terms.size()>0;
+            return !m_terms.empty();
         }
         void compile(const std::vector<Table *> &tables, const std::vector<int> &search_order, Query &q);
 
@@ -2374,35 +2385,8 @@ class Reader;
 class Query
 {
 public:
-
-    Query(const char *name = 0, const char *query = 0)
+    Query(const char *name, const char *query)
     {
-        init(name, query);
-    };
-    ~Query()
-    {
-        if (m_result) delete m_result;
-        if (m_where ) delete m_where;
-        if (m_having) delete m_having;
-        std::vector<OP *>::iterator it=m_result_set.begin();
-        while ( it != m_result_set.end() )
-        {
-            delete *it;
-            m_result_set.erase(it);
-            it = m_result_set.begin();
-        }
-    }
-    void set_sample(int s) { m_sample = s;    }
-    int  get_sample()      { return m_sample; }
-    void ask( const char *sql, bool first_pass=false )
-    {
-        m_first_pass = first_pass;
-        m_sql      = sql;
-        parse();
-    }
-    void init(const char *name = 0, const char *query = 0)
-    {
-        m_first_pass=  false;
         m_sample    =  0;
         m_where     =  0;
         m_having    =  0;
@@ -2410,19 +2394,23 @@ public:
         m_limit     = -1;
         m_offset    =  0;
         m_result    = new Table(name, query);
-    };
-    bool parse();
-    bool execute(Reader &reader);
-    void process_select(Row **rows, Row *dest, Accessor **result_accessors);
-    bool process_where(Row **rows);
-    bool process_having(Row **rows);
-    void combine_aggregate_in_select(Row *base_row, Row *other_row);
-    void process_aggregate_in_select(Row **rows, Row *dest, Accessor **result_accessors);
-    void replace_star_column_with_all_columns();
-    bool has_aggregate_functions();
-    Table *get_result()                     { return m_result; }
+        m_sql = query;
+    }
 
-    std::vector<OP *>   m_result_set;
+    ~Query()
+    {
+        if (m_result) delete m_result;
+        if (m_where ) delete m_where;
+        if (m_having) delete m_having;
+        for (auto i = m_select.begin(); i != m_select.end(); ++i)
+            delete *i;
+        m_select.clear();
+    }
+
+    void parse();
+    void execute(Reader &reader);
+
+    std::vector<OP *>   m_select;
     OP                  *m_where;
     OP                  *m_having;
     Ordering_terms      m_order_by;
@@ -2430,16 +2418,26 @@ public:
     
     int                 m_limit;
     int                 m_offset;
-   
-    Table               *m_from;
-
-    bool                m_first_pass;
-private:
-  
-    Table               *m_result;
     int                 m_sample;
+
+    std::string         m_from_name;
+    std::vector<int>    m_used_from_column_ids;
+
+    Table               *m_from;
+    Table               *m_result;
+
+private:
+    void replace_star_column_with_all_columns();
+
+    void process_from();
+    void process_select(Row **rows, Row *dest, Accessor **result_accessors);
+    void combine_aggregate_in_select(Row *base_row, Row *other_row);
+    void process_aggregate_in_select(Row **rows, Row *dest, Accessor **result_accessors);
+    bool process_where(Row **rows);
+    bool process_having(Row **rows);
+    bool has_aggregate_functions();
+
     std::string         m_sql;
-    bool                m_aggregate_functions;
 };
 
 };

@@ -39,6 +39,8 @@
 #include <assert.h>
 #include <cctype>
 #include <string>
+#include <vector>
+#include "sql.h"
 
 #define IPPROTO_ICMP 1
 
@@ -111,9 +113,25 @@ public:
     unsigned int       offset; 
 };
 
+class Packet_handler;
+
 class IP_header_to_table
 {
 public:
+    enum {
+        COLUMN_ID,
+        COLUMN_S,
+        COLUMN_US,
+        COLUMN_ETHER_TYPE,
+        COLUMN_PROTOCOL,
+        COLUMN_IP_TTL,
+        COLUMN_SRC_PORT,
+        COLUMN_DST_PORT,
+        COLUMN_SRC_ADDR,
+        COLUMN_DST_ADDR,
+        COLUMN_FRAGMENTS
+    };
+
     IP_header_to_table()
     {
         acc_id         =0;
@@ -129,8 +147,9 @@ public:
         acc_fragments  =0;
     }
 
-    void add_columns(Table &table);
-    void assign(Row *row, IP_header *head);
+    void add_packet_columns(Packet_handler &packet_handler);
+    void on_table_created(Table *table, const std::vector<int> &columns);
+    void assign(Row *row, IP_header *head, const std::vector<int> &columns);
 
 private:
     Int_accessor *acc_id;
@@ -148,9 +167,12 @@ private:
 
 class Packet
 {
-    public:
-    Packet(unsigned char *data,int len,int s, int us, int id, int link_layer_type, const std::string &application_protocol, Row &destination_row)
-        : m_application_protocol(application_protocol), m_destination_row(destination_row)
+public:
+    enum ParseResult {
+        ERROR, OK, NOT_SAMPLED
+    };
+
+    Packet(unsigned char *data,int len,int s, int us, int id, int link_layer_type)
     {
         m_s    = s;
         m_us   = us;
@@ -159,11 +181,12 @@ class Packet
         m_id   = id;
         m_link_layer_type   = link_layer_type;
     }
-    bool parse();
+
+    ParseResult parse(Packet_handler *handler, const std::vector<int> &columns, Row &destination_row, bool sample);
     bool parse_ethernet();
     bool parse_ip(unsigned char *data, int len, int ether_type);
     bool parse_transport(unsigned char *data, int len);
-    bool parse_application();
+
     IP_header       m_ip_header;
     unsigned char  *m_data;
     int             m_len;
@@ -171,22 +194,38 @@ class Packet
     int             m_us;
     int             m_id;
     int             m_link_layer_type;
-    const std::string &m_application_protocol;
-    Row &m_destination_row;
+};
+
+struct Packet_column
+{
+    const char *name;
+    const char *description;
+    int id;
+    Coltype::Type type;
 };
 
 class Packet_handler
 {
-    public:
+public:
     Packet_handler()
     {
     }
-    const char *table_name() const;
-    virtual void add_columns(Table &table)=0;
-    virtual bool parse(Packet &packet)=0;
+
+    Table *create_table(const std::vector<int> &columns);
+
+    // for actual packet handlers to fill in
+    virtual void on_table_created(Table *table, const std::vector<int> &columns) = 0;
+    virtual Packet::ParseResult parse(Packet &packet, const std::vector<int> &columns, Row &destination_row, bool sample) = 0;
+
+    const char *table_name;
+    std::vector<Packet_column> packet_columns;
+
+    void add_packet_column(const char *name, const char *description, Coltype::Type type, int id);
 };
 
-void init_packet_handler();
+void init_packet_handlers();
+Packet_handler *get_packet_handler(std::string table_name);
+
 }
 #endif
 

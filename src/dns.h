@@ -323,17 +323,47 @@ class DNSMessage
 class Parse_dns : public Packet_handler
 {
     public:
-    Parse_dns()
-    {
-        init();
-    }
+    enum {
+        COLUMN_QNAME = IP_header_to_table::COLUMN_FRAGMENTS + 1,
+        COLUMN_ANAME,
+        COLUMN_MSG_ID,
+        COLUMN_MSG_SIZE,
+        COLUMN_OPCODE,
+        COLUMN_RCODE,
+        COLUMN_EXTENDED_RCODE,
+        COLUMN_EDNS_VERSION,
+        COLUMN_Z,
+        COLUMN_UDP_SIZE,
+        COLUMN_QD_COUNT,
+        COLUMN_AN_COUNT,
+        COLUMN_NS_COUNT,
+        COLUMN_AR_COUNT,
+        COLUMN_QTYPE,
+        COLUMN_QCLASS,
+        COLUMN_ATYPE,
+        COLUMN_ACLASS,
+        COLUMN_ATTL,
+        COLUMN_AA,
+        COLUMN_TC,
+        COLUMN_RD,
+        COLUMN_CD,
+        COLUMN_RA,
+        COLUMN_AD,
+        COLUMN_DO,
+        COLUMN_EDNS0,
+        COLUMN_QR,
+    };
 
-    const char *table_name() const;
-    virtual void add_columns(Table &table);
-    bool fill_in_row(DNSMessage &message, Row &destination_Row);
-    virtual bool parse(Packet &packet);
+
+    Parse_dns();
+
+    virtual void on_table_created(Table *table, const std::vector<int> &columns);
+    virtual Packet::ParseResult parse(Packet &packet, const std::vector<int> &columns, Row &destination_row, bool sample);
+
+    void add_packet_columns();
+    void add_lookup_tables();
+
     private:
-    void init();
     Str_conv converter;
 
     IP_header_to_table m_ip_helper;
@@ -373,7 +403,6 @@ class Parse_dns : public Packet_handler
     String_accessor *acc_aname       ;
     String_accessor *acc_src_addr    ;
     String_accessor *acc_dst_addr    ;
-    Table *m_table;
 };
 
 };

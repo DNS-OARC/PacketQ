@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "sql.h"
-#include <zlib.h> 
+#include <zlib.h>
 #include "segzip.h" 
 
 namespace se {

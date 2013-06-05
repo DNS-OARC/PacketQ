@@ -7,8 +7,10 @@
 #include "pcap.h"
 #include "sql.h"
 
-namespace se 
+namespace se
 {
+    class Packet_handler;
+
     // reading packet rows out of a list of files
     class Reader
     {
@@ -23,11 +25,9 @@ namespace se
         void seek_to_start();
 
         bool done();
-        bool read_next(const std::string &application_protocol, Row &destination_row);
+        bool read_next(Packet_handler *handler, const std::vector<int> &columns, Row &destination_row, int skip_packets);
 
     private:
-        void open_pcap(std::string);
-
         std::vector<std::string>::iterator currently_reading;
 
         std::vector<std::string> filenames;

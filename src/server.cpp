@@ -869,7 +869,9 @@ class Page
         
     void query(const char *sql)
     {
-        g_app->m_query->ask(sql);
+        Query query("result", sql);
+
+        query.parse();
 
         std::vector<std::string> in_files;
 
@@ -892,10 +894,9 @@ class Page
 
         Reader reader(in_files, g_app->get_limit());
 
-        g_app->m_query->execute(reader);
-        Table *result = g_app->m_query->get_result();
-        if (result)
-            result->json(false);
+        query.execute(reader);
+        if (query.m_result)
+            query.m_result->json(false);
     }
     Url m_url;
 };

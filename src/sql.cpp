@@ -33,35 +33,37 @@
 #include "packetq.h"
 #include "output.h"
 #include "reader.h"
+#include "packet_handler.h"
 #include <vector>
 #include <unordered_map>
 #include <utility>
 #ifdef WIN32
 #include <windows.h>
 #endif
+
 namespace se {
 
 bool verbose = false;
 
 int g_allocs=0;
 
-Column *Table::add_column(const char *name, const char *type, bool hidden)
+Column *Table::add_column(const char *name, const char *type, int id, bool hidden)
 {
     if (!type)
-        return add_column(name,Coltype::_text, hidden);
+        return add_column(name,Coltype::_text, id, hidden);
     else if (strcmp(type,"bool") == 0)
-        return add_column(name,Coltype::_bool, hidden);
+        return add_column(name,Coltype::_bool, id, hidden);
     else if (strcmp(type,"int") == 0)
-        return add_column(name,Coltype::_int, hidden);
+        return add_column(name,Coltype::_int, id, hidden);
     else if (strcmp(type,"float") == 0)
-        return add_column(name,Coltype::_float, hidden);
+        return add_column(name,Coltype::_float, id, hidden);
     else
-        return add_column(name,Coltype::_text, hidden);
+        return add_column(name,Coltype::_text, id, hidden);
 }
 
-Column *Table::add_column(const char *name, Coltype::Type type, bool hidden)
+Column *Table::add_column(const char *name, Coltype::Type type, int id, bool hidden)
 {
-    Column *col = new Column(name, type, hidden);
+    Column *col = new Column(name, type, id, hidden);
     col->set_offset(Table::align( m_curpos, col->m_def.m_align ));
     m_curpos = col->get_offset() + col->m_def.m_size;
     if (type==Coltype::_text)
@@ -1143,7 +1145,7 @@ class Parser
                 return false;
 
             it++;
-            q.set_sample(sample);
+            q.m_sample = sample;
             i_iter = it;
             return true;
         }
@@ -1241,7 +1243,7 @@ class Parser
                 OP *op;
                 if (op = get_result_column(it))
                 {
-                    q.m_result_set.push_back(op);
+                    q.m_select.push_back(op);
                 }
                 else
                 {
@@ -1321,7 +1323,7 @@ class Parser
             it++;
             if (!is (it,Token::_label))
                 return false;
-            q.get_result()->m_name = it->get_token();
+            q.m_result->m_name = it->get_token();
             it++;
             return true;
         }
@@ -1409,27 +1411,20 @@ class Parser
 
         bool get_from(Query &q, Lit &it)
         {
-            if (!is (it,Token::_label,"from"))
+            if (!is(it, Token::_label, "from"))
                 return false;
             it++;
             if (it->get_type() == Token::_label)
             {
-                Table *t=0;
-                if (t = g_db.get_table(it->get_token()))
+                const char *name = it->get_token();
+                if (get_packet_handler(name))
                 {
-                    q.m_from= t;
+                    q.m_from_name = name;
                     it++;
                     return true;
                 }
                 else
-                {
-                    if (q.m_first_pass)
-                    {
-                        it++;
-                        return true;
-                    }
-                    throw Error("Error in from statement cannot find table %s !",it->get_token());
-                }
+                    throw Error("Error in from statement, table '%s' not found", name);
             }
             throw Error("Error in from statement");
         }
@@ -1940,24 +1935,20 @@ public:
     Num_state num_state;
 };
 
-bool Query::parse()
+void Query::parse()
 {
     Parser p;
     Lexer l(p);
     l.lex(m_sql.c_str());
 //		p.dump();
     if (!p.analyze(*this))
-    {
         throw Error("error parsing select statement");
-        return false;
-    }
-    return true;
 }
 
 Accessor *OP::add_intermediate_column(Table *dest_table, std::string name_suffix, Coltype::Type type)
 {
     std::string name = std::string(get_name()) + name_suffix;
-    Column *column = dest_table->add_column(name.c_str(), type, Column::HIDDEN);
+    Column *column = dest_table->add_column(name.c_str(), type, -1, Column::HIDDEN);
     return column->m_accessor;
 }
 
@@ -2397,114 +2388,8 @@ void OP::evaluate(Row **rows, Variant &v)
     return;
 }
 
-bool Query::process_where(Row **rows)
-{
-    if (!m_where)
-        return true;
-
-    Variant v;
-    m_where->evaluate(rows, v);
-    return v.get_bool();
-}
-
-bool Query::process_having(Row **rows)
-{
-    if (!m_having)
-        return true;
-
-    Variant v;
-    m_having->evaluate(rows, v);
-    return v.get_bool();
-}
-
-void Query::process_select(Row **rows, Row *dest, Accessor **result_accessors)
-{
-    for (unsigned int i=0;i<m_result_set.size();i++)
-    {
-        OP *op = m_result_set[i];
-        if (!op)
-            continue;
-
-        if (op->m_has_aggregate_function)
-        {
-            // defer evaluating aggregate functions, just eval their operands
-            op->evaluate_aggregate_operands(rows);
-        }
-        else
-        {
-            Variant v;
-            op->evaluate(rows, v);
-            result_accessors[i]->set(dest, v);
-        }
-    }
-}
-
-void Query::combine_aggregate_in_select(Row *base_row, Row *other_row)
-{
-    for (unsigned int i=0;i<m_result_set.size();i++)
-    {
-        OP *op = m_result_set[i];
-        if (op && op->m_has_aggregate_function)
-            op->combine_aggregate(base_row, other_row);
-    }
-}
-
-void Query::process_aggregate_in_select(Row **rows, Row *dest, Accessor **result_accessors)
-{
-    for (unsigned int i=0;i<m_result_set.size();i++)
-    {
-        OP *op = m_result_set[i];
-        if (op && op->m_has_aggregate_function)
-        {
-            Variant v;
-            op->evaluate(rows, v);
-            result_accessors[i]->set(dest, v);
-        }
-    }
-}
-
-std::string group_by_key(Ordering_terms &group_by, Row **rows)
-{
-    std::string res = "";
-
-    for (std::vector<Ordering_terms::OP_dir>::iterator it=group_by.m_terms.begin(); it != group_by.m_terms.end(); it++)
-    {
-        Variant v;
-        char separator = '\0';
-        it->m_op->evaluate(rows, v);
-        res += v.get_string();
-        res += separator;
-    }
-
-    return res;
-}
-
-void Query::replace_star_column_with_all_columns()
-{
-    bool found_star = false;
-    for (std::vector<OP *>::iterator it=m_result_set.begin();it!=m_result_set.end();it++)
-    {
-        if (strcmp((*it)->get_token(), "*") == 0) {
-            found_star = true;
-            break;
-        }
-    }
-
-    if (found_star)
-    {
-        m_result_set.clear();
-        if (m_from)
-        {
-            for (std::size_t i = 0; i < m_from->m_cols.size(); ++i) {
-                if (!m_from->m_cols[i]->m_hidden) {
-                    m_result_set.push_back(new OP(Token(Token::_column, m_from->m_cols[i]->m_name.c_str())));
-                }
-            }
-        }
-    }
-}
-
-// return any column access ops found in the ops tree
+// return any column access ops found in given list of op trees - they don't
+// have to be compiled beforehand
 std::vector<OP *> find_column_ops(std::vector<OP *> ops)
 {
     std::vector<OP *> res;
@@ -2543,222 +2428,346 @@ std::vector<OP *> find_column_ops(std::vector<OP *> ops)
     return res;
 }
 
+void Query::replace_star_column_with_all_columns()
+{
+    bool found_star = false;
+    for (std::vector<OP *>::iterator i = m_select.begin(); i != m_select.end(); ++i)
+    {
+        if (strcmp((*i)->get_token(), "*") == 0) {
+            found_star = true;
+            break;
+        }
+    }
+
+    if (found_star)
+    {
+        for (auto i = m_select.begin(); i != m_select.end(); ++i)
+            delete *i;
+        m_select.clear();
+
+        if (!m_from_name.empty())
+        {
+            Packet_handler *handler = get_packet_handler(m_from_name);
+
+            for (auto i = handler->packet_columns.begin(); i != handler->packet_columns.end(); ++i)
+                m_select.push_back(new OP(Token(Token::_column, i->name)));
+        }
+    }
+}
+
+void Query::process_from()
+{
+    replace_star_column_with_all_columns();
+
+    if (m_from_name.empty())
+        return;
+
+    std::vector<OP *> all_ops;
+    all_ops.insert(all_ops.end(), m_select.begin(), m_select.end());
+    if (m_where)
+        all_ops.push_back(m_where);
+    // skip m_having, it can't access source columns
+    for (auto i = m_order_by.m_terms.begin(); i != m_order_by.m_terms.end(); ++i)
+        all_ops.push_back(i->m_op);
+    for (auto i = m_group_by.m_terms.begin(); i != m_group_by.m_terms.end(); ++i)
+        all_ops.push_back(i->m_op);
+    
+    auto used_columns = find_column_ops(all_ops);
+
+    // add from table with used columns
+    Packet_handler *handler = get_packet_handler(m_from_name);
+    for (auto j = handler->packet_columns.begin(); j != handler->packet_columns.end(); ++j)
+        for (auto i = used_columns.begin(); i != used_columns.end(); ++i)
+            if (cmpi(j->name, (*i)->get_token()))
+                m_used_from_column_ids.push_back(j->id);
+
+    m_from = handler->create_table(m_used_from_column_ids);
+}
+
+void Query::process_select(Row **rows, Row *dest, Accessor **result_accessors)
+{
+    for (unsigned int i=0;i<m_select.size();i++)
+    {
+        OP *op = m_select[i];
+        if (!op)
+            continue;
+
+        if (op->m_has_aggregate_function)
+        {
+            // defer evaluating aggregate functions, just eval their operands
+            op->evaluate_aggregate_operands(rows);
+        }
+        else
+        {
+            Variant v;
+            op->evaluate(rows, v);
+            result_accessors[i]->set(dest, v);
+        }
+    }
+}
+
+void Query::combine_aggregate_in_select(Row *base_row, Row *other_row)
+{
+    for (unsigned int i=0;i<m_select.size();i++)
+    {
+        OP *op = m_select[i];
+        if (op && op->m_has_aggregate_function)
+            op->combine_aggregate(base_row, other_row);
+    }
+}
+
+void Query::process_aggregate_in_select(Row **rows, Row *dest, Accessor **result_accessors)
+{
+    for (unsigned int i=0;i<m_select.size();i++)
+    {
+        OP *op = m_select[i];
+        if (op && op->m_has_aggregate_function)
+        {
+            Variant v;
+            op->evaluate(rows, v);
+            result_accessors[i]->set(dest, v);
+        }
+    }
+}
+
+bool Query::process_where(Row **rows)
+{
+    if (!m_where)
+        return true;
+
+    Variant v;
+    m_where->evaluate(rows, v);
+    return v.get_bool();
+}
+
+bool Query::process_having(Row **rows)
+{
+    if (!m_having)
+        return true;
+
+    Variant v;
+    m_having->evaluate(rows, v);
+    return v.get_bool();
+}
+
+std::string process_group_by_key(Ordering_terms &group_by, Row **rows)
+{
+    std::string res("");
+
+    for (std::vector<Ordering_terms::OP_dir>::iterator it=group_by.m_terms.begin(); it != group_by.m_terms.end(); it++)
+    {
+        Variant v;
+        char separator = '\0';
+        it->m_op->evaluate(rows, v);
+        res += v.get_string();
+        res += separator;
+    }
+
+    return res;
+}
+
 bool Query::has_aggregate_functions()
 {
     // this assumes the ops have been compiled
-    for (std::vector<OP *>::iterator it=m_result_set.begin();it!=m_result_set.end();it++)
+    for (std::vector<OP *>::iterator it=m_select.begin();it!=m_select.end();it++)
         if ((*it)->m_has_aggregate_function)
             return true;
 
     return false;
 }
 
-bool Query::execute(Reader &reader)
+void Query::execute(Reader &reader)
 {
-    try
+    std::vector<Table *> tables;
+    std::vector<int> search_results_last, search_results_first, search_results_only;
+
+    // set up tables
+    process_from();
+
+    if (m_from)
+        tables.push_back(m_from);
+    tables.push_back(m_result);
+
+    for (int i = 0; i < int(tables.size()); ++i)
+        search_results_last.push_back(i);
+    for (int i = int(tables.size()) - 1; i >= 0; --i)
+        search_results_first.push_back(i);
+
+    search_results_only.push_back(tables.size() - 1);
+
+    std::vector<Row *> row_ptrs(tables.size());
+    Row **rows = &row_ptrs[0];
+
+    std::vector<Accessor *> result_accessors_vector;
+
+    // compile
+    for (auto i = m_select.begin(); i != m_select.end(); ++i)
     {
-        std::vector<Table *> tables;
-        std::vector<int> search_results_last, search_results_first, search_results_only;
+        *i = (*i)->compile(tables, search_results_last, *this);
+        Column *col = m_result->add_column((*i)->get_name(), (*i)->ret_type());
+        result_accessors_vector.push_back(col->m_accessor);
+    }
 
-        if (m_from)
-            tables.push_back(m_from);
-        tables.push_back(m_result);
+    if (m_where)
+        m_where=m_where->compile(tables, search_results_last, *this);
 
-        for (int i = 0; i < int(tables.size()); ++i)
-            search_results_last.push_back(i);
-        for (int i = int(tables.size()) - 1; i >= 0; --i)
-            search_results_first.push_back(i);
+    if (m_having)
+        m_having=m_having->compile(tables, search_results_only, *this);
 
-        search_results_only.push_back(tables.size() - 1);
+    if (m_group_by.exist())
+        m_group_by.compile(tables, search_results_last, *this);
 
-        std::vector<Row *> row_ptrs(tables.size());
-        Row **rows = &row_ptrs[0];
+    if (m_order_by.exist())
+    {
+        // copy any missing columns to result table as hidden so we can
+        // order by them
+        std::vector<OP *> ops;
+        for (auto i = m_order_by.m_terms.begin(); i != m_order_by.m_terms.end(); ++i)
+            ops.push_back(i->m_op);
 
-        std::vector<Accessor *> result_accessors_vector;
+        std::vector<OP *> column_ops = find_column_ops(ops);
 
-        for (auto i = m_result->m_cols.begin(); i < m_result->m_cols.end(); ++i)
-
-        // compile select
-        replace_star_column_with_all_columns();
-
-        for (auto i = m_result_set.begin(); i != m_result_set.end(); ++i)
+        for (auto i = column_ops.begin(); i != column_ops.end(); ++i)
         {
-            *i = (*i)->compile(tables, search_results_last, *this);
-            Column *col = m_result->add_column((*i)->get_name(), (*i)->ret_type());
-            result_accessors_vector.push_back(col->m_accessor);
-        }
-
-        // compile remaining components
-        if (m_where)
-            m_where=m_where->compile(tables, search_results_last, *this);
-
-        if (m_having)
-            m_having=m_having->compile(tables, search_results_only, *this);
-
-        if (m_group_by.exist())
-            m_group_by.compile(tables, search_results_last, *this);
-
-        if (m_order_by.exist())
-        {
-            // copy any missing columns to result table as hidden so we can
-            // order by them
-            std::vector<OP *> ops;
-            for (auto i = m_order_by.m_terms.begin(); i != m_order_by.m_terms.end(); ++i)
-                ops.push_back(i->m_op);
-
-
-            std::vector<OP *> column_ops = find_column_ops(ops);
-
-            for (auto i = column_ops.begin(); i != column_ops.end(); ++i)
-            {
-                const char *name = (*i)->get_token();
-                auto lookup = lookup_column_in_tables(tables, search_results_first, name);
-                if (lookup.first and lookup.second < int(tables.size()) - 1) {
-                    // found, but not in result table
-                    OP *copying_op = new OP(**i);
-                    copying_op = copying_op->compile(tables, search_results_last, *this);
-                    m_result_set.push_back(copying_op);
-                    Column *col = m_result->add_column(copying_op->get_name(), copying_op->ret_type(), Column::HIDDEN);
-                    result_accessors_vector.push_back(col->m_accessor);
-                }
+            const char *name = (*i)->get_token();
+            auto lookup = lookup_column_in_tables(tables, search_results_first, name);
+            if (lookup.first and lookup.second < int(tables.size()) - 1) {
+                // found, but not in result table
+                OP *copying_op = new OP(**i);
+                copying_op = copying_op->compile(tables, search_results_last, *this);
+                m_select.push_back(copying_op);
+                Column *col = m_result->add_column(copying_op->get_name(), copying_op->ret_type(), -1, Column::HIDDEN);
+                result_accessors_vector.push_back(col->m_accessor);
             }
-
-            // we only provide access to result table for "order by"; in order
-            // to make the sort thing work correctly the result table currently
-            // has to be at index 0
-            std::vector<Table *> tables_result_only = { m_result };
-            std::vector<int> tables_result_only_search = { 0 };
-            m_order_by.compile(tables_result_only, tables_result_only_search, *this);
         }
 
+        // we only provide access to result table for "order by"; in order
+        // to make the sort thing work correctly the result table currently
+        // has to be at index 0
+        std::vector<Table *> tables_result_only = { m_result };
+        std::vector<int> tables_result_only_search = { 0 };
+        m_order_by.compile(tables_result_only, tables_result_only_search, *this);
+    }
 
-        // execute
+    // execute
 
-        Accessor **result_accessors = &result_accessors_vector[0];
+    Accessor **result_accessors = &result_accessors_vector[0];
 
-        bool aggregate_functions = has_aggregate_functions();
+    bool aggregate_functions = has_aggregate_functions();
 
-        int count=0;
-        bool limiter = m_order_by.exist()==false && m_group_by.exist()==false && !aggregate_functions && m_limit>=0;
+    int count=0;
+    bool limiter = !m_order_by.exist() && !m_group_by.exist() && !aggregate_functions && m_limit>=0;
 
-        if (m_from)
+    if (m_from)
+    {
+        bool first_row = true;
+        Packet_handler *handler = get_packet_handler(m_from_name);
+
+        reader.seek_to_start();
+
+        const int src_i = 0, dest_i = tables.size() - 1;
+
+        rows[src_i] = m_from->create_row(false);
+
+        if (m_group_by.exist() || aggregate_functions)
         {
-            reader.seek_to_start();
+            std::unordered_map<std::string, Row*> groups;
 
-            const int src_i = 0, dest_i = tables.size() - 1;
-
-            rows[src_i] = m_from->create_row(false);
-
-            if (m_group_by.exist() || aggregate_functions)
+            rows[dest_i] = 0;
+            while (reader.read_next(handler, m_used_from_column_ids, rows[0]->cleared(), first_row or m_sample == 0 ? 0 : m_sample - 1))
             {
-                std::unordered_map<std::string, Row*> groups;
-
-                rows[dest_i] = 0;
-                while (reader.read_next(m_from->m_name, rows[0]->cleared()))
-                {
-                    // fill in groups
-                    if (rows[dest_i])
-                        rows[dest_i]->cleared();
-                    else
-                        rows[dest_i] = m_result->create_row(false);
-
-                    process_select(rows, rows[dest_i], result_accessors);
-                    if (process_where(rows))
-                    {
-                        std::string key = group_by_key(m_group_by, rows);
-                        auto existing = groups.find(key);
-                        if (existing != groups.end())
-                        {
-                            combine_aggregate_in_select(existing->second, rows[dest_i]);
-                        }
-                        else
-                        {
-                            groups[key] = rows[dest_i];
-                            rows[dest_i] = 0;
-                        }
-                    }
-                }
+                // fill in groups
                 if (rows[dest_i])
-                    rows[dest_i]->del();
+                    rows[dest_i]->cleared();
+                else
+                    rows[dest_i] = m_result->create_row(false);
 
-                // put groups into result
-                for (auto i = groups.begin(); i != groups.end(); ++i)
+                process_select(rows, rows[dest_i], result_accessors);
+                if (process_where(rows))
                 {
-                    rows[dest_i] = i->second;
-                    // propagate the aggregate results
-                    process_aggregate_in_select(rows, rows[dest_i], result_accessors);
-                    if (process_having(rows))
-                        m_result->commit_row(rows[dest_i]);
-                    else
-                        rows[dest_i]->del();
-                }
-            }
-            else
-            {
-                rows[dest_i] = m_result->create_row(false);
-                while (reader.read_next(m_from->m_name, rows[src_i]->cleared()))
-                {
-                    // fill in result
-                    process_select(rows, rows[dest_i], result_accessors);
-                    if (process_where(rows))
+                    std::string key = process_group_by_key(m_group_by, rows);
+                    auto existing = groups.find(key);
+                    if (existing != groups.end())
                     {
-                        bool commit = true;
-                        if (limiter)
-                        {
-                            int l = count++;
-                            if (m_offset>0)
-                                l-=m_offset;
-                            if (m_limit>=0 && l>=m_limit)
-                            {
-                                break;
-                            }
-                            if (l<0)
-                                commit=false;
-                        }
-
-                        if (commit)
-                        {
-                            m_result->commit_row(rows[dest_i]);
-                            rows[dest_i] = m_result->create_row(false);
-                        }
+                        combine_aggregate_in_select(existing->second, rows[dest_i]);
+                    }
+                    else
+                    {
+                        groups[key] = rows[dest_i];
+                        rows[dest_i] = 0;
                     }
                 }
-                rows[dest_i]->del();
-            }
 
-            rows[src_i]->del();
+                first_row = false;
+            }
+            if (rows[dest_i])
+                rows[dest_i]->del();
+
+            // put groups into result
+            for (auto i = groups.begin(); i != groups.end(); ++i)
+            {
+                rows[dest_i] = i->second;
+                // propagate the aggregate results through the evaluation tree
+                process_aggregate_in_select(rows, rows[dest_i], result_accessors);
+                if (process_having(rows))
+                    m_result->commit_row(rows[dest_i]);
+                else
+                    rows[dest_i]->del();
+            }
         }
         else
         {
-            const int dest_i = tables.size() - 1;
             rows[dest_i] = m_result->create_row(false);
-            process_select(rows, rows[dest_i], result_accessors);
-            if (process_where(rows))
-                m_result->commit_row(rows[dest_i]);
-            else
-                rows[dest_i]->del();
+            while (reader.read_next(handler, m_used_from_column_ids, rows[src_i]->cleared(), first_row or m_sample == 0 ? 0 : m_sample - 1))
+            {
+                // fill in result
+                process_select(rows, rows[dest_i], result_accessors);
+                if (process_where(rows))
+                {
+                    bool commit = true;
+                    if (limiter)
+                    {
+                        int l = count++;
+                        if (m_offset>0)
+                            l-=m_offset;
+                        if (m_limit>=0 && l>=m_limit)
+                            break;
+
+                        if (l<0)
+                            commit=false;
+                    }
+
+                    if (commit)
+                    {
+                        m_result->commit_row(rows[dest_i]);
+                        rows[dest_i] = m_result->create_row(false);
+                    }
+                }
+
+                first_row = false;
+            }
+            rows[dest_i]->del();
         }
 
-        if (m_order_by.exist())
-            m_result->per_sort(m_order_by);
+        rows[src_i]->del();
+    }
+    else
+    {
+        const int dest_i = tables.size() - 1;
+        rows[dest_i] = m_result->create_row(false);
+        process_select(rows, rows[dest_i], result_accessors);
+        if (process_where(rows))
+            m_result->commit_row(rows[dest_i]);
+        else
+            rows[dest_i]->del();
+    }
 
-        if (m_limit>=0 && !limiter)
-            m_result->limit(m_limit,m_offset);
-        //m_from <-- tabell
-    }
-    catch(Error &e)
-    {
-        printf("Error: %s\n",e.m_err.c_str());
-        delete m_result;
-        m_result=0;
-        fflush(stdout);
-    }
-    catch(...)
-    {
-        printf("Error: an unknown error has occured !\n");
-        fflush(stdout);
-    }
-    return true;
+    if (m_order_by.exist())
+        m_result->per_sort(m_order_by);
+
+    if (m_limit>=0 && !limiter)
+        m_result->limit(m_limit,m_offset);
+    //m_from <-- tabell
 }
 
 DB::DB()
@@ -2803,7 +2812,7 @@ Table *DB::create_table(const char *i_name)
  
     return t;
 }
-Column::Column(const char *name,Coltype::Type type, bool hidden): m_name(name) , m_type(type), m_def(Column::m_coldefs[type])
+Column::Column(const char *name,Coltype::Type type, int id, bool hidden): m_name(name), m_type(type), m_def(Column::m_coldefs[type]), m_id(id)
 {
     m_hidden = hidden;
     if (m_type==Coltype::_int)
