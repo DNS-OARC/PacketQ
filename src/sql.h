@@ -42,11 +42,13 @@
 #include <set>
 #include <map>
 #include <algorithm>
+#include <functional>
 #include <stdexcept>
 #include <sys/types.h>
 #include <regex.h>
 #include "string.h"
 #include "stdarg.h"
+#include "MurmurHash3.h"
 
 
 #ifdef WIN32
@@ -56,6 +58,13 @@
 #define RE_LEN	64
 
 namespace se {
+
+inline std::size_t hash_bytes(const char *bytes, int len)
+{
+    uint32_t result = 0;
+    MurmurHash3_x86_32(bytes, len, 0, &result);
+    return result;
+}
 
 
 extern int g_allocs;
@@ -120,73 +129,26 @@ class Bool_accessor;
 class Float_accessor;
 
 
-
-
 class Variant
 {
-    public:
+public:
     Variant()
     {
-        m_int     = 0;
+        m_val.m_int     = 0;
         m_type    = Coltype::_int;
         m_free_str = 0;
     }
-    Variant(const Variant &var)
-    {
-        m_free_str = 0;
-        switch(var.m_type)
-        {
-            case(Coltype::_int):    m_int = var.m_int;          break;
-            case(Coltype::_float):  m_float = var.m_float;      break;
-            case(Coltype::_bool):   m_int = var.m_int;          break;
-            case(Coltype::_text):   
-                if (var.m_free_str)
-                    set_copy(var.m_str);
-                else
-                    m_str = var.m_str;    
-            break;
-        }
-    }
-    Variant &operator = (const Variant &rhs)
-    {
-        m_free_str = 0;
-        m_type = rhs.m_type;
-        switch(rhs.m_type)
-        {
-            case(Coltype::_int):    m_int = rhs.m_int;          break;
-            case(Coltype::_float):  m_float = rhs.m_float;      break;
-            case(Coltype::_bool):   m_int = rhs.m_int;          break;
-            case(Coltype::_text):   
-                if (rhs.m_free_str)
-                    set_copy(rhs.m_str);
-                else
-                    m_str = rhs.m_str;    
-            break;
-        }
-        return *this;
-    }
+
     Variant(int val)
     {
-        m_int = val;
+        m_val.m_int = val;
         m_type = Coltype::_int;
         m_free_str = 0;
     }
     Variant(double val)
     {
-        m_float = val;
+        m_val.m_float = val;
         m_type = Coltype::_float;
-        m_free_str = 0;
-    }
-    ~Variant()
-    {
-        if (m_type == Coltype::_text)
-            freestr();
-    }
-
-    inline void freestr()
-    {
-        if (m_free_str)
-            delete []m_free_str;
         m_free_str = 0;
     }
 
@@ -199,6 +161,58 @@ class Variant
         else
             set_no_copy(val);
     }
+
+    Variant(const Variant &other)
+    {
+        m_type = other.m_type;
+        m_free_str = 0;
+        switch(other.m_type)
+        {
+            case(Coltype::_int):    m_val.m_int = other.m_val.m_int;          break;
+            case(Coltype::_float):  m_val.m_float = other.m_val.m_float;      break;
+            case(Coltype::_bool):   m_val.m_int = other.m_val.m_int;          break;
+            case(Coltype::_text):   
+                if (other.m_free_str)
+                    set_copy(other.m_val.m_str);
+                else
+                    m_val.m_str = other.m_val.m_str;
+            break;
+        }
+    }
+
+    // move constructor
+    Variant(Variant &&other) : Variant()
+    {
+        swap(*this, other);
+    }
+
+    ~Variant()
+    {
+        if (m_type == Coltype::_text)
+            freestr();
+    }
+
+    Variant &operator = (Variant other)
+    {
+        swap(*this, other);     // copy and swap idiom
+        return *this;
+    }
+
+    friend void swap(Variant& first, Variant& second)
+    {
+        using std::swap;
+        swap(first.m_type, second.m_type);
+        swap(first.m_val, second.m_val);
+        swap(first.m_free_str, second.m_free_str);
+    }
+
+    inline void freestr()
+    {
+        if (m_free_str)
+            delete []m_free_str;
+        m_free_str = 0;
+    }
+
     void set_copy(const char *val)
     {
         freestr();
@@ -206,19 +220,19 @@ class Variant
         g_allocs++;
         char *str = new char[strlen(val)+1];
         strcpy(str,val);
-        m_str      = str;
+        m_val.m_str = str;
         m_free_str = str;
     }
     void set_no_copy(const char *val)
     {
         m_type = Coltype::_text;
-        m_str = (char *)val;
+        m_val.m_str = (char *)val;
     }
-    void set_no_copy_free(const char *val)
+    void set_no_copy_free(const char *val) // take over responsibility of freeing without copying
     {
         m_type      = Coltype::_text;
-        m_str       = (char *)val;
-        m_free_str  = m_str;
+        m_val.m_str = (char *)val;
+        m_free_str  = (char *)val;
     }
 
     inline void make_float_valid() const  
@@ -228,9 +242,9 @@ class Variant
 
         switch(m_type)
         {
-            case(Coltype::_int):   m_float = (double)m_int; break;
-            case(Coltype::_bool):  m_float = (double)m_int; break;
-            case(Coltype::_text):  m_float = atof(m_str); break;
+            case(Coltype::_int):   m_val.m_float = (double)m_val.m_int; break;
+            case(Coltype::_bool):  m_val.m_float = (double)m_val.m_int; break;
+            case(Coltype::_text):  m_val.m_float = atof(m_val.m_str); break;
         }
         m_type = Coltype::_float;
     }
@@ -247,9 +261,9 @@ class Variant
 
         switch(m_type)
         {
-            case(Coltype::_float):  m_int = (int)m_float; break;
-            case(Coltype::_text):   m_int = atoi(m_str); break;
-            case(Coltype::_int):    m_int = -(0-(m_int>>31)); break;
+            case(Coltype::_float):  m_val.m_int = (int)m_val.m_float; break;
+            case(Coltype::_text):   m_val.m_int = atoi(m_val.m_str); break;
+            case(Coltype::_int):    m_val.m_int = -(0-(m_val.m_int>>31)); break;
         }
         m_type = Coltype::_int;
     }
@@ -261,8 +275,8 @@ class Variant
 
         switch(m_type)
         {
-            case(Coltype::_float):  m_int = (int)m_float; break;
-            case(Coltype::_text):   m_int = atoi(m_str); break;
+            case(Coltype::_float):  m_val.m_int = (int)m_val.m_float; break;
+            case(Coltype::_text):   m_val.m_int = atoi(m_val.m_str); break;
         }
         m_type = Coltype::_int;
     }
@@ -275,9 +289,9 @@ class Variant
         char buffer[64];
         switch(m_type)
         {
-            case(Coltype::_float):  snprintf(buffer,sizeof(buffer),"%f",m_float); break;
-            case(Coltype::_int):    snprintf(buffer,sizeof(buffer),"%d",m_int  ); break;
-            case(Coltype::_bool):   snprintf(buffer,sizeof(buffer),"%d",m_int  ); break;
+            case(Coltype::_float):  snprintf(buffer,sizeof(buffer),"%f",m_val.m_float); break;
+            case(Coltype::_int):    snprintf(buffer,sizeof(buffer),"%d",m_val.m_int); break;
+            case(Coltype::_bool):   snprintf(buffer,sizeof(buffer),"%d",m_val.m_int); break;
         }
         const_cast<Variant *>(this)->set_copy(buffer);
     }
@@ -285,25 +299,25 @@ class Variant
     int get_int() const
     {
         make_int_valid();
-        return m_int;
+        return m_val.m_int;
     }
 
     double get_float() const
     {
         make_float_valid();
-        return m_float;
+        return m_val.m_float;
     }
 
     const char *get_string() const 
     {
         make_string_valid();
-        return m_str;
+        return m_val.m_str;
     }
 
     bool get_bool() const
     {
         make_bool_valid();
-        return m_int!=0;
+        return m_val.m_int != 0;
     }
     inline int cmp(const Variant &rhs) const
     {
@@ -312,13 +326,13 @@ class Variant
             case(Coltype::_float):  
                 {
                 double r = rhs.get_float();
-                if (m_float<r)
+                if (m_val.m_float<r)
                     return -1;
-                return m_float>r?1:0;
+                return m_val.m_float>r?1:0;
                 }
-            case(Coltype::_int):    return m_int-rhs.get_int();
-            case(Coltype::_bool):   return m_int-rhs.get_int();
-            case(Coltype::_text):   return strcmp(m_str, rhs.get_string());
+            case(Coltype::_int):    return m_val.m_int-rhs.get_int();
+            case(Coltype::_bool):   return m_val.m_int-rhs.get_int();
+            case(Coltype::_text):   return strcmp(m_val.m_str, rhs.get_string());
         }
         return 0;
     }
@@ -327,10 +341,10 @@ class Variant
     {
         switch(m_type)
         {
-            case(Coltype::_float):  return m_float<rhs.get_float();
-            case(Coltype::_int):    return m_int<rhs.get_int();
-            case(Coltype::_bool):   return m_int<rhs.get_int();
-            case(Coltype::_text):   return strcmp(m_str, rhs.get_string())<0;
+            case(Coltype::_float):  return m_val.m_float < rhs.get_float();
+            case(Coltype::_int):    return m_val.m_int < rhs.get_int();
+            case(Coltype::_bool):   return m_val.m_int < rhs.get_int();
+            case(Coltype::_text):   return strcmp(m_val.m_str, rhs.get_string())<0;
         }
         return 0;
     }
@@ -338,24 +352,35 @@ class Variant
     {
         switch(m_type)
         {
-            case(Coltype::_float):  return m_float==rhs.get_float();
-            case(Coltype::_int):    return m_int==rhs.get_int();
-            case(Coltype::_bool):   return m_int==rhs.get_int();
-            case(Coltype::_text):   return strcmp(m_str, rhs.get_string())==0;
+            case(Coltype::_float):  return m_val.m_float == rhs.get_float();
+            case(Coltype::_int):    return m_val.m_int == rhs.get_int();
+            case(Coltype::_bool):   return m_val.m_int == rhs.get_int();
+            case(Coltype::_text):   return strcmp(m_val.m_str, rhs.get_string())==0;
         }
         return false;
     }
 
-    private:
-        union {
-            mutable const char *m_str;
-            mutable int  m_int;
-            mutable double  m_float;
-        };
-        mutable const char *m_free_str;
-        mutable Coltype::Type m_type;
-};
+    inline std::size_t hash() const
+    {
+        switch(m_type)
+        {
+        case(Coltype::_float):  return std::hash<float>()(m_val.m_float);
+        case(Coltype::_int):    return std::hash<int>()(m_val.m_int);
+        case(Coltype::_bool):   return std::hash<bool>()(m_val.m_int);
+        case(Coltype::_text):   return hash_bytes(m_val.m_str, strlen(m_val.m_str));
+        }
+        return 0;
+    }
 
+    mutable Coltype::Type m_type;
+private:
+    union VariantUnion {
+        mutable const char *m_str;
+        mutable int m_int;
+        mutable double m_float;
+    } m_val;
+    mutable const char *m_free_str;
+};
 
 inline std::string lower(const char *s)
 {
@@ -2441,6 +2466,22 @@ private:
 };
 
 };
+
+// support for hashing std::vector<Variant>
+namespace std {
+    template <> struct hash<std::vector<se::Variant>>
+    {
+        size_t operator()(const std::vector<se::Variant> &seq) const
+        {
+            // combination procedure from boost::hash_combine
+            std::size_t accumulator = 0;
+            for(auto i = seq.begin(), end = seq.end(); i != end; ++i)
+                accumulator ^= i->hash() + 0x9e3779b9 + (accumulator << 6) + (accumulator >> 2);
+            return accumulator;
+        }
+    };
+}
+
 
 #endif
 

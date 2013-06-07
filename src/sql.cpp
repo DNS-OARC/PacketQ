@@ -2550,18 +2550,18 @@ bool Query::process_having(Row **rows)
     return v.get_bool();
 }
 
-std::string process_group_by_key(Ordering_terms &group_by, Row **rows)
+std::vector<Variant> process_group_by_key(Ordering_terms &group_by, Row **rows)
 {
-    std::string res("");
+    int size = group_by.m_terms.size();
 
-    for (std::vector<Ordering_terms::OP_dir>::iterator it=group_by.m_terms.begin(); it != group_by.m_terms.end(); it++)
-    {
-        Variant v;
-        char separator = '\0';
-        it->m_op->evaluate(rows, v);
-        res += v.get_string();
-        res += separator;
+    std::vector<Variant> res(size);
+
+    for (int i = 0; i < size; ++i) {
+        group_by.m_terms[i].m_op->evaluate(rows, res[i]);
+        if (res[i].m_type == Coltype::_text) // make sure we get a copy
+            res[i].set_copy(res[i].get_string());
     }
+
 
     return res;
 }
@@ -2671,7 +2671,7 @@ void Query::execute(Reader &reader)
 
         if (m_group_by.exist() || aggregate_functions)
         {
-            std::unordered_map<std::string, Row*> groups;
+            std::unordered_map<std::vector<Variant>, Row*> groups;
 
             rows[dest_i] = 0;
             while (reader.read_next(handler, m_used_from_column_ids, rows[0]->cleared(), first_row or m_sample == 0 ? 0 : m_sample - 1))
@@ -2685,15 +2685,15 @@ void Query::execute(Reader &reader)
                 process_select(rows, rows[dest_i], result_accessors);
                 if (process_where(rows))
                 {
-                    std::string key = process_group_by_key(m_group_by, rows);
-                    auto existing = groups.find(key);
-                    if (existing != groups.end())
+                    auto key = process_group_by_key(m_group_by, rows);
+                    Row* &entry = groups[key];
+                    if (entry)
                     {
-                        combine_aggregate_in_select(existing->second, rows[dest_i]);
+                        combine_aggregate_in_select(entry, rows[dest_i]);
                     }
                     else
                     {
-                        groups[key] = rows[dest_i];
+                        entry = rows[dest_i];
                         rows[dest_i] = 0;
                     }
                 }
