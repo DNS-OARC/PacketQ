@@ -181,8 +181,11 @@ public:
     }
 
     // move constructor
-    Variant(Variant &&other) : Variant()
+    Variant(Variant &&other)
     {
+        m_val.m_int     = 0;
+        m_type    = Coltype::_int;
+        m_free_str = 0;
         swap(*this, other);
     }
 
