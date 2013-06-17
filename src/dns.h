@@ -354,7 +354,6 @@ class Parse_dns : public Packet_handler
         COLUMN_QR,
     };
 
-
     Parse_dns();
 
     virtual void on_table_created(Table *table, const std::vector<int> &columns);
@@ -368,41 +367,41 @@ class Parse_dns : public Packet_handler
 
     IP_header_to_table m_ip_helper;
 
-    Int_accessor *acc_s              ;
-    Int_accessor *acc_us             ;
-    Int_accessor *acc_ether_type     ;
-    Int_accessor *acc_protocol       ;
-    Int_accessor *acc_src_port       ;
-    Int_accessor *acc_msg_id         ;
-    Int_accessor *acc_msg_size       ;
-    Int_accessor *acc_opcode         ;
-    Int_accessor *acc_rcode          ;
-    Int_accessor *acc_extended_rcode ;
-    Int_accessor *acc_edns_version   ;
-    Int_accessor *acc_z              ;
-    Int_accessor *acc_udp_size       ;
-    Int_accessor *acc_qd_count       ;
-    Int_accessor *acc_an_count       ;
-    Int_accessor *acc_ns_count       ;
-    Int_accessor *acc_ar_count       ;
-    Int_accessor *acc_qtype          ;
-    Int_accessor *acc_qclass         ;
-    Int_accessor *acc_atype          ;
-    Int_accessor *acc_aclass         ;
-    Int_accessor *acc_attl           ;
-    Bool_accessor *acc_qr            ;
-    Bool_accessor *acc_aa            ;
-    Bool_accessor *acc_tc            ;
-    Bool_accessor *acc_rd            ;
-    Bool_accessor *acc_cd            ;
-    Bool_accessor *acc_ra            ;
-    Bool_accessor *acc_ad            ;
-    Bool_accessor *acc_do            ;
-    Bool_accessor *acc_edns0         ;
-    String_accessor *acc_qname       ;
-    String_accessor *acc_aname       ;
-    String_accessor *acc_src_addr    ;
-    String_accessor *acc_dst_addr    ;
+    Int_accessor acc_s;
+    Int_accessor acc_us;
+    Int_accessor acc_ether_type;
+    Int_accessor acc_protocol;
+    Int_accessor acc_src_port;
+    Int_accessor acc_msg_id;
+    Int_accessor acc_msg_size;
+    Int_accessor acc_opcode;
+    Int_accessor acc_rcode;
+    Int_accessor acc_extended_rcode;
+    Int_accessor acc_edns_version;
+    Int_accessor acc_z;
+    Int_accessor acc_udp_size;
+    Int_accessor acc_qd_count;
+    Int_accessor acc_an_count;
+    Int_accessor acc_ns_count;
+    Int_accessor acc_ar_count;
+    Int_accessor acc_qtype;
+    Int_accessor acc_qclass;
+    Int_accessor acc_atype;
+    Int_accessor acc_aclass;
+    Int_accessor acc_attl;
+    Bool_accessor acc_qr;
+    Bool_accessor acc_aa;
+    Bool_accessor acc_tc;
+    Bool_accessor acc_rd;
+    Bool_accessor acc_cd;
+    Bool_accessor acc_ra;
+    Bool_accessor acc_ad;
+    Bool_accessor acc_do;
+    Bool_accessor acc_edns0;
+    Text_accessor acc_qname;
+    Text_accessor acc_aname;
+    Text_accessor acc_src_addr;
+    Text_accessor acc_dst_addr;
 };
 
 };

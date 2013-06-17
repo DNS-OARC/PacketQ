@@ -48,7 +48,8 @@
 #include <regex.h>
 #include "string.h"
 #include "stdarg.h"
-#include "MurmurHash3.h"
+#include "refcountstring.h"
+#include "variant.h"
 
 
 #ifdef WIN32
@@ -59,30 +60,8 @@
 
 namespace se {
 
-inline std::size_t hash_bytes(const char *bytes, int len)
-{
-    uint32_t result = 0;
-    MurmurHash3_x86_32(bytes, len, 0, &result);
-    return result;
-}
-
-
 extern int g_allocs;
 static const int max_func_param=4;
-
-// must be defined in this order - see the "if" statement
-namespace Coltype
-{
-    enum Type
-    {
-        _bool,
-        _int,
-        _float,
-        _text,
-        _max
-    };
-};
-
 extern bool verbose;
 
 inline void vlog(const char *fmt,...)
@@ -122,268 +101,7 @@ class Table;
 class Parser;
 class Row;
 class Ordering_terms;
-class Accessor;
-class Int_accessor;
-class String_accessor;
-class Bool_accessor;
-class Float_accessor;
 
-
-class Variant
-{
-public:
-    Variant()
-    {
-        m_val.m_int     = 0;
-        m_type    = Coltype::_int;
-        m_free_str = 0;
-    }
-
-    Variant(int val)
-    {
-        m_val.m_int = val;
-        m_type = Coltype::_int;
-        m_free_str = 0;
-    }
-    Variant(double val)
-    {
-        m_val.m_float = val;
-        m_type = Coltype::_float;
-        m_free_str = 0;
-    }
-
-    Variant(const char *val, bool copy)
-    {
-        m_free_str = 0;
-        m_type = Coltype::_text;
-        if (copy)
-            set_copy(val);
-        else
-            set_no_copy(val);
-    }
-
-    Variant(const Variant &other)
-    {
-        m_type = other.m_type;
-        m_free_str = 0;
-        switch(other.m_type)
-        {
-            case(Coltype::_int):    m_val.m_int = other.m_val.m_int;          break;
-            case(Coltype::_float):  m_val.m_float = other.m_val.m_float;      break;
-            case(Coltype::_bool):   m_val.m_int = other.m_val.m_int;          break;
-            case(Coltype::_text):   
-                if (other.m_free_str)
-                    set_copy(other.m_val.m_str);
-                else
-                    m_val.m_str = other.m_val.m_str;
-            break;
-        }
-    }
-
-    // move constructor
-    Variant(Variant &&other)
-    {
-        m_val.m_int     = 0;
-        m_type    = Coltype::_int;
-        m_free_str = 0;
-        swap(*this, other);
-    }
-
-    ~Variant()
-    {
-        if (m_type == Coltype::_text)
-            freestr();
-    }
-
-    Variant &operator = (Variant other)
-    {
-        swap(*this, other);     // copy and swap idiom
-        return *this;
-    }
-
-    friend void swap(Variant& first, Variant& second)
-    {
-        using std::swap;
-        swap(first.m_type, second.m_type);
-        swap(first.m_val, second.m_val);
-        swap(first.m_free_str, second.m_free_str);
-    }
-
-    inline void freestr()
-    {
-        if (m_free_str)
-            delete []m_free_str;
-        m_free_str = 0;
-    }
-
-    void set_copy(const char *val)
-    {
-        freestr();
-        m_type = Coltype::_text;
-        g_allocs++;
-        char *str = new char[strlen(val)+1];
-        strcpy(str,val);
-        m_val.m_str = str;
-        m_free_str = str;
-    }
-    void set_no_copy(const char *val)
-    {
-        m_type = Coltype::_text;
-        m_val.m_str = (char *)val;
-    }
-    void set_no_copy_free(const char *val) // take over responsibility of freeing without copying
-    {
-        m_type      = Coltype::_text;
-        m_val.m_str = (char *)val;
-        m_free_str  = (char *)val;
-    }
-
-    inline void make_float_valid() const  
-    {
-        if (m_type == Coltype::_float)
-            return;
-
-        switch(m_type)
-        {
-            case(Coltype::_int):   m_val.m_float = (double)m_val.m_int; break;
-            case(Coltype::_bool):  m_val.m_float = (double)m_val.m_int; break;
-            case(Coltype::_text):  m_val.m_float = atof(m_val.m_str); break;
-        }
-        m_type = Coltype::_float;
-    }
-
-    inline void make_bool_valid() const  
-    {
-        if (m_type == Coltype::_bool)
-            return;
-        if (m_type == Coltype::_int)
-        {
-
-            return;
-        }
-
-        switch(m_type)
-        {
-            case(Coltype::_float):  m_val.m_int = (int)m_val.m_float; break;
-            case(Coltype::_text):   m_val.m_int = atoi(m_val.m_str); break;
-            case(Coltype::_int):    m_val.m_int = -(0-(m_val.m_int>>31)); break;
-        }
-        m_type = Coltype::_int;
-    }
-
-    inline void make_int_valid() const  
-    {
-        if (m_type == Coltype::_int)
-            return;
-
-        switch(m_type)
-        {
-            case(Coltype::_float):  m_val.m_int = (int)m_val.m_float; break;
-            case(Coltype::_text):   m_val.m_int = atoi(m_val.m_str); break;
-        }
-        m_type = Coltype::_int;
-    }
-
-    inline void make_string_valid() const
-    {
-        if (m_type == Coltype::_text)
-            return;
-
-        char buffer[64];
-        switch(m_type)
-        {
-            case(Coltype::_float):  snprintf(buffer,sizeof(buffer),"%f",m_val.m_float); break;
-            case(Coltype::_int):    snprintf(buffer,sizeof(buffer),"%d",m_val.m_int); break;
-            case(Coltype::_bool):   snprintf(buffer,sizeof(buffer),"%d",m_val.m_int); break;
-        }
-        const_cast<Variant *>(this)->set_copy(buffer);
-    }
-
-    int get_int() const
-    {
-        make_int_valid();
-        return m_val.m_int;
-    }
-
-    double get_float() const
-    {
-        make_float_valid();
-        return m_val.m_float;
-    }
-
-    const char *get_string() const 
-    {
-        make_string_valid();
-        return m_val.m_str;
-    }
-
-    bool get_bool() const
-    {
-        make_bool_valid();
-        return m_val.m_int != 0;
-    }
-    inline int cmp(const Variant &rhs) const
-    {
-        switch(m_type)
-        {
-            case(Coltype::_float):  
-                {
-                double r = rhs.get_float();
-                if (m_val.m_float<r)
-                    return -1;
-                return m_val.m_float>r?1:0;
-                }
-            case(Coltype::_int):    return m_val.m_int-rhs.get_int();
-            case(Coltype::_bool):   return m_val.m_int-rhs.get_int();
-            case(Coltype::_text):   return strcmp(m_val.m_str, rhs.get_string());
-        }
-        return 0;
-    }
-
-    bool operator < (const Variant &rhs) const
-    {
-        switch(m_type)
-        {
-            case(Coltype::_float):  return m_val.m_float < rhs.get_float();
-            case(Coltype::_int):    return m_val.m_int < rhs.get_int();
-            case(Coltype::_bool):   return m_val.m_int < rhs.get_int();
-            case(Coltype::_text):   return strcmp(m_val.m_str, rhs.get_string())<0;
-        }
-        return 0;
-    }
-    bool operator == (const Variant &rhs) const
-    {
-        switch(m_type)
-        {
-            case(Coltype::_float):  return m_val.m_float == rhs.get_float();
-            case(Coltype::_int):    return m_val.m_int == rhs.get_int();
-            case(Coltype::_bool):   return m_val.m_int == rhs.get_int();
-            case(Coltype::_text):   return strcmp(m_val.m_str, rhs.get_string())==0;
-        }
-        return false;
-    }
-
-    inline std::size_t hash() const
-    {
-        switch(m_type)
-        {
-        case(Coltype::_float):  return std::hash<float>()(m_val.m_float);
-        case(Coltype::_int):    return std::hash<int>()(m_val.m_int);
-        case(Coltype::_bool):   return std::hash<bool>()(m_val.m_int);
-        case(Coltype::_text):   return hash_bytes(m_val.m_str, strlen(m_val.m_str));
-        }
-        return 0;
-    }
-
-    mutable Coltype::Type m_type;
-private:
-    union VariantUnion {
-        mutable const char *m_str;
-        mutable int m_int;
-        mutable double m_float;
-    } m_val;
-    mutable const char *m_free_str;
-};
 
 inline std::string lower(const char *s)
 {
@@ -451,17 +169,17 @@ class DB
         i.m_key      = key;
         m_lut[i]     = value;
     }
-    const char *get_value( const char *table, int key )
+
+    RefCountString *get_value( const char *table, int key )
     {
         Item i;
         i.m_function = table;
         i.m_key      = key;
         std::map< Item, std::string >::iterator it = m_lut.find(i);
         if (it!= m_lut.end())
-        {
-            const char *str = it->second.c_str();
-            return str;
-        }
+            // FIXME: we should store these strings in the first place
+            return RefCountString::construct(it->second.c_str());
+
         return 0;
     }
 
@@ -480,159 +198,6 @@ class Coldef
     int m_size;
     int m_align;
 };
-
-
-class Text_col
-{
-    public:
-        static void init(Coldef &def)
-        {
-            def.m_size = sizeof(Text_col);
-            def.m_align = sizeof(const char *);
-        }
-        inline void set(const char *str)
-        {
-            if (m_is_ptr)
-                destroy();
-            int n=0;
-            while(str[n] && n<sizeof(m_inline)-1)
-            {
-                m_inline[n] = str[n];
-                n++;
-            }
-            m_inline[n] = str[n];
-            if (!str[n])
-                return;
-            n = (int)strlen(&str[n])+n;
-            m_is_ptr=1;
-            g_allocs++;
-            char *t = new char[n+1];
-            strcpy(t,str);
-            m_text = t;
-        }
-        void set(int i)
-        {
-            destroy();
-            m_is_ptr=0;
-            snprintf(m_inline,sizeof(m_inline-1),"%d",i);
-        }
-
-        void set(Variant &iset)
-        {
-            set(iset.get_string());
-        }
-
-        const char *get()
-        {
-            if (m_is_ptr)
-                return m_text;
-            else
-                return m_inline;
-        }
-        inline void destroy()
-        {
-            if (m_is_ptr)
-            {
-                m_is_ptr=0;
-                delete []m_text;
-            }
-            m_inline[0]=0;
-        }
-        union
-        {
-            const char *m_text;
-            struct
-            {
-                char m_inline[23]; // must be minimun of pointersize +1
-//            char m_inline[128]; // must be minimun of pointersize +1
-                char m_is_ptr;
-            };
-        };
-};
-
-class Int_col
-{
-    public:
-        static void init(Coldef &def)
-        {
-            def.m_size = sizeof(int);
-            def.m_align = sizeof(int);
-        }
-        void set(int i)
-        {
-            m_val=i;
-        }
-        void set(Variant &set)
-        {
-            m_val=set.get_int();
-        }
-        int get()
-        {
-            return m_val;
-        }
-        void destroy()
-        {
-        }
-        int m_val;
-};
-
-class Float_col
-{
-    public:
-        static void init(Coldef &def)
-        {
-            def.m_size = sizeof(Float_col);
-            def.m_align = sizeof(Float_col);
-        }
-        void set(int i)
-        {
-            m_val=i;
-        }
-        void set(double i)
-        {
-            m_val=i;
-        }
-        void set(Variant &set)
-        {
-            m_val=set.get_float();
-        }
-        double get()
-        {
-            return m_val;
-        }
-        void destroy()
-        {
-        }
-        double m_val;
-};
-
-class Bool_col
-{
-    public:
-        static void init(Coldef &def)
-        {
-            def.m_size = sizeof(Bool_col);
-            def.m_align = sizeof(Bool_col);
-        }
-        void set(Variant &set)
-        {
-            m_val=set.get_int()!=0;
-        }
-        void set(bool i)
-        {
-            m_val=i;
-        }
-        bool get()
-        {
-            return m_val;
-        }
-        void destroy()
-        {
-        }
-        bool m_val;
-};
-
-
 
 template <typename T>
 class Allocator
@@ -757,32 +322,51 @@ class Column
         static const bool HIDDEN = true;
 
         static Coldef m_coldefs[Coltype::_max];
-        Column(const char *name,Coltype::Type type, int id, bool hidden);
-        ~Column();
+        Column(const char *name, Coltype::Type type, int id, bool hidden);
         // called at startup by DB
         static void init_defs()
         {
-            Int_col::init (m_coldefs[Coltype::_int]);
-            Text_col::init(m_coldefs[Coltype::_text]);
-            Bool_col::init(m_coldefs[Coltype::_bool]);
-            Float_col::init(m_coldefs[Coltype::_float]);
-        }
-        void set_offset(int o);
-        inline int get_offset()
-        {
-            return m_offset;
+            m_coldefs[Coltype::_bool].m_size = bool_size;
+            m_coldefs[Coltype::_bool].m_align = bool_align;
+            m_coldefs[Coltype::_int].m_size = int_size;
+            m_coldefs[Coltype::_int].m_align = int_align;
+            m_coldefs[Coltype::_float].m_size = float_size;
+            m_coldefs[Coltype::_float].m_align = float_align;
+            m_coldefs[Coltype::_text].m_size = text_size;
+            m_coldefs[Coltype::_text].m_align = text_align;
         }
         std::string m_name;
         Coltype::Type        m_type;
         Coldef      &m_def;
-        Accessor    *m_accessor;
         bool m_hidden;
-        int m_id;           // numeric id used by parsers for speed
-    private:
+        int m_id;           // numeric id used by packet parsers for speed
         int         m_offset;
 };
 
+// for accessing a field in a row
+template <typename T>
+class Accessor
+{
+public:
+    T &value(Row *row);
 
+    int m_offset;
+};
+
+typedef Accessor<bool_column> Bool_accessor;
+typedef Accessor<int_column> Int_accessor;
+typedef Accessor<float_column> Float_accessor;
+typedef Accessor<text_column> Text_accessor;
+
+// for writing a variant to a field in a row
+class GenericAccessor
+{
+public:
+    void set(Row *row, const Variant &v);
+
+    int m_offset;
+    Coltype::Type m_type;
+};
 
 class Table
 {
@@ -793,18 +377,13 @@ class Table
         m_name = name?name:"result";
         m_qstring = query?query:"";
         m_curpos  = 0;
-        m_clear_list[0]=0;
     }
     ~Table()
     {
-        limit(0);
-        std::vector<Column *>::iterator it=m_cols.begin();
-        while ( it!=m_cols.end() )
-        {
-            delete *it;
-            m_cols.erase(it);
-            it=m_cols.begin();
-        }
+        for (auto i = m_rows.begin(), end = m_rows.end(); i != end; ++i)
+            delete_row(*i);
+        for (auto i = m_cols.begin(), end = m_cols.end(); i != end; ++i)
+            delete *i;
         delete m_row_allocator;
     }
     static int align(int pos,int align)
@@ -836,54 +415,19 @@ class Table
         return -1;
     }
 
-    String_accessor *get_string_accessor(const char *col)
+    template <typename T>
+    Accessor<T> get_accessor(const char *col)
     {
-        int i=0;
-        for (std::vector<Column *>::iterator it=m_cols.begin(); it!=m_cols.end();it++)
-        {
-            Column *c = *it;
-            if (cmpi(c->m_name,col) && c->m_type ==Coltype::_text)
-                return (String_accessor *)c->m_accessor;
-            i++;
-        }
-        return 0;
+        Accessor<T> res;
+        res.m_offset = -1;
+
+        int i = get_col_index(col);
+        if (i >= 0)
+            res.m_offset = m_cols[i]->m_offset;
+
+        return res;
     }
-    Int_accessor *get_int_accessor(const char *col)
-    {
-        int i=0;
-        for (std::vector<Column *>::iterator it=m_cols.begin(); it!=m_cols.end();it++)
-        {
-            Column *c = *it;
-            if (cmpi(c->m_name,col) && c->m_type ==Coltype::_int)
-                return (Int_accessor *)c->m_accessor;
-            i++;
-        }
-        return 0;
-    }
-    Bool_accessor *get_bool_accessor(const char *col)
-    {
-        int i=0;
-        for (std::vector<Column *>::iterator it=m_cols.begin(); it!=m_cols.end();it++)
-        {
-            Column *c = *it;
-            if (cmpi(c->m_name,col) && c->m_type ==Coltype::_bool)
-                return (Bool_accessor *)c->m_accessor;
-            i++;
-        }
-        return 0;
-    }
-    Accessor *get_accessor(const char *col)
-    {
-        int i=0;
-        for (std::vector<Column *>::iterator it=m_cols.begin(); it!=m_cols.end();it++)
-        {
-            Column *c = *it;
-            if (cmpi(c->m_name,col))
-                return c->m_accessor;
-            i++;
-        }
-        return 0;
-    }
+
     void dump();
     void json(bool trailing_comma);
     void csv(bool format = false);
@@ -893,10 +437,9 @@ class Table
     Column *add_column(const char *name, const char *type, int id=-1, bool hidden=false);
     void merge_sort(Ordering_terms &order);
     void per_sort(Ordering_terms &order);
-    void group(Ordering_terms &order,Table *source);
-    Row *create_row(bool auto_commit=true);
+    Row *create_row();
     void delete_row(Row *row);
-    void commit_row(Row *row);
+    void add_row(Row *row);
     void limit(int limit,int offset=0);
 
     std::vector<Column *> m_cols;
@@ -907,318 +450,80 @@ class Table
     Allocator<Row>      *m_row_allocator;
     int m_rsize;
     int m_dsize;
-    int m_clear_list[128];
+    std::vector<int> m_text_column_offsets;
 };
 
 class Row
 {
-    public:
-        Row(Table &table) : m_table(table)
-        {
-            clear();
-        }
-        ~Row()
-        {
-            for (unsigned int i=0; i<m_table.m_cols.size(); i++)
-                destroy(i);
-         //   delete []m_data;
-        }
+public:
+    void zero_text_columns(const std::vector<int> &text_column_offsets)
+    {
+        for (auto i = text_column_offsets.begin(), end = text_column_offsets.end(); i != end; ++i)
+            access_column<text_column>(*i) = 0;
+    }
 
-        void clear()
+    void decref_text_columns(const std::vector<int> &text_column_offsets)
+    {
+        for (auto i = text_column_offsets.begin(), end = text_column_offsets.end(); i != end; ++i)
         {
-            int *p = m_table.m_clear_list;
-            while(*p)
-                m_data[*p++]=0;
+            text_column &t = access_column<text_column>(*i);
+            if (t)
+                t->dec_refcount();
         }
+    }
 
-        Row &cleared()
+    void reset_text_columns(const std::vector<int> &text_column_offsets)
+    {
+        for (auto i = text_column_offsets.begin(), end = text_column_offsets.end(); i != end; ++i)
         {
-            // make sure text columns are whacked
-            for (unsigned int i=0; i<m_table.m_cols.size(); i++)
-                destroy(i);
-            clear();
-            return *this;
-        }
-
-        void operator delete (void* ptr, void* voidptr2) throw()
-        {
-        }
-        void del()
-        {
-            m_table.delete_row(this);
-        }
-        void destroy(int icol)
-        {
-            Column &col=*m_table.m_cols[icol];
-            int offs=col.get_offset();
-            void *ptr = (void *)&m_data[offs];
-            if (col.m_type == Coltype::_text)
+            text_column &t = access_column<text_column>(*i);
+            if (t)
             {
-                Text_col *t=(Text_col *)ptr;
-                t->destroy();
-            }
-            else if (col.m_type == Coltype::_int)
-            {
-                Int_col *t=(Int_col *)ptr;
-                t->destroy();
-            }
-            else if (col.m_type == Coltype::_bool)
-            {
-                Bool_col *t=(Bool_col *)ptr;
-                t->destroy();
+                t->dec_refcount();
+                t = 0;
             }
         }
-        void get(int icol, Variant &v);
+    }
 
-        void set(int icol,int n);
-        void set(int icol,const char *s);
+    template <typename T>
+    T &access_column(int offset)
+    {
+        void *ptr = m_data + offset;
+        return *reinterpret_cast<T *>(ptr);
+    }
 
-        void set(int icol,Variant &data);
-
-
-    Table  &m_table;
-    char   m_data[4];
+    char   m_data[4];           // dummy
 };
 
-class Accessor
+template <typename T>
+inline T &Accessor<T>::value(Row *row)
 {
-public:
-    Accessor() : m_v(0)
-    {
-    }
-    virtual ~Accessor() { }
-    
-    inline char *get_ptr(Row *row) 
-    {
-        return row->m_data+m_offset;   
-    }
-    virtual int   get_int(Row *row)
-    {
-        return atoi(get_string(row));
-    }
-    virtual const char    *get_string(Row *row)
-    {
-        m_v=get_int(row);
-        return m_v.get_string();
-    }
-    inline void set(Row *row, unsigned int i)
-    {
-        set(row,int(i));
-    }
-    virtual void get(Row *row, Variant &v) = 0;
-    virtual void set(Row *row, int i) = 0;
-    virtual void set(Row *row, const char *s) = 0;
-    virtual void set(Row *row, Variant &v) = 0;
-    virtual void set(Row *row, bool b) = 0;
-    int     m_offset;
-    Variant m_v;
-};
-
-inline void Row::get(int icol, Variant &v)
-{
-    Column &col=*m_table.m_cols[icol];
-    col.m_accessor->get(this,v);
+    return row->access_column<T>(m_offset);
 }
 
-
-inline void Row::set(int icol,int n)
+inline void GenericAccessor::set(Row *row, const Variant &v)
 {
-    if (icol<0)
-        throw Error("illegal column");
-    Column &col=*m_table.m_cols[icol];
-    col.m_accessor->set(this,n);
+    switch (m_type)
+    {
+    case Coltype::_bool:
+        row->access_column<bool_column>(m_offset) = v.get_bool();
+        break;
+
+    case Coltype::_int:
+        row->access_column<int_column>(m_offset) = v.get_int();
+        break;
+
+    case Coltype::_float:
+        row->access_column<float_column>(m_offset) = v.get_float();
+        break;
+
+    case Coltype::_text:
+        // reference count on string has already been incremented by get_text()
+        // so we can assign the pointer directly
+        row->access_column<text_column>(m_offset) = v.get_text();
+        break;
+    }
 }
-inline void Row::set(int icol,const char *s)
-{
-    if (icol<0)
-        throw Error("illegal column");
-    Column &col=*m_table.m_cols[icol];
-    col.m_accessor->set(this,s);
-}
-
-inline void Row::set(int icol,Variant &data)
-{
-    if (icol<0)
-        throw Error("illegal column");
-    Column &col=*m_table.m_cols[icol];
-    col.m_accessor->set(this,data);
-}
-
-class Int_accessor : public Accessor
-{
-public:
-    void get(Row *row, Variant &v)
-    {
-        v=get_int(row);
-    }
-    int     get_int(Row *row)
-    {
-        Int_col *t=(Int_col *)this->get_ptr(row);
-        return t->get();
-    }
-    inline void set(Row *row, int i)
-    {
-        Int_col *t=(Int_col *)this->get_ptr(row);
-        t->set(i);
-    }
-    inline void set_i(Row *row, int i)
-    {
-        Int_col *t=(Int_col *)this->get_ptr(row);
-        t->set(i);
-    }
-    void set(Row *row, const char *s)
-    {
-        Int_col *t=(Int_col *)this->get_ptr(row);
-        t->set(atoi(s));
-    }
-    void set(Row *row, Variant &v)
-    {
-        Int_col *t=(Int_col *)this->get_ptr(row);
-        t->set(v.get_int());
-    }
-    void set(Row *row, bool b)
-    {
-        Int_col *t=(Int_col *)this->get_ptr(row);
-        t->set((int)b);
-    }
-    inline void set(Row *row, unsigned int i)
-    {
-        set(row,int(i));
-    }
-};
-
-class Float_accessor : public Accessor
-{
-public:
-    void get(Row *row, Variant &v)
-    {
-        v=get_float(row);
-    }
-    double get_float(Row *row)
-    {
-        Float_col *t=(Float_col *)this->get_ptr(row);
-        return t->get();
-    }
-    inline void set(Row *row, int i)
-    {
-        Float_col *t=(Float_col *)this->get_ptr(row);
-        t->set(i);
-    }
-    inline void set_i(Row *row, int i)
-    {
-        Float_col *t=(Float_col *)this->get_ptr(row);
-        t->set(i);
-    }
-    void set(Row *row, const char *s)
-    {
-        Float_col *t=(Float_col *)this->get_ptr(row);
-        t->set(atof(s));
-    }
-    void set(Row *row, Variant &v)
-    {
-        Float_col *t=(Float_col *)this->get_ptr(row);
-        t->set(v.get_float());
-    }
-    void set(Row *row, bool b)
-    {
-        Float_col *t=(Float_col *)this->get_ptr(row);
-        t->set((int)b);
-    }
-    inline void set(Row *row, unsigned int i)
-    {
-        set(row,int(i));
-    }
-    inline void set(Row *row, double f)
-    {
-        Float_col *t=(Float_col *)this->get_ptr(row);
-        t->set(f);
-    }
-};
-class Bool_accessor : public Accessor
-{
-public:
-    void get(Row *row, Variant &v)
-    {
-        v=get_int(row);
-    }
-    int     get_int(Row *row)
-    {
-        Bool_col *t=(Bool_col *)this->get_ptr(row);
-        return t->get();
-    }
-    inline void set(Row *row, int i)
-    {
-        Bool_col *t=(Bool_col *)this->get_ptr(row);
-        t->set(i>0);
-    }
-    inline void set_i(Row *row, bool i)
-    {
-        Bool_col *t=(Bool_col *)this->get_ptr(row);
-        t->set(i);
-    }
-    void set(Row *row, const char *s)
-    {
-        Bool_col *t=(Bool_col *)this->get_ptr(row);
-        t->set(atoi(s)>0);
-    }
-    void set(Row *row, Variant &v)
-    {
-        Bool_col *t=(Bool_col *)this->get_ptr(row);
-        t->set(v);
-    }
-    void set(Row *row, bool b)
-    {
-        Bool_col *t=(Bool_col *)this->get_ptr(row);
-        t->set((int)b);
-    }
-    inline void set(Row *row, unsigned int i)
-    {
-        set(row,int(i));
-    }
-};
-class String_accessor : public Accessor
-{
-public:
-    virtual void get(Row *row, Variant &v)
-    {
-        v.set_no_copy(get_string(row));
-    }
-    virtual const char    *get_string(Row *row)
-    {
-        return get_string_i(row);
-    }
-
-    inline const char    *get_string_i(Row *row)
-    {
-        Text_col *t=(Text_col *)this->get_ptr(row);
-        return t->get();
-    }
-
-    virtual void set(Row *row, int i)
-    {
-        Text_col *t=(Text_col *)this->get_ptr(row);
-        t->set(i);
-    }
-    virtual void set(Row *row, const char *s)
-    {
-        Text_col *t=(Text_col *)get_ptr(row);
-        t->set(s);
-    }
-    inline void set_i(Row *row, const char *s)
-    {
-        Text_col *t=(Text_col *)get_ptr(row);
-        t->set(s);
-    }
-    virtual void set(Row *row, Variant &v)
-    {
-        Text_col *t=(Text_col *)this->get_ptr(row);
-        t->set(v);
-    }
-    virtual void set(Row *row, bool b)
-    {
-        set(row,b?1:0);
-    }
-};
 
 class Token
 {
@@ -1358,9 +663,17 @@ class OP : public Token
         Coltype::Type ret_type() {return m_t;}
 
         // add a hidden column for storing intermediate results
-        Accessor *add_intermediate_column(Table * table, std::string name, Coltype::Type type);
+        template <typename T>
+        T add_intermediate_column(Table *table, std::string name_suffix, Coltype::Type type)
+        {
+            std::string name = std::string(get_name()) + name_suffix;
+            Column *column = table->add_column(name.c_str(), type, -1, Column::HIDDEN);
+            T res;
+            res.m_offset = column->m_offset;
+            return res;
+        }
 
-        virtual void evaluate(Row **rows, Variant &v);
+        virtual void evaluate(Row **rows, Variant &v) { throw Error("evaluate() called on abstract OP class"); };
         virtual void evaluate_aggregate_operands(Row **rows);
         virtual void combine_aggregate(Row *base_row, Row *other_row);
         OP *compile(const std::vector<Table *> &tables,
@@ -1386,7 +699,7 @@ public:
     }
     void evaluate(Row **rows, Variant &v)
     {
-        m_accessor.get(rows[m_row_index], v);
+        v = m_accessor.value(rows[m_row_index]);
     }
     Int_accessor m_accessor;
 };
@@ -1400,7 +713,7 @@ public:
     }
     void evaluate(Row **rows, Variant &v)
     {
-        m_accessor.get(rows[m_row_index], v);
+        v = m_accessor.value(rows[m_row_index]);
     }
     Bool_accessor m_accessor;
 };
@@ -1414,23 +727,23 @@ public:
     }
     void evaluate(Row **rows, Variant &v)
     {
-        m_accessor.get(rows[m_row_index], v);
+        v = m_accessor.value(rows[m_row_index]);
     }
     Float_accessor m_accessor;
 };
 
-class Column_access_string : public OP
+class Column_access_text : public OP
 {
 public:
-    Column_access_string(const OP &op, int offset): OP(op)
+    Column_access_text(const OP &op, int offset): OP(op)
     {
         m_accessor.m_offset = offset;
     }
     void evaluate(Row **rows, Variant &v)
     {
-        v.set_no_copy(m_accessor.get_string_i(rows[m_row_index]));
+        v = m_accessor.value(rows[m_row_index]);
     }
-    String_accessor m_accessor;
+    Text_accessor m_accessor;
 };
 
 ///////////////// Static numbers
@@ -1442,12 +755,11 @@ public:
     {
         m_val = atoi(get_token());
     }
-    int m_val;
     void evaluate(Row **rows, Variant &v)
     {
         v = m_val;
-        return;
     }
+    int m_val;
 };
 
 class Static_float : public OP
@@ -1457,14 +769,26 @@ public:
     {
         m_val = atof(get_token());
     }
-    double m_val;
     void evaluate(Row **rows, Variant &v)
     {
         v = m_val;
-        return;
     }
+    double m_val;
 };
 
+class Static_text : public OP
+{
+public:
+    Static_text(const OP &op): OP(op)
+    {
+        m_val.set(RefCountString::construct(get_token()));
+    }
+    void evaluate(Row **rows, Variant &v)
+    {
+        v = *m_val;
+    }
+    RefCountStringHandle m_val;
+};
 
 ///////////////// Functions
 class Truncate_func : public OP
@@ -1478,7 +802,6 @@ public:
         Variant val; 
         m_param[0]->evaluate(rows, val);
         v = val.get_int();
-        return;
     }
 };
 
@@ -1490,22 +813,18 @@ public:
     }
     void evaluate(Row **rows, Variant &v)
     {
-        Variant str,num; 
+        Variant str, num;
         m_param[0]->evaluate(rows, str);
         m_param[1]->evaluate(rows, num);
        
-        int n=num.get_int();
-        const char *s = str.get_string();
-        const char *r = g_db.get_value( s, n );
-        if (!r)
-        {
-            v=num;
-            return;
-        }
+        int_column n = num.get_int();
+        RefCountStringHandle lookup(str.get_text());
+        RefCountStringHandle r(g_db.get_value((*lookup)->data, n));
 
-        Variant res( r, false );
-        v=res;
-        return;
+        if (!*r)
+            r.set(num.get_text());
+
+        v = *r;
     }
 };
 
@@ -1519,21 +838,22 @@ public:
     {
         Variant str; 
         m_param[0]->evaluate(rows, str);
-        const char *src = str.get_string();
-        int l = strlen(src);
-        char *s = new char[l+1];
-        int p=0;
-        while(src[p])
+        RefCountStringHandle src(str.get_text());
+
+        int l = strlen((*src)->data);
+        RefCountStringHandle dest(RefCountString::allocate(l + 1));
+        int p = 0;
+        while ((*src)->data[p])
         {
-            char c=src[p];
-            if( c>='A' && c<='Z')
-                c=c-'A'+'a';
-            s[p]=c;
+            char c = (*src)->data[p];
+            if (c>='A' && c<='Z')
+                c= c-'A'+'a';
+            (*dest)->data[p]=c;
             p++;
         }
-        s[p]=0;
-        v.set_no_copy_free(s);
-        return;
+        (*dest)->data[p]=0;
+
+        v = *dest;
     }
 };
 
@@ -1546,25 +866,28 @@ public:
     void evaluate(Row **rows, Variant &v)
     {
         char sep='.';
-        Variant str,num; 
+        Variant str, num;
         m_param[0]->evaluate(rows, str);
         m_param[1]->evaluate(rows, num);
+
         if (m_param[2])
         {
             Variant vsep;
             m_param[2]->evaluate(rows, vsep);
-            const char *s = vsep.get_string();
+            RefCountStringHandle sep_text(vsep.get_text());
+            const char *s = (*sep_text)->data;
             if (s)
-                sep=s[0];
+                sep = s[0];
         }
 
-        int n=num.get_int();
-        const char *s = str.get_string();
+        int n = num.get_int();
+        RefCountStringHandle src(str.get_text());
+        const char *s = (*src)->data;
         int l = strlen(s);
         if (!l)
         {
-            Variant null( "",false);
-            v=null;
+            RefCountStringHandle res(RefCountString::construct(""));
+            v = *res;
             return;
         }
         int p=l-1;
@@ -1584,21 +907,21 @@ public:
             }
             p--;
         }
-        char buff[256];
-        if ( found<n || start>=l || end-start > sizeof(buff) )
+        char buf[256]; // FIXME: arbitrary limitation, would probably be
+                        // better to allocate result buffer directly
+        if ( found<n || start>=l || end-start > sizeof(buf) )
         {
-            Variant null( "",false);
-            v=null;
+            RefCountStringHandle res(RefCountString::construct(""));
+            v = *res;
             return;
         }
         p=0;
         while (start<end)
-            buff[p++]=s[start++];
-        buff[p]=0;
+            buf[p++]=s[start++];
+        buf[p]=0;
 
-        Variant res( buff,true);
-        v=res;
-        return;
+        RefCountStringHandle res(RefCountString::construct(buf));
+        v = *res;
     }
 };
 
@@ -1612,11 +935,8 @@ class Len_func : public OP
 	{
 	    Variant str; 
 	    m_param[0]->evaluate(rows, str);
-	    const char *src = str.get_string();
-	    int l = strlen(src);
-	    Variant res(l);
-	    v = res;
-	    return;
+            RefCountStringHandle t(str.get_text());
+	    v = int(strlen((*t)->data));
 	}
 };
 
@@ -1643,7 +963,6 @@ public:
             m_param[1]->evaluate(rows, v);
         else
             m_param[2]->evaluate(rows, v);
-        return;
     }
 };
 
@@ -1656,25 +975,26 @@ public:
     Min_func_int(const OP &op, Table *dest_table): OP(op)
     {
         m_has_aggregate_function = true;
-        min_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".min", Coltype::_int));
+        acc_min = add_intermediate_column<Int_accessor>(dest_table, ".min", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row **rows)
     {
         Variant p;
         m_param[0]->evaluate(rows, p);
-        min_accessor->set(rows[m_row_index], p.get_int());
+        acc_min.value(rows[m_row_index]) = p.get_int();
     }
     virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        int min = std::min(min_accessor->get_int(base_row), min_accessor->get_int(next_row));
-        min_accessor->set(base_row, min);
+        int_column n = acc_min.value(next_row);
+        if (n < acc_min.value(base_row))
+            acc_min.value(base_row) = n;
     }
     void evaluate(Row **rows, Variant &v)
     {
-        min_accessor->get(rows[m_row_index], v);
+        v = acc_min.value(rows[m_row_index]);
     }
 
-    Int_accessor *min_accessor;
+    Int_accessor acc_min;
 };
 
 class Min_func_float : public OP
@@ -1683,25 +1003,26 @@ public:
     Min_func_float(const OP &op, Table *dest_table): OP(op)
     {
         m_has_aggregate_function = true;
-        min_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".min", Coltype::_float));
+        acc_min = add_intermediate_column<Float_accessor>(dest_table, ".min", Coltype::_float);
     }
     virtual void evaluate_aggregate_operands(Row **rows)
     {
         Variant p;
         m_param[0]->evaluate(rows, p);
-        min_accessor->set(rows[m_row_index], p);
+        acc_min.value(rows[m_row_index]) = p.get_float();
     }
     virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        float min = std::min(min_accessor->get_float(base_row), min_accessor->get_float(next_row));
-        min_accessor->set(base_row, min);
+        float_column n = acc_min.value(next_row);
+        if (n < acc_min.value(base_row))
+            acc_min.value(base_row) = n;
     }
     void evaluate(Row **rows, Variant &v)
     {
-        min_accessor->get(rows[m_row_index], v);
+        v = acc_min.value(rows[m_row_index]);
     }
 
-    Float_accessor *min_accessor;
+    Float_accessor acc_min;
 };
 
 class Max_func_int : public OP
@@ -1710,25 +1031,26 @@ public:
     Max_func_int(const OP &op, Table *dest_table): OP(op)
     {
         m_has_aggregate_function = true;
-        max_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".max", Coltype::_int));
+        acc_max = add_intermediate_column<Int_accessor>(dest_table, ".max", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row **rows)
     {
         Variant p;
         m_param[0]->evaluate(rows, p);
-        max_accessor->set(rows[m_row_index], p.get_int());
+        acc_max.value(rows[m_row_index]) = p.get_int();
     }
     virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        int max = std::max(max_accessor->get_int(base_row), max_accessor->get_int(next_row));
-        max_accessor->set(base_row, max);
+        int_column n = acc_max.value(next_row);
+        if (n > acc_max.value(base_row))
+            acc_max.value(base_row) = n;
     }
     void evaluate(Row **rows, Variant &v)
     {
-        max_accessor->get(rows[m_row_index], v);
+        v = acc_max.value(rows[m_row_index]);
     }
 
-    Int_accessor *max_accessor;
+    Int_accessor acc_max;
 };
 
 class Max_func_float : public OP
@@ -1737,25 +1059,26 @@ public:
     Max_func_float(const OP &op, Table *dest_table): OP(op)
     {
         m_has_aggregate_function = true;
-        max_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".max", Coltype::_float));
+        acc_max = add_intermediate_column<Float_accessor>(dest_table, ".max", Coltype::_float);
     }
     virtual void evaluate_aggregate_operands(Row **rows)
     {
         Variant p;
         m_param[0]->evaluate(rows, p);
-        max_accessor->set(rows[m_row_index], p);
+        acc_max.value(rows[m_row_index]) = p.get_float();
     }
     virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        float max = std::max(max_accessor->get_float(base_row), max_accessor->get_float(next_row));
-        max_accessor->set(base_row, max);
+        float_column n = acc_max.value(next_row);
+        if (n > acc_max.value(base_row))
+            acc_max.value(base_row) = n;
     }
     void evaluate(Row **rows, Variant &v)
     {
-        max_accessor->get(rows[m_row_index], v);
+        v = acc_max.value(rows[m_row_index]);
     }
 
-    Float_accessor *max_accessor;
+    Float_accessor acc_max;
 };
 
 class Stdev_func : public OP
@@ -1764,44 +1087,40 @@ public:
     Stdev_func(const OP &op, Table *dest_table): OP(op)
     {
         m_has_aggregate_function = true;
-        sum_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".sum", Coltype::_float));
-        sum_squared_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".sumsquared", Coltype::_float));
-        count_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".count", Coltype::_int));
+        acc_sum = add_intermediate_column<Float_accessor>(dest_table, ".sum", Coltype::_float);
+        acc_sum_sq = add_intermediate_column<Float_accessor>(dest_table, ".sumsquared", Coltype::_float);
+        acc_count = add_intermediate_column<Int_accessor>(dest_table, ".count", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row **rows)
     {
         Variant p;
         m_param[0]->evaluate(rows, p);
-        double val = p.get_float();
+        float_column val = p.get_float();
 
-        sum_accessor->set(rows[m_row_index], val);
-        sum_squared_accessor->set(rows[m_row_index], val * val);
-        count_accessor->set(rows[m_row_index], 1);
+        acc_sum.value(rows[m_row_index]) = val;
+        acc_sum_sq.value(rows[m_row_index]) = val * val;
+        acc_count.value(rows[m_row_index]) = 1;
     }
     virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        float sum = sum_accessor->get_float(base_row) + sum_accessor->get_float(next_row);
-        sum_accessor->set(base_row, sum);
-
-        float sum_squared = sum_squared_accessor->get_float(base_row) + sum_squared_accessor->get_float(next_row);
-        sum_squared_accessor->set(base_row, sum_squared);
-
-        int count = count_accessor->get_int(base_row) + count_accessor->get_int(next_row);
-        count_accessor->set(base_row, count);
+        acc_sum.value(base_row) = acc_sum.value(base_row) + acc_sum.value(next_row);
+        acc_sum_sq.value(base_row) = acc_sum_sq.value(base_row) + acc_sum_sq.value(next_row);
+        acc_count.value(base_row) = acc_count.value(base_row) + acc_count.value(next_row);
     }
     void evaluate(Row **rows, Variant &v)
     {
-        int c = count_accessor->get_int(rows[m_row_index]);
+        Row *row = rows[m_row_index];
+        int c = acc_count.value(row);
         if (c == 0)
             c = 1;
-        double mean = sum_accessor->get_float(rows[m_row_index]) / c;
-        double variance = sum_squared_accessor->get_float(rows[m_row_index]) / c - mean * mean;
+        double mean = acc_sum.value(row) / c;
+        double variance = acc_sum_sq.value(row) / c - mean * mean;
 
         v = sqrt(variance);
     }
 
-    Float_accessor *sum_accessor, *sum_squared_accessor;
-    Int_accessor *count_accessor;
+    Float_accessor acc_sum, acc_sum_sq;
+    Int_accessor acc_count;
 };
 
 class Avg_func : public OP
@@ -1810,32 +1129,28 @@ public:
     Avg_func(const OP &op, Table *dest_table): OP(op)
     {
         m_has_aggregate_function = true;
-        sum_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".sum", Coltype::_float));
-        count_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".count", Coltype::_int));
+        acc_sum = add_intermediate_column<Float_accessor>(dest_table, ".sum", Coltype::_float);
+        acc_count = add_intermediate_column<Int_accessor>(dest_table, ".count", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row **rows)
     {
         Variant p;
         m_param[0]->evaluate(rows, p);
-        sum_accessor->set(rows[m_row_index], p.get_float());
-
-        count_accessor->set(rows[m_row_index], 1);
+        acc_sum.value(rows[m_row_index]) = p.get_float();
+        acc_count.value(rows[m_row_index]) = 1;
     }
     virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        float sum = sum_accessor->get_float(base_row) + sum_accessor->get_float(next_row);
-        sum_accessor->set(base_row, sum);
-
-        int count = count_accessor->get_int(base_row) + count_accessor->get_int(next_row);
-        count_accessor->set(base_row, count);
+        acc_sum.value(base_row) = acc_sum.value(base_row) + acc_sum.value(next_row);
+        acc_count.value(base_row) = acc_count.value(base_row) + acc_count.value(next_row);
     }
     void evaluate(Row **rows, Variant &v)
     {
-        v = sum_accessor->get_float(rows[m_row_index]) / count_accessor->get_int(rows[m_row_index]);
+        v = acc_sum.value(rows[m_row_index]) / acc_count.value(rows[m_row_index]);
     }
 
-    Float_accessor *sum_accessor;
-    Int_accessor *count_accessor;
+    Float_accessor acc_sum;
+    Int_accessor acc_count;
 };
 
 class Sum_func_int : public OP
@@ -1844,26 +1159,24 @@ public:
     Sum_func_int(const OP &op, Table *dest_table): OP(op)
     {
         m_has_aggregate_function = true;
-        sum_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".sum", Coltype::_int));
+        acc_sum = add_intermediate_column<Int_accessor>(dest_table, ".sum", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row **rows)
     {
         Variant p;
         m_param[0]->evaluate(rows, p);
-
-        sum_accessor->set(rows[m_row_index], p.get_int());
+        acc_sum.value(rows[m_row_index]) = p.get_int();
     }
     virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        int sum = sum_accessor->get_int(base_row) + sum_accessor->get_int(next_row);
-        sum_accessor->set(base_row, sum);
+        acc_sum.value(base_row) = acc_sum.value(base_row) + acc_sum.value(next_row);
     }
     void evaluate(Row **rows, Variant &v)
     {
-        v = sum_accessor->get_int(rows[m_row_index]);
+        v = acc_sum.value(rows[m_row_index]);
     }
 
-    Int_accessor *sum_accessor;
+    Int_accessor acc_sum;
 };
 
 class Sum_func_float : public OP
@@ -1872,26 +1185,24 @@ public:
     Sum_func_float(const OP &op, Table *dest_table): OP(op)
     {
         m_has_aggregate_function = true;
-        sum_accessor = static_cast<Float_accessor *>(add_intermediate_column(dest_table, ".sum", Coltype::_float));
+        acc_sum = add_intermediate_column<Float_accessor>(dest_table, ".sum", Coltype::_float);
     }
     virtual void evaluate_aggregate_operands(Row **rows)
     {
         Variant p;
         m_param[0]->evaluate(rows, p);
-
-        sum_accessor->set(rows[m_row_index], p.get_float());
+        acc_sum.value(rows[m_row_index]) = p.get_float();
     }
     virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        float sum = sum_accessor->get_float(base_row) + sum_accessor->get_float(next_row);
-        sum_accessor->set(base_row, sum);
+        acc_sum.value(base_row) = acc_sum.value(base_row) + acc_sum.value(next_row);
     }
     void evaluate(Row **rows, Variant &v)
     {
-        v = sum_accessor->get_float(rows[m_row_index]);
+        v = acc_sum.value(rows[m_row_index]);
     }
 
-    Float_accessor *sum_accessor;
+    Float_accessor acc_sum;
 };
 
 class Count_func : public OP
@@ -1900,23 +1211,22 @@ public:
     Count_func(const OP &op, Table *dest_table): OP(op)
     {
         m_has_aggregate_function = true;
-        count_accessor = static_cast<Int_accessor *>(add_intermediate_column(dest_table, ".count", Coltype::_int));
+        acc_count = add_intermediate_column<Int_accessor>(dest_table, ".count", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row **rows)
     {
-        count_accessor->set(rows[m_row_index], 1);
+        acc_count.value(rows[m_row_index]) = 1;
     }
     virtual void combine_aggregate(Row *base_row, Row *next_row)
     {
-        int count = count_accessor->get_int(base_row) + count_accessor->get_int(next_row);
-        count_accessor->set(base_row, count);
+        acc_count.value(base_row) = acc_count.value(base_row) + acc_count.value(next_row);
     }
     void evaluate(Row **rows, Variant &v)
     {
-        v = count_accessor->get_int(rows[m_row_index]);
+        v = acc_count.value(rows[m_row_index]);
     }
 
-    Int_accessor *count_accessor;
+    Int_accessor acc_count;
 };
 
 //////////////// Binary ops
@@ -1932,7 +1242,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = bool(lhs==rhs);
-        return;
     }
 };
 class Bin_op_not_eq : public OP
@@ -1945,7 +1254,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = !bool(lhs==rhs);
-        return;
     }
 };
 class Bin_op_or : public OP
@@ -1954,7 +1262,6 @@ public:
     Bin_op_or(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        v=false;
         m_left->evaluate(rows, v);
         if (v.get_bool())
         {
@@ -1962,9 +1269,7 @@ public:
             return;
         }
         m_right->evaluate(rows, v);
-        if(v.get_bool())
-            v = true;
-        return;
+        v = v.get_bool();
     }
 };
 
@@ -1974,7 +1279,6 @@ public:
     Bin_op_and(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        v=false;
         m_left->evaluate(rows, v);
         if (!v.get_bool())
         {
@@ -1982,9 +1286,7 @@ public:
             return;
         }
         m_right->evaluate(rows, v);
-        if(v.get_bool())
-            v = true;
-        return;
+        v = v.get_bool();
     }
 };
 class Bin_op_lt : public OP
@@ -1997,7 +1299,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = bool(lhs < rhs);
-        return;
     }
 };
 class Bin_op_gt : public OP
@@ -2010,7 +1311,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = bool(rhs < lhs);
-        return;
     }
 };
 class Bin_op_lteq : public OP
@@ -2023,7 +1323,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = !bool(rhs < lhs);
-        return;
     }
 };
 class Bin_op_gteq : public OP
@@ -2036,7 +1335,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = !bool(lhs < rhs);
-        return;
     }
 };
 class Bin_op_add : public OP
@@ -2048,8 +1346,7 @@ public:
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
-        v = int(lhs.get_int() + rhs.get_int());
-        return;
+        v = lhs.get_int() + rhs.get_int();
     }
 };
 class Bin_op_add_float : public OP
@@ -2062,7 +1359,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_float() + rhs.get_float();
-        return;
     }
 };
 class Bin_op_sub : public OP
@@ -2074,8 +1370,7 @@ public:
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
-        v = int(lhs.get_int() - rhs.get_int());
-        return;
+        v = lhs.get_int() - rhs.get_int();
     }
 };
 class Bin_op_sub_float : public OP
@@ -2088,7 +1383,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_float() - rhs.get_float();
-        return;
     }
 };
 
@@ -2101,8 +1395,7 @@ public:
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
-        v = int(lhs.get_int() * rhs.get_int());
-        return;
+        v = lhs.get_int() * rhs.get_int();
     }
 };
 class Bin_op_mul_float : public OP
@@ -2115,7 +1408,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_float() * rhs.get_float();
-        return;
     }
 };
 class Bin_op_div : public OP
@@ -2128,7 +1420,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_float() / rhs.get_float();
-        return;
     }
 };
 class Bin_op_modulo : public OP
@@ -2141,7 +1432,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = fmod(lhs.get_float(), rhs.get_float());
-        return;
     }
 };
 class Bin_op_arithmetic_shift_left : public OP
@@ -2154,7 +1444,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_int() << rhs.get_int();
-        return;
     }
 };
 class Bin_op_arithmetic_shift_right : public OP
@@ -2167,7 +1456,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_int() >> rhs.get_int();
-        return;
     }
 };
 class Bin_op_bitwise_and : public OP
@@ -2180,7 +1468,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_int() & rhs.get_int();
-        return;
     }
 };
 class Bin_op_bitwise_or : public OP
@@ -2193,7 +1480,6 @@ public:
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_int() | rhs.get_int();
-        return;
     }
 };
 class Bin_op_concatenate : public OP
@@ -2205,23 +1491,18 @@ public:
         Variant lhs,rhs; 
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
-        const char *lhs_str = lhs.get_string();
-        const char *rhs_str = rhs.get_string();
-        if (!lhs_str)
-        {
-            if (rhs_str)
-                v = rhs;
-            else
-                v.set_no_copy("");
-            return;
-        }
+        RefCountStringHandle lhandle(lhs.get_text()), rhandle(rhs.get_text());
+        const char *lhs_str = (*lhandle)->data;
+        const char *rhs_str = (*rhandle)->data;
+
         int l = (int)strlen(lhs_str);
         int r = (int)strlen(rhs_str);
-        char *str = new char[ l+r+1 ];
-        strcpy( str, lhs_str );
-        strcat( str, rhs_str );
-        v.set_no_copy_free(str);
-        return;
+
+        RefCountStringHandle res = RefCountString::allocate(l + r + 1);
+        memcpy((*res)->data, lhs_str, l);
+        memcpy((*res)->data + l, rhs_str, r + 1); // copy the zero terminator
+
+        v = *res;
     }
 };
 class Bin_op_like : public OP
@@ -2277,8 +1558,9 @@ class Bin_op_like : public OP
 	    Variant lhs,rhs;
 	    m_left ->evaluate(rows, lhs);
 	    m_right->evaluate(rows, rhs);
-	    const char* lstr = lhs.get_string();
-	    const char* rstr = rhs.get_string();
+            RefCountStringHandle lhandle(lhs.get_text()), rhandle(rhs.get_text());
+	    const char* lstr = (*lhandle)->data;
+	    const char* rstr = (*rhandle)->data;
 	    if (!m_compiled) {
 		m_compiled = true;	// Set this before we try; no need to try again if we fail
 		regex_from_like(rstr, m_re_str, RE_LEN);
@@ -2289,12 +1571,10 @@ class Bin_op_like : public OP
 		    printf("Error compiling regex: %d: %s", m_err, errstr);
 		}
 	    }
-	    if (m_err) {
+	    if (m_err)
 		v = false;
-	    } else {
-		v = bool(regexec(&m_re, lstr, 0, 0, 0) == 0);
-	    }
-	    return;
+	    else
+		v = regexec(&m_re, lstr, 0, 0, 0) == 0;
 	}
 	~Bin_op_like()
 	{
@@ -2302,7 +1582,6 @@ class Bin_op_like : public OP
 		regfree(&m_re);
 	    }
 	}
-
 };
 class Bin_op_not_like : public Bin_op_like
 {
@@ -2311,8 +1590,7 @@ class Bin_op_not_like : public Bin_op_like
 	void evaluate(Row **rows, Variant &v)
 	{
 	    Bin_op_like::evaluate(rows, v);
-	    v = !bool(v.get_bool());
-	    return;
+	    v = !v.get_bool();
 	}
 };
 ////////////////// unary ops
@@ -2326,7 +1604,6 @@ public:
         Variant rhs; 
         m_right->evaluate(rows, rhs);
         v = !rhs.get_bool();
-        return;
     }
 };
 
@@ -2339,7 +1616,6 @@ public:
         Variant rhs; 
         m_right->evaluate(rows, rhs);
         v = -rhs.get_int();
-        return;
     }
 };
 
@@ -2352,7 +1628,6 @@ public:
         Variant rhs; 
         m_right->evaluate(rows, rhs);
         v = -rhs.get_float();
-        return;
     }
 };
 
@@ -2365,7 +1640,6 @@ public:
         Variant rhs; 
         m_right->evaluate(rows, rhs);
         v = ~rhs.get_int();
-        return;
     }
 };
 
@@ -2427,12 +1701,12 @@ public:
 
     ~Query()
     {
+        if (m_from) delete m_from;
         if (m_result) delete m_result;
         if (m_where ) delete m_where;
         if (m_having) delete m_having;
         for (auto i = m_select.begin(); i != m_select.end(); ++i)
             delete *i;
-        m_select.clear();
     }
 
     void parse();
@@ -2458,9 +1732,9 @@ private:
     void replace_star_column_with_all_columns();
 
     void process_from();
-    void process_select(Row **rows, Row *dest, Accessor **result_accessors);
-    void combine_aggregate_in_select(Row *base_row, Row *other_row);
-    void process_aggregate_in_select(Row **rows, Row *dest, Accessor **result_accessors);
+    void process_select(Row **rows, Row *dest, GenericAccessor dest_accessors[]);
+    void combine_aggregates_in_select(Row *base_row, Row *other_row);
+    void process_aggregates_in_select(Row **rows, Row *dest, GenericAccessor dest_accessors[]);
     bool process_where(Row **rows);
     bool process_having(Row **rows);
     bool has_aggregate_functions();

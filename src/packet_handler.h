@@ -48,8 +48,6 @@ namespace se {
 
 class Table;
 class Row;
-class Int_accessor;
-class String_accessor;
 
 inline int get_int_h(unsigned char *data)
 {
@@ -71,8 +69,8 @@ inline int get_short(unsigned char *data)
     return  data[1] | (data[0]<<8) ;
 }
 
-const char *v4_addr2str(in6addr_t &addr);
-const char *v6_addr2str(in6addr_t &addr);
+RefCountString *v4_addr2str(in6addr_t &addr);
+RefCountString *v6_addr2str(in6addr_t &addr);
 
 
 class Payload
@@ -132,37 +130,22 @@ public:
         COLUMN_FRAGMENTS
     };
 
-    IP_header_to_table()
-    {
-        acc_id         =0;
-        acc_s          =0;
-        acc_us         =0;
-        acc_ether_type =0;
-        acc_protocol   =0;
-        acc_ip_ttl     =0;
-        acc_src_port   =0;
-        acc_dst_port   =0;
-        acc_src_addr   =0;
-        acc_dst_addr   =0;
-        acc_fragments  =0;
-    }
-
     void add_packet_columns(Packet_handler &packet_handler);
     void on_table_created(Table *table, const std::vector<int> &columns);
     void assign(Row *row, IP_header *head, const std::vector<int> &columns);
 
 private:
-    Int_accessor *acc_id;
-    Int_accessor *acc_s;
-    Int_accessor *acc_us;
-    Int_accessor *acc_ether_type;
-    Int_accessor *acc_protocol;
-    Int_accessor *acc_ip_ttl;
-    Int_accessor *acc_src_port;
-    Int_accessor *acc_dst_port;
-    Int_accessor *acc_fragments;
-    String_accessor *acc_src_addr;
-    String_accessor *acc_dst_addr;
+    Int_accessor acc_id;
+    Int_accessor acc_s;
+    Int_accessor acc_us;
+    Int_accessor acc_ether_type;
+    Int_accessor acc_protocol;
+    Int_accessor acc_ip_ttl;
+    Int_accessor acc_src_port;
+    Int_accessor acc_dst_port;
+    Int_accessor acc_fragments;
+    Text_accessor acc_src_addr;
+    Text_accessor acc_dst_addr;
 };
 
 class Packet
@@ -210,6 +193,9 @@ public:
     Packet_handler()
     {
     }
+    virtual ~Packet_handler()
+    {
+    }
 
     Table *create_table(const std::vector<int> &columns);
 
@@ -224,6 +210,7 @@ public:
 };
 
 void init_packet_handlers();
+void destroy_packet_handlers();
 Packet_handler *get_packet_handler(std::string table_name);
 
 }

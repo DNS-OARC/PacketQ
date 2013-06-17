@@ -414,6 +414,13 @@ void init_packet_handlers()
     packet_handlers.push_back(new Parse_icmp());
 }
 
+void destroy_packet_handlers()
+{
+    for (auto i = packet_handlers.begin(); i != packet_handlers.end(); ++i)
+        delete *i;
+    packet_handlers.clear();
+}
+
 Packet_handler *get_packet_handler(std::string table_name)
 {
     for (auto i = packet_handlers.begin(); i != packet_handlers.end(); ++i)
@@ -433,7 +440,7 @@ void IP_header_to_table::add_packet_columns(Packet_handler &packet_handler)
     packet_handler.add_packet_column("ether_type", "", Coltype::_int, COLUMN_ETHER_TYPE);
     packet_handler.add_packet_column("src_port",   "", Coltype::_int, COLUMN_SRC_PORT); // this is really tcp/udp but accidents do happen
     packet_handler.add_packet_column("dst_port",   "", Coltype::_int, COLUMN_DST_PORT);
-    packet_handler.add_packet_column("src_addr",   "", Coltype::_text, COLUMN_SRC_ADDR); // will start on a 64 bit boundary (put an even number of ints before this to avoid padding)
+    packet_handler.add_packet_column("src_addr",   "", Coltype::_text, COLUMN_SRC_ADDR);
     packet_handler.add_packet_column("dst_addr",   "", Coltype::_text, COLUMN_DST_ADDR);
     packet_handler.add_packet_column("protocol",   "", Coltype::_int, COLUMN_PROTOCOL);
     packet_handler.add_packet_column("ip_ttl",     "", Coltype::_int, COLUMN_IP_TTL);
@@ -442,17 +449,17 @@ void IP_header_to_table::add_packet_columns(Packet_handler &packet_handler)
 
 void IP_header_to_table::on_table_created(Table *table, const std::vector<int> &columns)
 {
-    acc_src_addr   = table->get_string_accessor("src_addr");
-    acc_dst_addr   = table->get_string_accessor("dst_addr");
-    acc_ether_type = table->get_int_accessor("ether_type");
-    acc_protocol   = table->get_int_accessor("protocol");
-    acc_ip_ttl     = table->get_int_accessor("ip_ttl");
-    acc_src_port   = table->get_int_accessor("src_port");
-    acc_dst_port   = table->get_int_accessor("dst_port");
-    acc_s          = table->get_int_accessor("s");
-    acc_us         = table->get_int_accessor("us");
-    acc_id         = table->get_int_accessor("id");
-    acc_fragments  = table->get_int_accessor("fragments");
+    acc_src_addr   = table->get_accessor<text_column>("src_addr");
+    acc_dst_addr   = table->get_accessor<text_column>("dst_addr");
+    acc_ether_type = table->get_accessor<int_column>("ether_type");
+    acc_protocol   = table->get_accessor<int_column>("protocol");
+    acc_ip_ttl     = table->get_accessor<int_column>("ip_ttl");
+    acc_src_port   = table->get_accessor<int_column>("src_port");
+    acc_dst_port   = table->get_accessor<int_column>("dst_port");
+    acc_s          = table->get_accessor<int_column>("s");
+    acc_us         = table->get_accessor<int_column>("us");
+    acc_id         = table->get_accessor<int_column>("id");
+    acc_fragments  = table->get_accessor<int_column>("fragments");
 }
 
 
@@ -464,68 +471,69 @@ void IP_header_to_table::assign(Row *row, IP_header *head, const std::vector<int
     for (auto i = columns.begin(), end = columns.end(); i != end; ++i) {
         switch (*i) {
         case COLUMN_ID:
-            acc_id->set_i(row, head->id);
+            acc_id.value(row) = head->id;
             break;
 
         case COLUMN_S:
-            acc_s->set_i(row, head->s);
+            acc_s.value(row) = head->s;
             break;
 
         case COLUMN_US:
-            acc_us->set_i(row, head->us);
+            acc_us.value(row) = head->us;
             break;
 
         case COLUMN_ETHER_TYPE:
-            acc_ether_type->set_i(row, head->ethertype);
+            acc_ether_type.value(row) = head->ethertype;
             break;
 
         case COLUMN_PROTOCOL:
-            acc_protocol->set_i(row, head->proto);
+            acc_protocol.value(row) = head->proto;
             break;
 
         case COLUMN_IP_TTL:
-            acc_ip_ttl->set_i(row, head->ip_ttl);
+            acc_ip_ttl.value(row) = head->ip_ttl;
             break;
 
         case COLUMN_SRC_PORT:
-            acc_src_port->set_i(row, head->src_port);
+            acc_src_port.value(row) = head->src_port;
             break;
 
         case COLUMN_DST_PORT:
-            acc_dst_port->set_i(row, head->dst_port);
+            acc_dst_port.value(row) = head->dst_port;
             break;
 
         case COLUMN_FRAGMENTS:
-            acc_fragments->set_i(row, head->fragments);
+            acc_fragments.value(row) = head->fragments;
             break;
 
         case COLUMN_SRC_ADDR:
             if (head->ethertype==2048)
-                acc_src_addr->set_i(row, v4_addr2str(head->src_ip));
+                acc_src_addr.value(row) = v4_addr2str(head->src_ip);
             else
-                acc_src_addr->set_i(row, v6_addr2str(head->src_ip));
+                acc_src_addr.value(row) = v6_addr2str(head->src_ip);
             break;
 
         case COLUMN_DST_ADDR:
             if (head->ethertype==2048)
-                acc_dst_addr->set_i(row, v4_addr2str(head->dst_ip));
+                acc_dst_addr.value(row) = v4_addr2str(head->dst_ip);
             else
-                acc_dst_addr->set_i(row, v6_addr2str(head->dst_ip));
+                acc_dst_addr.value(row) = v6_addr2str(head->dst_ip);
             break;
         }
     }
 }
 
-const char *v4_addr2str(in6addr_t &addr)
+RefCountString *v4_addr2str(in6addr_t &addr)
 {
     converter.reset();
     converter.add_attr_ipv4(addr.__in6_u.__u6_addr32[3]);
-    return converter.get();
+    return RefCountString::construct(converter.get());
 }
-const char *v6_addr2str(in6addr_t &addr)
+
+RefCountString *v6_addr2str(in6addr_t &addr)
 {
     converter.reset();
     converter.add_attr_ipv6(&addr.__in6_u.__u6_addr8[0]);
-    return converter.get();
+    return RefCountString::construct(converter.get());
 }
 }

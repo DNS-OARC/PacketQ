@@ -67,14 +67,14 @@ class Parse_icmp : public Packet_handler
     Str_conv converter;
     IP_header_to_table m_ip_helper;
 
-    Int_accessor    *acc_type;
-    Int_accessor    *acc_code;
-    Int_accessor    *acc_echo_identifier;
-    Int_accessor    *acc_echo_sequence;
-    Int_accessor    *acc_du_protocol;
-    String_accessor *acc_du_src_addr;
-    String_accessor *acc_du_dst_addr;
-    String_accessor *acc_desc;
+    Int_accessor acc_type;
+    Int_accessor acc_code;
+    Int_accessor acc_echo_identifier;
+    Int_accessor acc_echo_sequence;
+    Int_accessor acc_du_protocol;
+    Text_accessor acc_du_src_addr;
+    Text_accessor acc_du_dst_addr;
+    Text_accessor acc_desc;
 };
 
 };
