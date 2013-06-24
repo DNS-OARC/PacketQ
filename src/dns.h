@@ -38,11 +38,12 @@
 #include "tcp.h"
 #include "packet_handler.h"
 #include <assert.h>
-#include <cctype>
 
 #define IPPROTO_ICMP 1
 
 namespace se {
+
+extern char visible_char_map[256];
 
 class DNSMessage
 {
@@ -204,13 +205,9 @@ class DNSMessage
         {
             int p=0;
             int savedoffs=0;
-            bool exit=false;
             int n=get_ubyte(offs++);
             if (n==0)
-            {
                 out[p++]='.';
-                exit=true;
-            }
 
             while(n>0)
             {
@@ -234,10 +231,7 @@ class DNSMessage
 
                 while(n-->0)
                 {
-                    int c=get_ubyte(offs++);
-                    if (!isgraph(c))
-                        c='$';
-                    out[p++]=c;
+                    out[p++] = visible_char_map[get_ubyte(offs++)];
                 }
                 out[p++]='.';
                 n=get_ubyte(offs++);
@@ -316,8 +310,8 @@ class DNSMessage
             }
         }
 
-        // returns 16 bit number at byte offser offs
         unsigned int  get_ubyte (int offs)                     { if(offs>=m_length)return 0;  return int(m_data[offs]); }
+        // returns 16 bit number at byte offset offs
         unsigned int  get_ushort(int offs)                     { if(offs>=m_length)return 0;  return (int(m_data[offs])<<8)|int(m_data[offs+1]); }
         bool           get_bit   (int offs,int bit)             { if(offs>=m_length)return 0;  return ((get_ushort(offs)<<bit)&0x8000)==0x8000; }
         unsigned int  get_bits  (int offs,int bit,int bits) { if(offs>=m_length)return 0;  return ((get_ushort(offs)<<bit)&0xffff)>>(16-bits); }
@@ -329,57 +323,85 @@ class DNSMessage
 class Parse_dns : public Packet_handler
 {
     public:
-    Parse_dns()
-    {
-        init();
-    }
+    enum {
+        COLUMN_QNAME = IP_header_to_table::COLUMN_FRAGMENTS + 1,
+        COLUMN_ANAME,
+        COLUMN_MSG_ID,
+        COLUMN_MSG_SIZE,
+        COLUMN_OPCODE,
+        COLUMN_RCODE,
+        COLUMN_EXTENDED_RCODE,
+        COLUMN_EDNS_VERSION,
+        COLUMN_Z,
+        COLUMN_UDP_SIZE,
+        COLUMN_QD_COUNT,
+        COLUMN_AN_COUNT,
+        COLUMN_NS_COUNT,
+        COLUMN_AR_COUNT,
+        COLUMN_QTYPE,
+        COLUMN_QCLASS,
+        COLUMN_ATYPE,
+        COLUMN_ACLASS,
+        COLUMN_ATTL,
+        COLUMN_AA,
+        COLUMN_TC,
+        COLUMN_RD,
+        COLUMN_CD,
+        COLUMN_RA,
+        COLUMN_AD,
+        COLUMN_DO,
+        COLUMN_EDNS0,
+        COLUMN_QR,
+    };
 
-    const char *table_name() const;
-    virtual void add_columns(Table &table);
-    bool packet_insert(DNSMessage &message);
-    virtual bool parse(Packet &packet);
+    Parse_dns();
+
+    virtual void on_table_created(Table *table, const std::vector<int> &columns);
+    virtual Packet::ParseResult parse(Packet &packet, const std::vector<int> &columns, Row &destination_row, bool sample);
+
+    void add_packet_columns();
+    void add_lookup_tables();
+
     private:
-    void init();
     Str_conv converter;
 
     IP_header_to_table m_ip_helper;
 
-    Int_accessor *acc_s              ;
-    Int_accessor *acc_us             ;
-    Int_accessor *acc_ether_type     ;
-    Int_accessor *acc_protocol       ;
-    Int_accessor *acc_src_port       ;
-    Int_accessor *acc_msg_id         ;
-    Int_accessor *acc_msg_size       ;
-    Int_accessor *acc_opcode         ;
-    Int_accessor *acc_rcode          ;
-    Int_accessor *acc_extended_rcode ;
-    Int_accessor *acc_edns_version   ;
-    Int_accessor *acc_z              ;
-    Int_accessor *acc_udp_size       ;
-    Int_accessor *acc_qd_count       ;
-    Int_accessor *acc_an_count       ;
-    Int_accessor *acc_ns_count       ;
-    Int_accessor *acc_ar_count       ;
-    Int_accessor *acc_qtype          ;
-    Int_accessor *acc_qclass         ;
-    Int_accessor *acc_atype          ;
-    Int_accessor *acc_aclass         ;
-    Int_accessor *acc_attl           ;
-    Bool_accessor *acc_qr            ;
-    Bool_accessor *acc_aa            ;
-    Bool_accessor *acc_tc            ;
-    Bool_accessor *acc_rd            ;
-    Bool_accessor *acc_cd            ;
-    Bool_accessor *acc_ra            ;
-    Bool_accessor *acc_ad            ;
-    Bool_accessor *acc_do            ;
-    Bool_accessor *acc_edns0         ;
-    String_accessor *acc_qname       ;
-    String_accessor *acc_aname       ;
-    String_accessor *acc_src_addr    ;
-    String_accessor *acc_dst_addr    ;
-    Table *m_table;
+    Int_accessor acc_s;
+    Int_accessor acc_us;
+    Int_accessor acc_ether_type;
+    Int_accessor acc_protocol;
+    Int_accessor acc_src_port;
+    Int_accessor acc_msg_id;
+    Int_accessor acc_msg_size;
+    Int_accessor acc_opcode;
+    Int_accessor acc_rcode;
+    Int_accessor acc_extended_rcode;
+    Int_accessor acc_edns_version;
+    Int_accessor acc_z;
+    Int_accessor acc_udp_size;
+    Int_accessor acc_qd_count;
+    Int_accessor acc_an_count;
+    Int_accessor acc_ns_count;
+    Int_accessor acc_ar_count;
+    Int_accessor acc_qtype;
+    Int_accessor acc_qclass;
+    Int_accessor acc_atype;
+    Int_accessor acc_aclass;
+    Int_accessor acc_attl;
+    Bool_accessor acc_qr;
+    Bool_accessor acc_aa;
+    Bool_accessor acc_tc;
+    Bool_accessor acc_rd;
+    Bool_accessor acc_cd;
+    Bool_accessor acc_ra;
+    Bool_accessor acc_ad;
+    Bool_accessor acc_do;
+    Bool_accessor acc_edns0;
+    Text_accessor acc_qname;
+    Text_accessor acc_aname;
+    Text_accessor acc_src_addr;
+    Text_accessor acc_dst_addr;
 };
 
 };

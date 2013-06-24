@@ -37,6 +37,7 @@
 #include "segzip.h" 
 
 namespace se {
+// this is a defunct .json reader for reading tables from JSON files
 
 class Json_file 
 {

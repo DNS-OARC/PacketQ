@@ -37,6 +37,7 @@
 #include "output.h"
 #include "dns.h"
 #include "icmp.h"
+#include "sql.h"
 
 namespace se {
 
@@ -287,30 +288,41 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
     return len;
 }
 
-void Packet::parse()
+std::vector<Packet_handler *> packet_handlers;
+
+Packet::ParseResult Packet::parse(Packet_handler *handler, const std::vector<int> &columns, Row &destination_row, bool sample)
 {
+    bool base_layers_parsed;
     if (m_link_layer_type == 1)
-        parse_ethernet();
+        base_layers_parsed = parse_ethernet();
     else
-        parse_ip( m_data, m_len, 0 );
+        base_layers_parsed = parse_ip(m_data, m_len, 0);
+
+    if (!base_layers_parsed)
+        return ERROR;
+
+    // do the application layer
+    return handler->parse(*this, columns, destination_row, sample);
 }
 
-void Packet::parse_ethernet()
+bool Packet::parse_ethernet()
 {
     unsigned char   *data = m_data;
     int len=m_len;
-    if (len<14+5*4) return;  // check for etherframe size + ipv4 header
+    if (len<14+5*4)
+        return false;  // check for etherframe size + ipv4 header
 
     int ethertype = data[13]|(data[12]<<8);
     data+=14;
     len-=14;
 
-    parse_ip( data, len, ethertype );
+    return parse_ip( data, len, ethertype );
 }
 
-void Packet::parse_ip(unsigned char *data, int len, int ethertype)
+bool Packet::parse_ip(unsigned char *data, int len, int ethertype)
 {
-    if (len<5*4) return;  // check for etherframe size + ipv4 header
+    if (len<5*4)
+        return false;  // check for etherframe size + ipv4 header
 
     int consumed   = m_ip_header.decode( data, ethertype,m_id );
     m_ip_header.s  = m_s;
@@ -320,13 +332,13 @@ void Packet::parse_ip(unsigned char *data, int len, int ethertype)
     if (m_ip_header.fragments > 0 || m_ip_header.offset > 0 )
     {
         m_fraghandler.add_fragment(m_ip_header, data, len, *this);
-        return;
+        return false;
     }
 
-    parse_transport(data, len);
+    return parse_transport(data, len);
 }
 
-void Packet::parse_transport(unsigned char *data, int len)
+bool Packet::parse_transport(unsigned char *data, int len)
 {
     // tcp/udp
     if (m_ip_header.proto==IPPROTO_TCP)
@@ -365,94 +377,163 @@ void Packet::parse_transport(unsigned char *data, int len)
     {
         m_data = data;
         m_len  = len;
-        parse_application();
+        return true;
     }
+
+    return false;
 }
 
-Parse_dns  *parse_dns    = 0;
-Parse_icmp *parse_icmp   = 0;
-
-bool init_packet_handler()
+Table *Packet_handler::create_table(const std::vector<int> &columns)
 {
-    parse_dns  = new Parse_dns();
-    parse_icmp = new Parse_icmp();
-}
+    Table *table = g_db.create_table(table_name);
 
+    for (auto i = packet_columns.begin(); i != packet_columns.end(); ++i)
+        if (std::find(columns.begin(), columns.end(), i->id) != columns.end())
+            table->add_column(i->name, i->type, i->id);
 
+    on_table_created(table, columns);
 
-void Packet::parse_application()
-{
-
-    if (parse_dns->parse(*this))
-        ;
-    else if (parse_icmp->parse(*this));
-
-}
-
-void IP_header_to_table::add_columns(Table &table)
-{
-    table.add_column("id",         Coltype::_int );
-    table.add_column("s",          Coltype::_int ); 
-    table.add_column("us",         Coltype::_int );
-    table.add_column("ether_type", Coltype::_int );
-    table.add_column("src_port",   Coltype::_int ); // this is really tcp/udp but accidents do happen
-    table.add_column("dst_port",   Coltype::_int );
-    table.add_column("src_addr",   Coltype::_text); // will start on a 64 bit boundary (put an even number of ints before this to avoid padding)
-    table.add_column("dst_addr",   Coltype::_text);
-    table.add_column("protocol",   Coltype::_int );
-    table.add_column("ip_ttl",     Coltype::_int );
-    table.add_column("fragments",  Coltype::_int );
-
-    acc_src_addr   = table.get_string_accessor("src_addr");
-    acc_dst_addr   = table.get_string_accessor("dst_addr");
-    acc_ether_type = table.get_int_accessor("ether_type");
-    acc_protocol   = table.get_int_accessor("protocol");
-    acc_ip_ttl     = table.get_int_accessor("ip_ttl");
-    acc_src_port   = table.get_int_accessor("src_port");
-    acc_dst_port   = table.get_int_accessor("dst_port");
-    acc_s          = table.get_int_accessor("s");
-    acc_us         = table.get_int_accessor("us");
-    acc_id         = table.get_int_accessor("id");
-    acc_fragments  = table.get_int_accessor("fragments");
+    return table;
 }
 
 
-
-void IP_header_to_table::assign(Row *row,IP_header *head)
+void Packet_handler::add_packet_column(const char *name, const char *description, Coltype::Type type, int id)
 {
-    if (!row || !head)
+    Packet_column c;
+    c.name = name;
+    c.description = description;
+    c.id = id;
+    c.type = type;
+    packet_columns.push_back(c);
+}
+
+
+void init_packet_handlers()
+{
+    packet_handlers.push_back(new Parse_dns());
+    packet_handlers.push_back(new Parse_icmp());
+}
+
+void destroy_packet_handlers()
+{
+    for (auto i = packet_handlers.begin(); i != packet_handlers.end(); ++i)
+        delete *i;
+    packet_handlers.clear();
+}
+
+Packet_handler *get_packet_handler(std::string table_name)
+{
+    for (auto i = packet_handlers.begin(); i != packet_handlers.end(); ++i)
+    {
+        if (table_name == (*i)->table_name)
+            return *i;
+    }
+
+    return 0;
+}
+
+void IP_header_to_table::add_packet_columns(Packet_handler &packet_handler)
+{
+    packet_handler.add_packet_column("id",         "ID", Coltype::_int, COLUMN_ID);
+    packet_handler.add_packet_column("s",          "Seconds", Coltype::_int, COLUMN_S);
+    packet_handler.add_packet_column("us",         "Milliseconds", Coltype::_int, COLUMN_US);
+    packet_handler.add_packet_column("ether_type", "", Coltype::_int, COLUMN_ETHER_TYPE);
+    packet_handler.add_packet_column("src_port",   "", Coltype::_int, COLUMN_SRC_PORT); // this is really tcp/udp but accidents do happen
+    packet_handler.add_packet_column("dst_port",   "", Coltype::_int, COLUMN_DST_PORT);
+    packet_handler.add_packet_column("src_addr",   "", Coltype::_text, COLUMN_SRC_ADDR);
+    packet_handler.add_packet_column("dst_addr",   "", Coltype::_text, COLUMN_DST_ADDR);
+    packet_handler.add_packet_column("protocol",   "", Coltype::_int, COLUMN_PROTOCOL);
+    packet_handler.add_packet_column("ip_ttl",     "", Coltype::_int, COLUMN_IP_TTL);
+    packet_handler.add_packet_column("fragments",  "", Coltype::_int, COLUMN_FRAGMENTS);
+}
+
+void IP_header_to_table::on_table_created(Table *table, const std::vector<int> &columns)
+{
+    acc_src_addr   = table->get_accessor<text_column>("src_addr");
+    acc_dst_addr   = table->get_accessor<text_column>("dst_addr");
+    acc_ether_type = table->get_accessor<int_column>("ether_type");
+    acc_protocol   = table->get_accessor<int_column>("protocol");
+    acc_ip_ttl     = table->get_accessor<int_column>("ip_ttl");
+    acc_src_port   = table->get_accessor<int_column>("src_port");
+    acc_dst_port   = table->get_accessor<int_column>("dst_port");
+    acc_s          = table->get_accessor<int_column>("s");
+    acc_us         = table->get_accessor<int_column>("us");
+    acc_id         = table->get_accessor<int_column>("id");
+    acc_fragments  = table->get_accessor<int_column>("fragments");
+}
+
+
+void IP_header_to_table::assign(Row *row, IP_header *head, const std::vector<int> &columns)
+{
+    if (!head)
         return;
-    acc_id->set_i(             row, head->id);
-    acc_s->set_i(             row, head->s);
-    acc_us->set_i(            row, head->us);
-    acc_ether_type->set_i(    row, head->ethertype);
-    acc_protocol->set_i(      row, head->proto);
-    acc_ip_ttl->set_i(        row, head->ip_ttl);
-    acc_src_port->set_i(      row, head->src_port);
-    acc_dst_port->set_i(      row, head->dst_port);
-    acc_fragments->set_i(     row, head->fragments);
-    if (head->ethertype==2048)
-    {
-        acc_src_addr->set_i(row, v4_addr2str(head->src_ip));
-        acc_dst_addr->set_i(row, v4_addr2str(head->dst_ip));
-    }
-    else
-    {
-        acc_src_addr->set_i(row, v6_addr2str(head->src_ip));
-        acc_dst_addr->set_i(row, v6_addr2str(head->dst_ip));
+
+    for (auto i = columns.begin(), end = columns.end(); i != end; ++i) {
+        switch (*i) {
+        case COLUMN_ID:
+            acc_id.value(row) = head->id;
+            break;
+
+        case COLUMN_S:
+            acc_s.value(row) = head->s;
+            break;
+
+        case COLUMN_US:
+            acc_us.value(row) = head->us;
+            break;
+
+        case COLUMN_ETHER_TYPE:
+            acc_ether_type.value(row) = head->ethertype;
+            break;
+
+        case COLUMN_PROTOCOL:
+            acc_protocol.value(row) = head->proto;
+            break;
+
+        case COLUMN_IP_TTL:
+            acc_ip_ttl.value(row) = head->ip_ttl;
+            break;
+
+        case COLUMN_SRC_PORT:
+            acc_src_port.value(row) = head->src_port;
+            break;
+
+        case COLUMN_DST_PORT:
+            acc_dst_port.value(row) = head->dst_port;
+            break;
+
+        case COLUMN_FRAGMENTS:
+            acc_fragments.value(row) = head->fragments;
+            break;
+
+        case COLUMN_SRC_ADDR:
+            if (head->ethertype==2048)
+                acc_src_addr.value(row) = v4_addr2str(head->src_ip);
+            else
+                acc_src_addr.value(row) = v6_addr2str(head->src_ip);
+            break;
+
+        case COLUMN_DST_ADDR:
+            if (head->ethertype==2048)
+                acc_dst_addr.value(row) = v4_addr2str(head->dst_ip);
+            else
+                acc_dst_addr.value(row) = v6_addr2str(head->dst_ip);
+            break;
+        }
     }
 }
 
-const char *v4_addr2str(in6addr_t &addr)
+RefCountString *v4_addr2str(in6addr_t &addr)
 {
     converter.reset();
     converter.add_attr_ipv4(addr.__in6_u.__u6_addr32[3]);
-    return converter.get();
+    return RefCountString::construct(converter.get());
 }
-const char *v6_addr2str(in6addr_t &addr)
+
+RefCountString *v6_addr2str(in6addr_t &addr)
 {
     converter.reset();
     converter.add_attr_ipv6(&addr.__in6_u.__u6_addr8[0]);
-    return converter.get();
+    return RefCountString::construct(converter.get());
 }
 }

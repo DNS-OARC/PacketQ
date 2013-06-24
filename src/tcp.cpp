@@ -192,7 +192,7 @@ class Stream
          */
         unsigned char *get_buffer()
         {
-            int start=2, p=0;
+            int p=0;
             for (std::list<Data_segment>::iterator it = m_segments.begin();
                     it != m_segments.end(); it ++)
             {
@@ -202,8 +202,7 @@ class Stream
                     if (p>=0xffff)
                         return m_buffer;
                 }
-                start = 0;
-            }         
+            }
             return m_buffer;
         }
     private:

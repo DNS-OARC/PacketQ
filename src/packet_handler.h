@@ -38,6 +38,9 @@
 #include "tcp.h"
 #include <assert.h>
 #include <cctype>
+#include <string>
+#include <vector>
+#include "sql.h"
 
 #define IPPROTO_ICMP 1
 
@@ -45,8 +48,6 @@ namespace se {
 
 class Table;
 class Row;
-class Int_accessor;
-class String_accessor;
 
 inline int get_int_h(unsigned char *data)
 {
@@ -68,8 +69,8 @@ inline int get_short(unsigned char *data)
     return  data[1] | (data[0]<<8) ;
 }
 
-const char *v4_addr2str(in6addr_t &addr);
-const char *v6_addr2str(in6addr_t &addr);
+RefCountString *v4_addr2str(in6addr_t &addr);
+RefCountString *v6_addr2str(in6addr_t &addr);
 
 
 class Payload
@@ -110,44 +111,50 @@ public:
     unsigned int       offset; 
 };
 
+class Packet_handler;
+
 class IP_header_to_table
 {
 public:
-    IP_header_to_table()
-    {
-        acc_id         =0;
-        acc_s          =0;
-        acc_us         =0;
-        acc_ether_type =0;
-        acc_protocol   =0;
-        acc_ip_ttl     =0;
-        acc_src_port   =0;
-        acc_dst_port   =0;
-        acc_src_addr   =0;
-        acc_dst_addr   =0;
-        acc_fragments  =0;
-    }
+    enum {
+        COLUMN_ID,
+        COLUMN_S,
+        COLUMN_US,
+        COLUMN_ETHER_TYPE,
+        COLUMN_PROTOCOL,
+        COLUMN_IP_TTL,
+        COLUMN_SRC_PORT,
+        COLUMN_DST_PORT,
+        COLUMN_SRC_ADDR,
+        COLUMN_DST_ADDR,
+        COLUMN_FRAGMENTS
+    };
 
-    void add_columns(Table &table);
-    void assign(Row *row, IP_header *head);
+    void add_packet_columns(Packet_handler &packet_handler);
+    void on_table_created(Table *table, const std::vector<int> &columns);
+    void assign(Row *row, IP_header *head, const std::vector<int> &columns);
 
 private:
-    Int_accessor *acc_id;
-    Int_accessor *acc_s;
-    Int_accessor *acc_us;
-    Int_accessor *acc_ether_type;
-    Int_accessor *acc_protocol;
-    Int_accessor *acc_ip_ttl;
-    Int_accessor *acc_src_port;
-    Int_accessor *acc_dst_port;
-    Int_accessor *acc_fragments;
-    String_accessor *acc_src_addr;
-    String_accessor *acc_dst_addr;
+    Int_accessor acc_id;
+    Int_accessor acc_s;
+    Int_accessor acc_us;
+    Int_accessor acc_ether_type;
+    Int_accessor acc_protocol;
+    Int_accessor acc_ip_ttl;
+    Int_accessor acc_src_port;
+    Int_accessor acc_dst_port;
+    Int_accessor acc_fragments;
+    Text_accessor acc_src_addr;
+    Text_accessor acc_dst_addr;
 };
 
 class Packet
 {
-    public:
+public:
+    enum ParseResult {
+        ERROR, OK, NOT_SAMPLED
+    };
+
     Packet(unsigned char *data,int len,int s, int us, int id, int link_layer_type)
     {
         m_s    = s;
@@ -157,11 +164,12 @@ class Packet
         m_id   = id;
         m_link_layer_type   = link_layer_type;
     }
-    void parse();
-    void parse_ethernet();
-    void parse_ip(unsigned char *data, int len, int ether_type);
-    void parse_transport(unsigned char *data, int len); 
-    void parse_application(); 
+
+    ParseResult parse(Packet_handler *handler, const std::vector<int> &columns, Row &destination_row, bool sample);
+    bool parse_ethernet();
+    bool parse_ip(unsigned char *data, int len, int ether_type);
+    bool parse_transport(unsigned char *data, int len);
+
     IP_header       m_ip_header;
     unsigned char  *m_data;
     int             m_len;
@@ -171,18 +179,40 @@ class Packet
     int             m_link_layer_type;
 };
 
+struct Packet_column
+{
+    const char *name;
+    const char *description;
+    int id;
+    Coltype::Type type;
+};
+
 class Packet_handler
 {
-    public:
+public:
     Packet_handler()
     {
     }
-    const char *table_name() const;
-    virtual void add_columns(Table &table)=0;
-    virtual bool parse(Packet &packet)=0;
+    virtual ~Packet_handler()
+    {
+    }
+
+    Table *create_table(const std::vector<int> &columns);
+
+    // for actual packet handlers to fill in
+    virtual void on_table_created(Table *table, const std::vector<int> &columns) = 0;
+    virtual Packet::ParseResult parse(Packet &packet, const std::vector<int> &columns, Row &destination_row, bool sample) = 0;
+
+    const char *table_name;
+    std::vector<Packet_column> packet_columns;
+
+    void add_packet_column(const char *name, const char *description, Coltype::Type type, int id);
 };
 
-bool init_packet_handler();
+void init_packet_handlers();
+void destroy_packet_handlers();
+Packet_handler *get_packet_handler(std::string table_name);
+
 }
 #endif
 

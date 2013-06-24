@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "sql.h"
-#include <zlib.h> 
+#include <zlib.h>
 #include "segzip.h" 
 
 namespace se {
@@ -42,9 +42,12 @@ namespace se {
 class Pcap_file 
 {
     public:
-        Pcap_file(FILE *fp)
+        static const bool TAKE_OVER_FP = true;
+
+        Pcap_file(FILE *fp, bool take_over_fp=false)
         {
-            m_fp=fp;
+            m_fp_owned = take_over_fp;
+            m_fp = fp;
             m_reverse_order     = false;
             m_packetbuffer      = 0;
             m_packetbuffer_len  = 0;
@@ -57,6 +60,8 @@ class Pcap_file
         {
             if (m_packetbuffer)
                 delete []m_packetbuffer;
+            if (m_fp_owned)
+                fclose(m_fp);
         }
 
         bool            get_header();
@@ -205,6 +210,7 @@ class Pcap_file
         bool    m_eof;
         bool    m_gzipped;
         FILE    *m_fp;
+        bool    m_fp_owned;
 
         unsigned char   *m_packetbuffer;
         int              m_packetbuffer_len;

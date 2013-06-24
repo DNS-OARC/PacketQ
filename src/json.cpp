@@ -107,7 +107,10 @@ class JParser
                         if (c==0)
                             m_row = m_table->create_row();
                         if (m_row)
+                        {
                             m_row->set(c,string);
+                            m_table->add_row(m_row);
+                        }
                     }
 		    if (m_stage==_tablename)
                     {

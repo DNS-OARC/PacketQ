@@ -1,0 +1,10 @@
+*.o
+.deps
+src/Makefile
+src/packetq
+stamp-h1
+config.status
+config.log
+config.h
+autom4te.cache/
+Makefile
