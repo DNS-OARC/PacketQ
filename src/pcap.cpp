@@ -93,8 +93,9 @@ unsigned char *Pcap_file::get_packet(int &len, int &s, int &us)
     s   = get_int32();
     us  = get_int32();
     len = get_int32();
-    int reallen = get_int32();
-   
+
+    // skip past reallen
+    get_int32();
 
     if (get_eof() || len < 0)
         return 0;

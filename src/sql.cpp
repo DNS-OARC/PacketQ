@@ -32,82 +32,79 @@
 #include "sql.h"
 #include "packetq.h"
 #include "output.h"
-#include <vector> 
+#include "reader.h"
+#include "packet_handler.h"
+#include <vector>
+#include <unordered_map>
+#include <utility>
 #ifdef WIN32
 #include <windows.h>
 #endif
+
 namespace se {
 
 bool verbose = false;
 
 int g_allocs=0;
 
-void Table::add_column(const char *name, const char *type)
+Column *Table::add_column(const char *name, const char *type, int id, bool hidden)
 {
     if (!type)
-        add_column(name,Coltype::_text);
+        return add_column(name,Coltype::_text, id, hidden);
     else if (strcmp(type,"bool") == 0)
-        add_column(name,Coltype::_bool);
+        return add_column(name,Coltype::_bool, id, hidden);
     else if (strcmp(type,"int") == 0)
-        add_column(name,Coltype::_int);
+        return add_column(name,Coltype::_int, id, hidden);
     else if (strcmp(type,"float") == 0)
-        add_column(name,Coltype::_float);
+        return add_column(name,Coltype::_float, id, hidden);
     else
-        add_column(name,Coltype::_text);
+        return add_column(name,Coltype::_text, id, hidden);
 }
-void Table::add_column(const char *name, Coltype::Type type)
+
+Column *Table::add_column(const char *name, Coltype::Type type, int id, bool hidden)
 {
-    Column *col = new Column( name, type );
-    col->set_offset(Table::align( m_curpos, col->m_def.m_align ));
-    m_curpos = col->get_offset() + col->m_def.m_size;
+    Column *col = new Column(name, type, id, hidden);
+    col->m_offset = Table::align(m_curpos, col->m_def.m_align);
+    m_curpos = col->m_offset + col->m_def.m_size;
     if (type==Coltype::_text)
-    {
-        int *cl = m_clear_list;
-        while(*cl)cl++;
-        *cl++=m_curpos-1;
-        *cl=0;
-    }
-    m_cols.push_back( col );
+        m_text_column_offsets.push_back(col->m_offset);
+    m_cols.push_back(col);
+    return col;
 }
 
 void Table::delete_row(Row *row)
 {
-    row->~Row();
+    row->decref_text_columns(m_text_column_offsets);
     m_row_allocator->deallocate(row);
 }
 
-Row *Table::create_row(bool auto_commit)
+Row *Table::create_row()
 {
     if (!m_row_allocator)
     {
-        m_rsize = (sizeof(Row)+31)&0xffff0;
-        m_dsize = (m_curpos+31)&0xffff0;
+        m_rsize = sizeof(Row) - sizeof(Row::m_data); // exclude the dummy
+        m_dsize = m_curpos;
         m_row_allocator = new Allocator<Row>(m_rsize+m_dsize,10000);
     }
 
-    Row *rr = m_row_allocator->allocate();
-    char * ptr = &((char *)(rr))[m_rsize];
-    Row *r = new (rr)Row(*this);
-    if (auto_commit)
-        m_rows.push_back(r);
-
+    Row *r = m_row_allocator->allocate();
+    r->zero_text_columns(m_text_column_offsets);
     return r;
 }
 
-void Table::commit_row(Row *row)
+void Table::add_row(Row *row)
 {
     m_rows.push_back(row);
 }
 
 int g_comp =0;
 
-void Ordering_terms::compile(Table *t, Table *s, Query &q)
+void Ordering_terms::compile(const std::vector<Table *> &tables, const std::vector<int> &search_order, Query &q)
 {
-    Table *olle[2] = {s,t};
     for (std::vector<Ordering_terms::OP_dir>::iterator it=m_terms.begin(); it!= m_terms.end(); it++)
     {
         OP *op = it->m_op;
-        it->m_op = op->compile(olle,q);
+        it->m_op = op->compile(tables, search_order, q);
     }
 }
 
@@ -117,15 +114,20 @@ class Sorter
         Sorter(Ordering_terms &order): m_order(order)
         {
         }
-        bool operator() (Row *ia, Row *ib) 
+        bool operator() (Row *ia, Row *ib)
         {
+            // this works under the assumption that the ordering terms have
+            // been compiled with only one table so the row index i is 0
+            Row **ia_rows = &ia;
+            Row **ib_rows = &ib;
+
             for (std::vector<Ordering_terms::OP_dir>::iterator it=m_order.m_terms.begin(); it!= m_order.m_terms.end(); it++)
             {
                 g_comp++;
 
                 OP *op = it->m_op;
-                op->evaluate(it->m_asc?ia:ib,m_a);
-                op->evaluate(it->m_asc?ib:ia,m_b);
+                op->evaluate(it->m_asc?ia_rows:ib_rows, m_a);
+                op->evaluate(it->m_asc?ib_rows:ia_rows, m_b);
                 int res = m_a.cmp(m_b); 
                 if (res<0)
                     return true;
@@ -134,30 +136,36 @@ class Sorter
             }
             return false;
         }
-        bool eq(Row *ia, Row *ib) 
+        bool eq(Row *ia, Row *ib)
         {
+            Row **ia_rows = &ia;
+            Row **ib_rows = &ib;
+
             for (std::vector<Ordering_terms::OP_dir>::iterator it=m_order.m_terms.begin(); it!= m_order.m_terms.end(); it++)
             {
                 g_comp++;
 
                 OP *op = it->m_op;
-                op->evaluate(it->m_asc?ia:ib,m_a);
-                op->evaluate(it->m_asc?ib:ia,m_b);
+                op->evaluate(it->m_asc?ia_rows:ib_rows,m_a);
+                op->evaluate(it->m_asc?ib_rows:ia_rows,m_b);
                 int res = m_a.cmp(m_b); 
                 if (res!=0)
                     return false;
             }
             return true;
         }
-        int cmp(Row *ia, Row *ib) 
+        int cmp(Row *ia, Row *ib)
         {
+            Row **ia_rows = &ia;
+            Row **ib_rows = &ib;
+
             for (std::vector<Ordering_terms::OP_dir>::iterator it=m_order.m_terms.begin(); it!= m_order.m_terms.end(); it++)
             {
                 g_comp++;
 
                 OP *op = it->m_op;
-                op->evaluate(it->m_asc?ia:ib,m_a);
-                op->evaluate(it->m_asc?ib:ia,m_b);
+                op->evaluate(it->m_asc?ia_rows:ib_rows,m_a);
+                op->evaluate(it->m_asc?ib_rows:ia_rows,m_b);
                 int res = m_a.cmp(m_b); 
                 if (res!=0)
                     return res;
@@ -413,7 +421,9 @@ public:
             Tlink &r = links[i];
             r.reset();
             r.row    = *it;
-            m_op->evaluate(r.row,r.cache);
+            // &row works under the assumption that m_op has been compiled with
+            // this table only so row index is 0
+            m_op->evaluate(&r.row,r.cache);
             it++;
             add(&r);
         }
@@ -496,12 +506,14 @@ void Table::merge_sort(Ordering_terms &order)
 
         row_ptrs[i]=*it++;
         r[i].row=i;
-        op->evaluate(row_ptrs[r[i].row],r[i].cache);
+        // &row works under the assumption that m_op has been compiled with
+        // this table only so row index is 0
+        op->evaluate(&row_ptrs[r[i].row],r[i].cache);
         if (i+1<table_size)
         {
             row_ptrs[i+1]=*it++;
             r[i+1].row=i+1;
-            op->evaluate(row_ptrs[r[i+1].row],r[i+1].cache);
+            op->evaluate(&row_ptrs[r[i+1].row],r[i+1].cache);
         }
     }
     int swap=0;
@@ -599,30 +611,6 @@ void Table::merge_sort(Ordering_terms &order)
     return;
 }
 
-void Table::group(Ordering_terms &order,Table *source)
-{
-    Sorter sorter(order);
-
-    m_rows.sort(sorter);
-    std::list<Row *>::iterator it=m_rows.begin();
-    int group = 0;
-    for (std::list<Row *>::iterator e=it++;it!=m_rows.end();it++)
-    {
-        if (sorter.eq(*it,*e))
-        {
-            delete_row(*e);
-            m_rows.erase(e);
-        }
-        else
-        {
-            // proceed to next group
-            group++;
-        }
-        e=it;        
-    }
-}
-
-
 void Table::limit(int limit,int offset)
 {
     int count = 0;
@@ -665,7 +653,6 @@ void Table::xml()
 {
     g_output.reset();
     int cols = (int)m_cols.size();
-    int width = 25;
 
     g_output.add_string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     g_output.add_string("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n");
@@ -687,6 +674,9 @@ void Table::xml()
 
     for (int i=0;i<cols;i++)
     {
+        if (m_cols[i]->m_hidden)
+            continue;
+
         const char *t="";
         switch (m_cols[i]->m_type)
         {
@@ -710,37 +700,40 @@ void Table::xml()
         g_output.add_string("</th>");
     }
     g_output.add_string("</tr>\n");
-    bool outer_comma=false;
     for (std::list<Row *>::iterator it=m_rows.begin(); it!=m_rows.end();it++)
     {
         g_output.add_string("<tr>");
-        outer_comma = true;
-        bool comma  = false;
         Row *r = *it;
        
         Variant v;
         for ( int i = 0; i < cols; i++ )
         {
+            Column *c = m_cols[i];
+
+            if (c->m_hidden)
+                continue;
+
+            int offset = c->m_offset;
+
+            static const int bufsize = 100;
+            char buf[bufsize];
+
             g_output.add_string("<td>");
-            comma=true;
-            r->get(i,v);
-            switch( m_cols[i]->m_type)
+            switch(c->m_type)
             {
-            case Coltype::_text:
-                g_output.add_string( v.get_string() );
+            case Coltype::_bool:
+                g_output.add_string(r->access_column<bool_column>(offset) ? "1" : "0");
                 break;
             case Coltype::_int:
-                g_output.add_int( v.get_int() );
+                snprintf(buf, bufsize, "%i", r->access_column<int_column>(offset));
+                g_output.add_string(buf);
                 break;
             case Coltype::_float:
-                {
-                    char str[100];
-                    sprintf(str,"%g", v.get_float());
-                    g_output.add_string(str);
-                }
+                snprintf(buf, bufsize, "%g", r->access_column<float_column>(offset));
+                g_output.add_string(buf);
                 break;
-            case Coltype::_bool:
-                g_output.add_string(v.get_int() == 0?"0":"1");
+            case Coltype::_text:
+                g_output.add_string(r->access_column<text_column>(offset)->data);
                 break;
             }
             g_output.add_string("</td> ");
@@ -754,11 +747,10 @@ void Table::xml()
     g_output.print();
 }
 
-void Table::json()
+void Table::json(bool trailing_comma)
 {
     g_output.reset();
     int cols = (int)m_cols.size();
-    int width = 25;
 
     g_output.add_string("  {\n    ");
 
@@ -775,12 +767,17 @@ void Table::json()
     g_output.add_q_string("head");
     g_output.add_string(": [");
 
+    bool append_comma = false;
     for (int i=0;i<cols;i++)
     {
-        if (i!=0)
+        if (m_cols[i]->m_hidden)
+            continue;
+
+        if (append_comma)
             g_output.add_string(",\n");
         else
             g_output.add_string("\n");
+	    append_comma = true;
         g_output.add_string("      { ");
         g_output.add_q_string("name");
         g_output.add_string(": ");
@@ -821,30 +818,37 @@ void Table::json()
         bool comma  = false;
         Row *r = *it;
        
-        Variant v;
         for ( int i = 0; i < cols; i++ )
         {
+            Column *c = m_cols[i];
+
+            if (c->m_hidden)
+                continue;
+
             if (comma)
                 g_output.add_string(",");
-            comma=true;
-            r->get(i,v);
-            switch( m_cols[i]->m_type)
+
+            comma = true;
+
+            int offset = c->m_offset;
+            static const int bufsize = 100;
+            char buf[bufsize];
+
+            switch(c->m_type)
             {
-            case Coltype::_text:
-                g_output.add_q_string( v.get_string() );
+            case Coltype::_bool:
+                g_output.add_string(r->access_column<bool_column>(offset) ? "1" : "0");
                 break;
             case Coltype::_int:
-                g_output.add_int( v.get_int() );
+                snprintf(buf, bufsize, "%i", r->access_column<int_column>(offset));
+                g_output.add_string(buf);
                 break;
             case Coltype::_float:
-                {
-                    char str[100];
-                    sprintf(str,"%g", v.get_float());
-                    g_output.add_string(str);
-                }
+                snprintf(buf, bufsize, "%g", r->access_column<float_column>(offset));
+                g_output.add_string(buf);
                 break;
-            case Coltype::_bool:
-                g_output.add_string(v.get_int() == 0?"0":"1");
+            case Coltype::_text:
+                g_output.add_q_string(r->access_column<text_column>(offset)->data);
                 break;
             }
         }
@@ -852,7 +856,11 @@ void Table::json()
         g_output.add_string("]");
     }
     g_output.add_string("\n    ]\n");
-    g_output.add_string("  }\n");
+    if (trailing_comma) {
+	g_output.add_string("  },\n");
+    } else {
+	g_output.add_string("  }\n");	
+    }
     g_output.print();
 }
 
@@ -886,30 +894,37 @@ void Table::csv(bool format)
     {
         for (std::list<Row *>::iterator it=m_rows.begin(); it!=m_rows.end();it++)
         {
-            for ( int i = 0; i < cols; i++ )
+            Row *r = *it;
+
+            for (int i = 0; i < cols; i++)
             {
-                Row *r = *it;
+                Column *c = m_cols[i];
+
+                if (c->m_hidden)
+                    continue;
+
                 int len = 0;
 
-                char buf[100];
-                Variant v;
-                r->get(i,v);
-                switch( m_cols[i]->m_type )
+                int offset = c->m_offset;
+                static const int bufsize = 100;
+                char buf[bufsize];
+
+                switch(c->m_type)
                 {
-                    case Coltype::_text:
-                        len = qoute_string(v.get_string()).length();
-                        break;
-                    case Coltype::_int:
-                        sprintf(buf,"%d", v.get_int());
-                        len = strlen(buf);
-                        break;
-                    case Coltype::_float:
-                        sprintf(buf,"%g", v.get_float());
-                        len = strlen(buf);
-                        break;
-                    case Coltype::_bool:
-                        len = 1;
-                        break;
+                case Coltype::_bool:
+                    len = 1;
+                    break;
+                case Coltype::_int:
+                    snprintf(buf, bufsize, "%i", r->access_column<int_column>(offset));
+                    len = strlen(buf);
+                    break;
+                case Coltype::_float:
+                    snprintf(buf, bufsize, "%g", r->access_column<float_column>(offset));
+                    len = strlen(buf);
+                    break;
+                case Coltype::_text:
+                    qoute_string(r->access_column<text_column>(offset)->data).length();
+                    break;
                 }
                 len++;
                 if ( len > col_len[i] )
@@ -920,6 +935,9 @@ void Table::csv(bool format)
         }
         for (int i=0;i<cols;i++)
         {
+            if (m_cols[i]->m_hidden)
+                continue;
+
             int l = qoute_string(m_cols[i]->m_name).length();
             l++;
             if ( l > col_len[i] )
@@ -936,6 +954,9 @@ void Table::csv(bool format)
 
     for (int i=0;i<cols;i++)
     {
+        if (m_cols[i]->m_hidden)
+            continue;
+
         printf("%s", qoute_string(m_cols[i]->m_name).c_str());
         if (i<cols-1)
             if (format)
@@ -948,31 +969,38 @@ void Table::csv(bool format)
     {
         Row *r = *it;
        
-        Variant v;
         for ( int i = 0; i < cols; i++ )
         {
-            r->get(i,v);
-            char buf[200];
+            Column *c = m_cols[i];
+
+            if (c->m_hidden)
+                continue;
+
+            int offset = c->m_offset;
+            static const int bufsize = 100;
+            char buf[bufsize];
+
             std::string out;
-            switch( m_cols[i]->m_type)
+
+            switch(c->m_type)
             {
-            case Coltype::_text:
-                out = qoute_string(v.get_string());
+            case Coltype::_bool:
+                out = r->access_column<bool_column>(offset) ? "1" : "0";
                 break;
             case Coltype::_int:
-                sprintf(buf, "%d", v.get_int());
+                snprintf(buf, bufsize, "%i", r->access_column<int_column>(offset));
                 out = buf;
                 break;
             case Coltype::_float:
-                sprintf(buf, "%g", v.get_float());
+                snprintf(buf, bufsize, "%g", r->access_column<float_column>(offset));
                 out = buf;
                 break;
-            case Coltype::_bool:
-                sprintf(buf, "%s", v.get_int()==1?"1":"0");
-                out = buf;
+            case Coltype::_text:
+                out = qoute_string(r->access_column<text_column>(offset)->data);
                 break;
             }
-            printf("%s", out.c_str());
+
+            fputs(out.c_str(), stdout);
             if (i<cols-1)
                 if (format)
                     printf("%s,", &tmp[ out.length() + max - col_len[i] + 1 ] );
@@ -993,7 +1021,7 @@ void Table::dump()
     char fmti[40];
     sprintf(fmti,"%%%dd |",width);
     char fmtd[40];
-    sprintf(fmtd,"%%%df |",width);
+    sprintf(fmtd,"%%%dg |",width);
     char fmts[40];
     sprintf(fmts,"%%%ds |",width);
 
@@ -1013,24 +1041,25 @@ void Table::dump()
     {
         printf("|");
         Row *r = *it;
-       
-        Variant v;
+
         for ( int i = 0; i < cols; i++ )
         {
-            r->get(i,v);
-            switch( m_cols[i]->m_type)
+            Column *c = m_cols[i];
+            int offset = c->m_offset;
+
+            switch(c->m_type)
             {
-            case Coltype::_text:
-                printf(fmts, v.get_string());
+            case Coltype::_bool:
+                printf(fmts, r->access_column<bool_column>(offset) ? "1" : "0");
                 break;
             case Coltype::_int:
-                printf(fmti, v.get_int());
+                printf(fmti, r->access_column<int_column>(offset));
                 break;
             case Coltype::_float:
-                printf(fmtd, v.get_float());
+                printf(fmtd, r->access_column<float_column>(offset));
                 break;
-            case Coltype::_bool:
-                printf(fmts, v.get_int()==1?"1":"0");
+            case Coltype::_text:
+                printf(fmts, r->access_column<text_column>(offset));
                 break;
             }
         }
@@ -1101,7 +1130,7 @@ class Parser
                 return false;
 
             it++;
-            q.set_sample(sample);
+            q.m_sample = sample;
             i_iter = it;
             return true;
         }
@@ -1199,7 +1228,7 @@ class Parser
                 OP *op;
                 if (op = get_result_column(it))
                 {
-                    q.m_result_set.push_back(op);
+                    q.m_select.push_back(op);
                 }
                 else
                 {
@@ -1223,8 +1252,7 @@ class Parser
         bool get_ordering_terms(Ordering_terms &ordering, std::list<Token>::iterator &it)
         {
             OP *op;
-            bool cont = true;
-            while(op=get_expr(it,0)) 
+            while(op=get_expr(it,0))
             {
                 bool asc=true;
                 if (it->get_type() == Token::_label)
@@ -1259,7 +1287,6 @@ class Parser
         }
         bool get_group_by( Query &q, Lit &it )
         {
-            Lit save = it;
             if (!is (it,Token::_label,"group"))
             {
                 return true;
@@ -1274,7 +1301,6 @@ class Parser
         }
         bool get_as( Query &q, Lit &it )
         {
-            Lit save = it;
             if (!is (it,Token::_label,"as"))
             {
                 return true;
@@ -1282,14 +1308,13 @@ class Parser
             it++;
             if (!is (it,Token::_label))
                 return false;
-            q.get_result()->m_name = it->get_token();
+            q.m_result->m_name = it->get_token();
             it++;
             return true;
         }
 
         bool get_order_by( Query &q, Lit &it )
         {
-            Lit save = it;
             if (!is (it,Token::_label,"order"))
             {
                 return true;
@@ -1313,12 +1338,10 @@ class Parser
             {
                 it=save;
                 throw Error("non numeric operand to limit");
-                return true;
             }
-            Variant v(it->get_token(),false);
-            q.m_limit=v.get_int();
+            q.m_limit = atoi(it->get_token());
             it++;
-            save =it;
+            save = it;
 
             if (!is (it,Token::_label,"offset"))
             {
@@ -1329,10 +1352,8 @@ class Parser
             {
                 it=save;
                 throw Error("non numeric operand to offset");
-                return true;
             }
-            v.set_no_copy(it->get_token());
-            q.m_offset=v.get_int();
+            q.m_offset = atoi(it->get_token());
             it++;
             return true;
         }
@@ -1371,28 +1392,20 @@ class Parser
 
         bool get_from(Query &q, Lit &it)
         {
-            Lit save = it;
-            if (!is (it,Token::_label,"from"))
+            if (!is(it, Token::_label, "from"))
                 return false;
             it++;
             if (it->get_type() == Token::_label)
             {
-                Table *t=0;
-                if (t = g_db.get_table(it->get_token()))
+                const char *name = it->get_token();
+                if (get_packet_handler(name))
                 {
-                    q.m_from= t;
+                    q.m_from_name = name;
                     it++;
                     return true;
                 }
                 else
-                {
-                    if (q.m_first_pass)
-                    {
-                        it++;
-                        return true;
-                    }
-                    throw Error("Error in from statement cannot find table %s !",it->get_token());
-                }
+                    throw Error("Error in from statement, table '%s' not found", name);
             }
             throw Error("Error in from statement");
         }
@@ -1838,7 +1851,6 @@ public:
 	}
     bool parse_num(const char p)
     {
-        bool cont = true;
         switch(num_state)
         {
             case(_nan):
@@ -1904,85 +1916,91 @@ public:
     Num_state num_state;
 };
 
-bool Query::parse()
+void Query::parse()
 {
     Parser p;
     Lexer l(p);
     l.lex(m_sql.c_str());
 //		p.dump();
     if (!p.analyze(*this))
-    {
         throw Error("error parsing select statement");
-        return false;
-    }
-    return true;
 }
 
+// return column and index in tables, or 0 for column if column isn't found
+std::pair<Column *, int> lookup_column_in_tables(const std::vector<Table *> &tables,
+                                                  const std::vector<int> &search_order,
+                                                  const char *name)
+{
+    if (strcmp(name, "*") == 0)
+        return std::pair<Column *, int>(0, 0);
 
+    for (auto i = search_order.begin(); i != search_order.end(); ++i)
+    {
+        Table *table = tables[*i];
+        int col_index = table->get_col_index(name);
+        if (col_index >= 0)
+            return std::pair<Column *, int>(table->m_cols[col_index], *i);
+    }
 
-OP* OP::compile(Table **table, Query &q)
+    return std::pair<Column *, int>(0, 0);
+}
+
+OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &search_order, Query &q)
 {
     OP *ret=0;
     for (int i=0 ; i<max_param(); i++)
-        if(m_param[i])
-            m_param[i] = m_param[i]->compile(table, q);
+    {
+        if (m_param[i])
+        {
+            m_param[i] = m_param[i]->compile(tables, search_order, q);
+            if (m_param[i]->m_has_aggregate_function)
+                m_has_aggregate_function = true;
+        }
+    }
 
-    if(m_left)
-        m_left = m_left->compile(table, q);
+    if (m_left)
+    {
+        m_left = m_left->compile(tables, search_order, q);
+        if (m_left->m_has_aggregate_function)
+            m_has_aggregate_function = true;
+    }
 
-    if(m_right)
-        m_right = m_right->compile(table, q);
+    if (m_right)
+    {
+        m_right = m_right->compile(tables, search_order, q);
+        if (m_right->m_has_aggregate_function)
+            m_has_aggregate_function = true;
+    }
+
+    // default to destination row
+    m_row_index = tables.size() - 1;
+
     if (get_type()==_column)
     {
-        m_src_idx = -1;
-        m_src_row = 0;
-        if ( cmpi(get_token(),"*") )
-        {
-           return 0; 
-        }
+        auto lookup = lookup_column_in_tables(tables, search_order, get_token());
+        Column *column = lookup.first;
+        m_row_index = lookup.second;
 
-        if (table[0])
-            m_src_idx = table[0]->get_col_index(get_token());
+        if (!column)
+            throw Error("Column '%s' not found", get_token());
 
-        if (m_src_idx<0)
-        {
-            m_src_row=1;
-            if (table[1])
-                m_src_idx = table[1]->get_col_index(get_token());
-            if (m_src_idx<0)
-                throw Error( "Column '%s' not found", get_token() );
-        }
+        int offset = column->m_offset;
 
-        m_t = table[m_src_row]->m_cols[m_src_idx]->m_type;
+        m_t = column->m_type;
+
         switch(m_t)
         {
-        case(Coltype::_int ):
-            {
-                Int_accessor *accessor = new Int_accessor();
-                accessor->m_offset = table[m_src_row]->m_cols[m_src_idx]->get_offset();
-                ret = new Column_access_int(*this,accessor);
-            }
+        case Coltype::_int:
+            ret = new Column_access_int(*this, offset);
             break;
-        case(Coltype::_bool ):
-            {
-                Bool_accessor *accessor = new Bool_accessor();
-                accessor->m_offset = table[m_src_row]->m_cols[m_src_idx]->get_offset();
-                ret = new Column_access_bool(*this,accessor);
-            }
+        case Coltype::_bool:
+            ret = new Column_access_bool(*this, offset);
             break;
-        case(Coltype::_float ):
-            {
-                Float_accessor *accessor = new Float_accessor();
-                accessor->m_offset = table[m_src_row]->m_cols[m_src_idx]->get_offset();
-                ret = new Column_access_float(*this,accessor);
-            }
+        case Coltype::_float:
+            ret = new Column_access_float(*this, offset);
             break;
-        case(Coltype::_text ):
-            {
-                String_accessor *accessor = new String_accessor();
-                accessor->m_offset = table[m_src_row]->m_cols[m_src_idx]->get_offset();
-                ret = new Column_access_string(*this,accessor);
-            }
+        case Coltype::_text:
+            ret = new Column_access_text(*this, offset);
             break;
         }
     }
@@ -2010,10 +2028,12 @@ OP* OP::compile(Table **table, Query &q)
     if (get_type()==_string)
     {
         m_t = Coltype::_text;
-        ret = new OP(*this);
+        ret = new Static_text(*this);
     }
     if ((get_type()==_function)&&m_param[0])
     {
+        Table *dest_table = tables[m_row_index];
+
         m_t = Coltype::_int;
         if ( cmpi(get_token(),"if") && m_param[1] && m_param[2] )
         {
@@ -2044,44 +2064,37 @@ OP* OP::compile(Table **table, Query &q)
 
         if (cmpi(get_token(),"count"))
         {
-            q.set_aggregate();
             m_t = Coltype::_int;
-            ret = new Count_func(*this);
+            ret = new Count_func(*this, dest_table);
         }
         if (m_t == Coltype::_int)
         {
             if (cmpi(get_token(),"min"))
             {
-                q.set_aggregate();
-                ret = new Min_func_int(*this);
+                ret = new Min_func_int(*this, dest_table);
             }
             if (cmpi(get_token(),"max"))
             {
-                q.set_aggregate();
-                ret = new Max_func_int(*this);
+                ret = new Max_func_int(*this, dest_table);
             }
             if (cmpi(get_token(),"sum"))
             {
-                q.set_aggregate();
-                ret = new Sum_func_int(*this);
+                ret = new Sum_func_int(*this, dest_table);
             }
         }
         else
         {
             if (cmpi(get_token(),"min"))
             {
-                q.set_aggregate();
-                ret = new Min_func_float(*this);
+                ret = new Min_func_float(*this, dest_table);
             }
             if (cmpi(get_token(),"max"))
             {
-                q.set_aggregate();
-                ret = new Max_func_float(*this);
+                ret = new Max_func_float(*this, dest_table);
             }
             if (cmpi(get_token(),"sum"))
             {
-                q.set_aggregate();
-                ret = new Sum_func_float(*this);
+                ret = new Sum_func_float(*this, dest_table);
             }
         }
 
@@ -2090,11 +2103,11 @@ OP* OP::compile(Table **table, Query &q)
             m_t = Coltype::_text;
             ret = new Lower_func(*this);
         }
-	if (cmpi(get_token(),"len"))
-	{
-	    m_t = Coltype::_int;
-	    ret = new Len_func(*this);
-	}
+        if (cmpi(get_token(),"len"))
+        {
+            m_t = Coltype::_int;
+            ret = new Len_func(*this);
+        }
         if (cmpi(get_token(),"truncate"))
         {
             m_t = Coltype::_int;
@@ -2103,14 +2116,12 @@ OP* OP::compile(Table **table, Query &q)
         if (cmpi(get_token(),"stdev"))
         {
             m_t = Coltype::_float;
-            q.set_aggregate();
-            ret = new Stdev_func(*this);
+            ret = new Stdev_func(*this, dest_table);
         }
         if (cmpi(get_token(),"avg"))
         {
             m_t = Coltype::_float;
-            q.set_aggregate();
-            ret = new Avg_func(*this);
+            ret = new Avg_func(*this, dest_table);
         }
     }
 
@@ -2300,291 +2311,415 @@ OP* OP::compile(Table **table, Query &q)
     return ret;
 }
 
-void OP::reset()
+void OP::evaluate_aggregate_operands(Row **rows)
 {
-    reset_op();
     if (m_left)
-        m_left->reset();
+        m_left->evaluate_aggregate_operands(rows);
     if (m_right)
-        m_right->reset();
+        m_right->evaluate_aggregate_operands(rows);
+    for (int i = 0; i < max_param(); ++i)
+        if (m_param[i])
+            m_param[i]->evaluate_aggregate_operands(rows);
 }
 
-void OP::evaluate(Row *row, Variant &v)
+void OP::combine_aggregate(Row *base_row, Row *other_row)
 {
+    if (m_left)
+        m_left->combine_aggregate(base_row, other_row);
+    if (m_right)
+        m_right->combine_aggregate(base_row, other_row);
+    for (int i = 0; i < max_param(); ++i)
+        if (m_param[i])
+            m_param[i]->combine_aggregate(base_row, other_row);
+}
 
-    switch(get_type())
+// return any column access ops found in given list of op trees - they don't
+// have to be compiled beforehand
+std::vector<OP *> find_column_ops(std::vector<OP *> ops)
+{
+    std::vector<OP *> res;
+
+    while (!ops.empty())
     {
+        OP *op = ops.back();
+        ops.pop_back();
 
-        case(_number):
+        if (op->m_left)
+            ops.push_back(op->m_left);
+        if (op->m_right)
+            ops.push_back(op->m_right);
+        for (int i = 0; i < op->max_param(); ++i)
+            if (op->m_param[i])
+                ops.push_back(op->m_param[i]);
+
+        if (op->get_type() == Token::_column)
+        {
+            bool found = false;
+
+            for (auto i = res.begin(); i != res.end(); ++i)
             {
-                v = atoi(get_token());
-            }
-            break;
-        case(_string):
-            {
-                if (get_type()==_string)
+                if (cmpii((*i)->get_token(), op->get_token()))
                 {
-                    v.set_no_copy(get_token());
-                    return ;
+                    found = true;
+                    break;
                 }
             }
-            break;
-        case(_function):
-            {
-                v.set_no_copy( "unknown function");
-            }
-            break;
+
+            if (!found)
+                res.push_back(op);
+        }
     }
-    return;
+
+    return res;
 }
 
-bool Query::process_where(Row *dst)
+void Query::replace_star_column_with_all_columns()
+{
+    bool found_star = false;
+    for (std::vector<OP *>::iterator i = m_select.begin(); i != m_select.end(); ++i)
+    {
+        if (strcmp((*i)->get_token(), "*") == 0) {
+            found_star = true;
+            break;
+        }
+    }
+
+    if (found_star)
+    {
+        for (auto i = m_select.begin(); i != m_select.end(); ++i)
+            delete *i;
+        m_select.clear();
+
+        if (!m_from_name.empty())
+        {
+            Packet_handler *handler = get_packet_handler(m_from_name);
+
+            for (auto i = handler->packet_columns.begin(); i != handler->packet_columns.end(); ++i)
+                m_select.push_back(new OP(Token(Token::_column, i->name)));
+        }
+    }
+}
+
+void Query::process_from()
+{
+    replace_star_column_with_all_columns();
+
+    if (m_from_name.empty())
+        return;
+
+    std::vector<OP *> all_ops;
+    all_ops.insert(all_ops.end(), m_select.begin(), m_select.end());
+    if (m_where)
+        all_ops.push_back(m_where);
+    // skip m_having, it can't access source columns
+    for (auto i = m_order_by.m_terms.begin(); i != m_order_by.m_terms.end(); ++i)
+        all_ops.push_back(i->m_op);
+    for (auto i = m_group_by.m_terms.begin(); i != m_group_by.m_terms.end(); ++i)
+        all_ops.push_back(i->m_op);
+    
+    auto used_columns = find_column_ops(all_ops);
+
+    // add from table with used columns
+    Packet_handler *handler = get_packet_handler(m_from_name);
+    for (auto j = handler->packet_columns.begin(); j != handler->packet_columns.end(); ++j)
+        for (auto i = used_columns.begin(); i != used_columns.end(); ++i)
+            if (cmpi(j->name, (*i)->get_token()))
+                m_used_from_column_ids.push_back(j->id);
+
+    m_from = handler->create_table(m_used_from_column_ids);
+}
+
+void Query::process_select(Row **rows, Row *dest, GenericAccessor *dest_accessors)
+{
+    for (unsigned int i=0, size = m_select.size(); i < size; ++i)
+    {
+        OP *op = m_select[i];
+        if (!op)
+            continue;
+
+        if (op->m_has_aggregate_function)
+        {
+            // defer evaluating aggregate functions, just eval their operands
+            op->evaluate_aggregate_operands(rows);
+        }
+        else
+        {
+            Variant v;
+            op->evaluate(rows, v);
+            dest_accessors[i].set(dest, v);
+        }
+    }
+}
+
+void Query::combine_aggregates_in_select(Row *base_row, Row *other_row)
+{
+    for (unsigned int i = 0; i < m_select.size(); ++i)
+    {
+        OP *op = m_select[i];
+        if (op && op->m_has_aggregate_function)
+            op->combine_aggregate(base_row, other_row);
+    }
+}
+
+void Query::process_aggregates_in_select(Row **rows, Row *dest, GenericAccessor dest_accessors[])
+{
+    for (unsigned int i = 0; i < m_select.size(); ++i)
+    {
+        OP *op = m_select[i];
+        if (op && op->m_has_aggregate_function)
+        {
+            Variant v;
+            op->evaluate(rows, v);
+            dest_accessors[i].set(dest, v);
+        }
+    }
+}
+
+bool Query::process_where(Row **rows)
 {
     if (!m_where)
         return true;
 
     Variant v;
-    m_where->evaluate( dst, v );
+    m_where->evaluate(rows, v);
     return v.get_bool();
 }
 
-bool Query::process_having(Row *dst)
+bool Query::process_having(Row **rows)
 {
     if (!m_having)
         return true;
 
     Variant v;
-    m_having->evaluate( dst, v );
+    m_having->evaluate(rows, v);
     return v.get_bool();
 }
 
-void Query::reset()
+std::vector<Variant> process_group_by_key(Ordering_terms &group_by, Row **rows)
 {
-    for (unsigned int i=0;i<m_result_set.size();i++)
-    {
-        OP *op = m_result_set[i];
-        if (op)
-        {
-            op->reset();
-        }
-    }
+    int size = group_by.m_terms.size();
+
+    std::vector<Variant> res(size);
+
+    for (int i = 0; i < size; ++i)
+        group_by.m_terms[i].m_op->evaluate(rows, res[i]);
+
+    return res;
 }
 
-Row *Query::process_select( Row *dest)
+bool Query::has_aggregate_functions()
 {
-    Row *src = 0;
-    for (unsigned int i=0;i<m_result_set.size();i++)
-    {
-        OP *op = m_result_set[i];
-        if (op)
-        {
-            int col = -1;
-            Variant v;
-            op->evaluate(dest, v);
-            dest->set(i,v);
-        }
-    }
-    return dest;
+    // this assumes the ops have been compiled
+    for (std::vector<OP *>::iterator it=m_select.begin();it!=m_select.end();it++)
+        if ((*it)->m_has_aggregate_function)
+            return true;
+
+    return false;
 }
 
-
-bool Query::execute()
+void Query::execute(Reader &reader)
 {
-    try
+    std::vector<Table *> tables;
+    std::vector<int> search_results_last, search_results_first, search_results_only;
+
+    // set up tables
+    process_from();
+
+    if (m_from)
+        tables.push_back(m_from);
+    tables.push_back(m_result);
+
+    for (int i = 0; i < int(tables.size()); ++i)
+        search_results_last.push_back(i);
+    for (int i = int(tables.size()) - 1; i >= 0; --i)
+        search_results_first.push_back(i);
+
+    search_results_only.push_back(tables.size() - 1);
+
+    std::vector<Row *> row_ptrs(tables.size());
+    Row **rows = &row_ptrs[0];
+
+    std::vector<GenericAccessor> result_accessors_vector;
+
+    // compile
+    for (auto i = m_select.begin(); i != m_select.end(); ++i)
     {
-        Table *tables[2]={m_from,m_result};
+        *i = (*i)->compile(tables, search_results_last, *this);
+        Column *col = m_result->add_column((*i)->get_name(), (*i)->ret_type());
+        GenericAccessor a;
+        a.m_offset = col->m_offset;
+        a.m_type = col->m_type;
+        result_accessors_vector.push_back(a);
+    }
 
-        bool found_star=false;
-        for (std::vector<OP *>::iterator it=m_result_set.begin();it!=m_result_set.end();it++)
+    if (m_where)
+        m_where=m_where->compile(tables, search_results_last, *this);
+
+    if (m_having)
+        m_having=m_having->compile(tables, search_results_only, *this);
+
+    if (m_group_by.exist())
+        m_group_by.compile(tables, search_results_last, *this);
+
+    if (m_order_by.exist())
+    {
+        // copy any missing columns to result table as hidden so we can
+        // order by them
+        std::vector<OP *> ops;
+        for (auto i = m_order_by.m_terms.begin(); i != m_order_by.m_terms.end(); ++i)
+            ops.push_back(i->m_op);
+
+        std::vector<OP *> column_ops = find_column_ops(ops);
+
+        for (auto i = column_ops.begin(); i != column_ops.end(); ++i)
         {
-            OP *op = *it = (*it)->compile(tables, *this);
-            if (!op)
-            {
-                delete *it;
-                found_star = true;
-                break;
+            const char *name = (*i)->get_token();
+            auto lookup = lookup_column_in_tables(tables, search_results_first, name);
+            if (lookup.first and lookup.second < int(tables.size()) - 1) {
+                // found, but not in result table
+                OP *copying_op = new OP(**i);
+                copying_op = copying_op->compile(tables, search_results_last, *this);
+                m_select.push_back(copying_op);
+                Column *col = m_result->add_column(copying_op->get_name(), copying_op->ret_type(), -1, Column::HIDDEN);
+                GenericAccessor a;
+                a.m_offset = col->m_offset;
+                a.m_type = col->m_type;
+                result_accessors_vector.push_back(a);
             }
-            m_result->add_column(op->get_name(), op->ret_type() );
-        }
-        if (found_star)
-        {
-            m_result_set.clear();
-            if (m_from)
-            {
-                int cols = (int)m_from->m_cols.size();
-                 m_result_set.resize(cols);
-                for (int i=0;i<cols;i++)
-                {
-                    OP *op = new OP( Token(Token::_column, m_from->m_cols[i]->m_name.c_str() ) );
-                    op = op->compile(tables, *this);
-
-                    m_result_set[i] = op;
-                    m_result->add_column(op->get_name(), op->ret_type() );
-                }
-            }
-        }
-        if(m_where)
-        {
-            m_where=m_where->compile(tables, *this);
-        }
-        if(m_having)
-        {
-            m_having=m_having->compile(tables, *this);
         }
 
-        int c=0,count=0,src_count = 0;
-        bool limiter = m_order_by.exist()==false && m_group_by.exist()==false && !m_aggregate_functions && m_limit>=0;
-        reset();
-        if (m_from)
+        // we only provide access to result table for "order by"; in order
+        // to make the sort thing work correctly the result table currently
+        // has to be at index 0
+        std::vector<Table *> tables_result_only = { m_result };
+        std::vector<int> tables_result_only_search = { 0 };
+        m_order_by.compile(tables_result_only, tables_result_only_search, *this);
+    }
+
+    // execute
+    GenericAccessor *result_accessors = &result_accessors_vector[0];
+    bool aggregate_functions = has_aggregate_functions();
+
+    int count=0;
+    bool limiter = !m_order_by.exist() && !m_group_by.exist() && !aggregate_functions && m_limit>=0;
+
+    if (m_from)
+    {
+        bool first_row = true;
+        Packet_handler *handler = get_packet_handler(m_from_name);
+
+        reader.seek_to_start();
+
+        const int src_i = 0, dest_i = tables.size() - 1;
+
+        rows[src_i] = m_from->create_row();
+
+        if (m_group_by.exist() || aggregate_functions)
         {
-            if (m_from->m_rows.size()==0)
-                throw Error("No source rows found");                
-            if ( m_group_by.exist() || m_aggregate_functions )
+            std::unordered_map<std::vector<Variant>, Row*> groups;
+
+            rows[dest_i] = 0;
+            while (reader.read_next(handler, m_used_from_column_ids, *rows[src_i], first_row or m_sample == 0 ? 0 : m_sample - 1))
             {
-                if ( m_group_by.exist() ) 
-                    m_group_by.compile(m_result, m_from, *this);
-                src_count = (int)m_from->m_rows.size();
-                for (std::list<Row *>::iterator it=m_from->m_rows.begin();it!=m_from->m_rows.end();it++)
+                // fill in groups
+                if (rows[dest_i])
+                    rows[dest_i]->reset_text_columns(m_result->m_text_column_offsets);
+                else
+                    rows[dest_i] = m_result->create_row();
+
+                process_select(rows, rows[dest_i], result_accessors);
+                if (process_where(rows))
                 {
-                    c++;
-                    Row *dest = m_result->create_row(false);
-                    dest->m_source = *it;
-                    process_select(dest); // <-- rather silly - we should resolve needed columns represented with "as"
-                    if (process_where(dest))
+                    auto key = process_group_by_key(m_group_by, rows);
+                    Row* &entry = groups[key];
+                    if (entry)
                     {
-                        m_result->commit_row(dest);
+                        combine_aggregates_in_select(entry, rows[dest_i]);
                     }
                     else
-                        dest->del();
+                    {
+                        entry = rows[dest_i];
+                        rows[dest_i] = 0;
+                    }
                 }
-                if ( m_group_by.exist() ) 
-                {
-                    m_result->per_sort(m_group_by);
 
-                    Sorter sorter(m_group_by);
-
-                    std::list<Row *>::iterator it=m_result->m_rows.begin();
-                    std::list<Row *>::iterator e=it++;
-                    reset();
-                    if (e!=m_result->m_rows.end())
-                        process_select(*e);
-                    for (;it!=m_result->m_rows.end();it++)
-                    {
-                        if (sorter.eq(*it,*e))
-                        {
-                            m_result->delete_row(*e);
-                            m_result->m_rows.erase(e);
-                        }
-                        else
-                        {
-                            if (!process_having(*e))
-                            {
-                                m_result->delete_row(*e);
-                                m_result->m_rows.erase(e);
-                            }
-                            reset();
-                            // proceed to next group
-                        }
-                        process_select(*it);
-                        e=it;        
-                    }
-                    if (!process_having(*e))
-                    {
-                        m_result->delete_row(*e);
-                        m_result->m_rows.erase(e);
-                    }
-                }
-                else
-                {
-                    // agg func
-                    std::list<Row *>::iterator it=m_result->m_rows.begin();
-                    std::list<Row *>::iterator e=it++;
-                    reset();
-                    if (e!=m_result->m_rows.end())
-                        process_select(*e);
-                    for (;it!=m_result->m_rows.end();it++)
-                    {
-                        m_result->delete_row(*e);
-                        m_result->m_rows.erase(e);
-                        process_select(*it);
-                        e=it;        
-                    }
-                }
+                first_row = false;
+                rows[src_i]->reset_text_columns(m_from->m_text_column_offsets);
             }
-            else
+            if (rows[dest_i])
+                m_result->delete_row(rows[dest_i]);
+
+            // put groups into result
+            for (auto i = groups.begin(); i != groups.end(); ++i)
             {
-                Row *dst = m_result->create_row(false);
-                src_count = (int)m_from->m_rows.size();
-                for (std::list<Row *>::iterator it=m_from->m_rows.begin();it!=m_from->m_rows.end();it++)
-                {
-                    dst->m_source = *it;
-                    process_select(dst);
-                    if (process_where(dst))
-                    {
-                        bool commit = true;
-                        if (limiter)
-                        {
-                            int l = count++;
-                            if (m_offset>0)
-                                l-=m_offset;
-                            if (m_limit>=0 && l>=m_limit)
-                            {
-                                break;
-                            }
-                            if (l<0)
-                                commit=false;
-                        }
-
-                        if (commit)
-                        {
-                            m_result->commit_row(dst);
-                            dst = m_result->create_row(false);
-                        }
-                    }
-
-                    c++;
-                }
-                dst->del();
+                rows[dest_i] = i->second;
+                // propagate the aggregate results through the evaluation tree
+                process_aggregates_in_select(rows, rows[dest_i], result_accessors);
+                if (process_having(rows))
+                    m_result->add_row(rows[dest_i]);
+                else
+                    m_result->delete_row(rows[dest_i]);
             }
+            printf("size = %i\n", m_result->m_rows.size());
         }
         else
         {
-            Row *dst = m_result->create_row(false);
-            dst = process_select(dst);
-            if (process_where(dst))
-                m_result->commit_row(dst);
-            else
-                dst->del();
-        }
-        if(m_order_by.exist())
-        {
-            m_order_by.compile(m_result,m_from, *this);
-            m_result->per_sort(m_order_by);
+            rows[dest_i] = m_result->create_row();
+            while (reader.read_next(handler, m_used_from_column_ids, *rows[src_i], first_row or m_sample == 0 ? 0 : m_sample - 1))
+            {
+                // fill in result
+                process_select(rows, rows[dest_i], result_accessors);
+                if (process_where(rows))
+                {
+                    bool commit = true;
+                    if (limiter)
+                    {
+                        int l = count++;
+                        if (m_offset>0)
+                            l-=m_offset;
+                        if (m_limit>=0 && l>=m_limit)
+                            break;
+
+                        if (l<0)
+                            commit=false;
+                    }
+
+                    if (commit)
+                    {
+                        m_result->add_row(rows[dest_i]);
+                        rows[dest_i] = m_result->create_row();
+                    }
+                }
+
+                first_row = false;
+                rows[src_i]->reset_text_columns(m_from->m_text_column_offsets);
+            }
+            m_result->delete_row(rows[dest_i]);
         }
 
-        if (m_limit>=0 && !limiter)
-            m_result->limit(m_limit,m_offset);
-        //m_from <-- tabell
+        m_from->delete_row(rows[src_i]);
     }
-    catch(Error &e)
+    else
     {
-        printf("Error: %s\n",e.m_err.c_str());
-        delete m_result;
-        m_result=0;
-        fflush(stdout);
+        const int dest_i = tables.size() - 1;
+        rows[dest_i] = m_result->create_row();
+        process_select(rows, rows[dest_i], result_accessors);
+        if (process_where(rows))
+            m_result->add_row(rows[dest_i]);
+        else
+            m_result->delete_row(rows[dest_i]);
     }
-    catch(...)
-    {
-        printf("Error: an unknown error has occured !\n");
-        fflush(stdout);
-    }
-    return true;
+
+    if (m_order_by.exist())
+        m_result->per_sort(m_order_by);
+
+    if (m_limit>=0 && !limiter)
+        m_result->limit(m_limit,m_offset);
 }
 
 DB::DB()
 {
     Column::init_defs();
-
 }
 
 DB::~DB()
@@ -2623,58 +2758,55 @@ Table *DB::create_table(const char *i_name)
  
     return t;
 }
-Column::Column(const char *name,Coltype::Type type): m_name(name) , m_type(type), m_def(Column::m_coldefs[type])
+Column::Column(const char *name,Coltype::Type type, int id, bool hidden): m_name(name), m_type(type), m_def(Column::m_coldefs[type]), m_id(id)
 {
-    if (m_type==Coltype::_int)
-        m_accessor = new Int_accessor();
-    else if (m_type==Coltype::_text)
-        m_accessor = new String_accessor();
-    else if (m_type==Coltype::_bool)
-        m_accessor = new Bool_accessor();
-    else if (m_type==Coltype::_float)
-        m_accessor = new Float_accessor();
+    m_hidden = hidden;
 }
-Column::~Column()
+
+void Trim_func::evaluate(Row **rows, Variant &v)
 {
-    if (m_accessor) delete m_accessor;
-}
-void Column::set_offset(int o)
-{
-    m_offset = o;
-    m_accessor->m_offset = o;
-}
-void Trim_func::evaluate(Row *row, Variant &v)
-{
-    std::string r=" ";
-    Variant str,rem; 
-    m_param[0]->evaluate(row, str);
+    Variant str;
+    m_param[0]->evaluate(rows, str);
+    RefCountStringHandle str_handle(str.get_text());
+    const char *s = (*str_handle)->data;
+
+    const char *t;
+    RefCountStringHandle trim_handle;
     if (m_param[1])
     {
-        m_param[1]->evaluate(row, rem);
-        r=rem.get_string();
+        Variant trim;
+        m_param[1]->evaluate(rows, trim);
+        trim_handle.set(trim.get_text());
+        t = (*trim_handle)->data;
     }
-    std::string s=str.get_string();
-    int l = r.length();
-    while ( l && ( s.length() >= l ) )
+    else
+        t = " ";
+
+    int l = strlen(t);
+    if (l <= 0)
     {
-        int l2 = l;
-        l=0;
-        int res = s.rfind(r);
-        if (res==s.length()-l2)
-        {
-            l=l2;
-            s=s.substr(0,s.length()-l);
-        }
-        if (s.find(r)==0)
-        {
-            s=s.substr(l2,s.length()-l2);
-            l=l2;
-        }
+        v = *str_handle;
+        return;
     }
 
-    Variant res( s.c_str(),true);
-    v=res;
-    return;
+    int slen = strlen(s);
+    int start = 0, end = slen;
+
+    // left trim
+    while (end - start >= l && memcmp(s + start, t, l) == 0)
+        start += l;
+
+    // right trim
+    while (end - start >= l && memcmp(s + end - l, t, l) == 0)
+        end -= l;
+
+    if (start == 0 && end == slen)
+        v = *str_handle;
+    else
+    {
+        RefCountStringHandle res(RefCountString::construct(s, start, end));
+        v = *res;
+    }
 }
 
 DB g_db;

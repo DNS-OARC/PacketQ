@@ -39,32 +39,56 @@
 
 namespace se {
 
-bool Parse_icmp::parse(Packet &packet)
+Parse_icmp::Parse_icmp()
+{
+    table_name = "icmp";
+
+    add_packet_columns();
+}
+
+void Parse_icmp::add_packet_columns()
+{
+    m_ip_helper.add_packet_columns(*this);
+
+    add_packet_column("type",            "", Coltype::_int, COLUMN_TYPE);
+    add_packet_column("code",            "", Coltype::_int, COLUMN_CODE);
+    add_packet_column("echo_identifier", "", Coltype::_int, COLUMN_ECHO_IDENTIFIER);
+    add_packet_column("echo_sequence",   "", Coltype::_int, COLUMN_ECHO_SEQUENCE);
+    add_packet_column("du_protocol",     "", Coltype::_int, COLUMN_DU_PROTOCOL);
+    add_packet_column("du_src_addr",     "", Coltype::_text, COLUMN_DU_SRC_ADDR);
+    add_packet_column("du_dst_addr",     "", Coltype::_text, COLUMN_DU_DST_ADDR);
+    add_packet_column("desc",            "", Coltype::_text, COLUMN_DESC);
+}
+
+Packet::ParseResult Parse_icmp::parse(Packet &packet, const std::vector<int> &columns, Row &destination_row, bool sample)
 {
     if (packet.m_ip_header.proto != IPPROTO_ICMP)
-        return false;
+        return Packet::ERROR;
     if (packet.m_ip_header.ethertype != 2048) // we dont support ICMPv6 yet
-        return false;
-        
-    Row *r = m_table->create_row();
-    m_ip_helper.assign( r, &packet.m_ip_header );
-    
+        return Packet::ERROR;
+
+    if (!sample)
+        return Packet::NOT_SAMPLED;
+
+    Row *r = &destination_row;
+
+    m_ip_helper.assign(r, &packet.m_ip_header, columns);
 
     unsigned char *raw = packet.m_data;
     int type=raw[0];
     int code=raw[1];
-    acc_type->set_i(r,type);
-    acc_code->set_i(r,code);
+    acc_type.value(r) = type;
+    acc_code.value(r) = code;
     char desc[300];
 
-    desc[0]=0;
+    desc[0] = 0;
 
     switch(type)
     {
         case(0):
             sprintf(desc,"Echo Reply");
-            acc_echo_identifier->set_i( r,get_short(&raw[4]));
-            acc_echo_sequence->set_i(   r,get_short(&raw[6]));
+            acc_echo_identifier.value(r) = get_short(&raw[4]);
+            acc_echo_sequence.value(r) = get_short(&raw[6]);
             //    acc_echo_sequence->set_i(   r,4);
             break;
         case(3):
@@ -76,9 +100,9 @@ bool Parse_icmp::parse(Packet &packet)
                 sprintf(desc,"Destination %sunreachable",what);
                 IP_header head;
                 head.decode(&raw[8],packet.m_ip_header.ethertype,0);
-                acc_du_protocol->set_i(     r,head.proto);
-                acc_du_src_addr->set_i(     r,v4_addr2str(head.src_ip));
-                acc_du_dst_addr->set_i(     r,v4_addr2str(head.dst_ip));
+                acc_du_protocol.value(r) = head.proto;
+                acc_du_src_addr.value(r) = v4_addr2str(head.src_ip);
+                acc_du_dst_addr.value(r) = v4_addr2str(head.dst_ip);
             }
             break;
         case(4):
@@ -92,8 +116,8 @@ bool Parse_icmp::parse(Packet &packet)
             break;
         case(8):
             sprintf(desc,"Echo Request");
-            acc_echo_identifier->set_i( r,get_short(&raw[4]));
-            acc_echo_sequence->set_i(   r,get_short(&raw[6]));
+            acc_echo_identifier.value(r) = get_short(&raw[4]);
+            acc_echo_sequence.value(r) = get_short(&raw[6]);
             break;
         case(9):
             sprintf(desc,"Router Advertisement");
@@ -129,45 +153,24 @@ bool Parse_icmp::parse(Packet &packet)
             sprintf(desc,"Traceroute");
             break;
     }
-    
 
-    acc_desc->set_i(     r,desc);
+    acc_desc.value(r) = RefCountString::construct(desc);
 
-    return true;
+    return Packet::OK;
 }
 
-void Parse_icmp::add_columns(Table &table)
+void Parse_icmp::on_table_created(Table *table, const std::vector<int> &columns)
 {
-    m_ip_helper.add_columns(table);
+    m_ip_helper.on_table_created(table, columns);
 
-    table.add_column("type",            Coltype::_int );
-    table.add_column("code",            Coltype::_int );
-    table.add_column("echo_identifier", Coltype::_int );
-    table.add_column("echo_sequence",   Coltype::_int );
-    table.add_column("du_protocol",     Coltype::_int );
-    table.add_column("du_src_addr",     Coltype::_text );
-    table.add_column("du_dst_addr",     Coltype::_text );
-    table.add_column("desc",            Coltype::_text );
+    acc_type            = table->get_accessor<int_column>("type");
+    acc_code            = table->get_accessor<int_column>("code");
+    acc_echo_identifier = table->get_accessor<int_column>("echo_identifier");
+    acc_echo_sequence   = table->get_accessor<int_column>("echo_sequence");
+    acc_du_protocol     = table->get_accessor<int_column>("du_protocol");
+    acc_du_src_addr     = table->get_accessor<text_column>("du_src_addr");
+    acc_du_dst_addr     = table->get_accessor<text_column>("du_dst_addr");
+    acc_desc            = table->get_accessor<text_column>("desc");
 }
-
-
-void Parse_icmp::init_idx()
-{
-    m_table = g_db.create_table("icmp");
-    if (!m_table)
-        return;
-    add_columns(*m_table);
-
-    acc_type            = m_table->get_int_accessor("type");
-    acc_code            = m_table->get_int_accessor("code");
-    acc_echo_identifier = m_table->get_int_accessor("echo_identifier");
-    acc_echo_sequence   = m_table->get_int_accessor("echo_sequence");
-    acc_du_protocol     = m_table->get_int_accessor("du_protocol");
-    acc_du_src_addr     = m_table->get_string_accessor("du_src_addr");
-    acc_du_dst_addr     = m_table->get_string_accessor("du_dst_addr");
-    acc_desc            = m_table->get_string_accessor("desc");
-}
-
-
 
 }
