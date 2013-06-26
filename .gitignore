@@ -8,3 +8,5 @@ config.log
 config.h
 autom4te.cache/
 Makefile
+src/*~
+unix.tag
