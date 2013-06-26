@@ -284,8 +284,15 @@ bool Packet::parse_ethernet()
         return false; // check for etherframe size + ipv4 header
 
     int ethertype = data[13] | (data[12] << 8);
-    data += 14;
-    len -= 14;
+    if (ethertype == 0x8100) {
+        // VLAN-tagged
+        ethertype = data[17] | (data[16] << 8);
+        data += 18;
+        len -= 18;
+    } else {
+        data += 14;
+        len -= 14;
+    }
 
     return parse_ip(data, len, ethertype);
 }
