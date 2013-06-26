@@ -42,8 +42,6 @@
 #include <vector>
 #include "sql.h"
 
-#define IPPROTO_ICMP 1
-
 namespace se {
 
 class Table;

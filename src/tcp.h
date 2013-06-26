@@ -39,8 +39,6 @@
 #ifndef ETHERTYPE_IPV6
 #define ETHERTYPE_IPV6 0x86dd
 #endif
-#define IPPROTO_TCP 6
-#define IPPROTO_UDP 17
 
 namespace se {
 

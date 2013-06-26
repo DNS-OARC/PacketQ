@@ -50,13 +50,18 @@
 #include "stdarg.h"
 #include "refcountstring.h"
 #include "variant.h"
-
+#include <arpa/inet.h>
 
 #ifdef WIN32
 #define snprintf _snprintf
 #endif
 
 #define RE_LEN	64
+
+#ifndef AF_INET
+#define AF_INET   2
+#define AF_INET6 10
+#endif
 
 namespace se {
 
@@ -924,6 +929,107 @@ public:
         RefCountStringHandle res(RefCountString::construct(buf));
         v = *res;
     }
+};
+
+class Subnet_func : public OP
+{
+    public:
+	Subnet_func(const OP &op): OP(op)
+	{
+	}
+	void evaluate(Row **rows, Variant &v)
+	{
+	    char sep='\0';
+	    Variant str, num;
+	    RefCountStringHandle blank(RefCountString::construct(""));
+	    int af;
+	    
+	    m_param[0]->evaluate(rows, str);
+	    RefCountStringHandle address(str.get_text());
+	    const char *addr_str = (*address)->data;
+	    int addr_len = strlen(addr_str);
+	    char buf[40];
+
+	    if (!addr_len)
+	    {
+		v = *blank;
+		return;
+	    }
+	    for (int i=0; i<addr_len-1; i++) {
+		if (addr_str[i] == '.') {
+		    sep = '.';
+		    break;
+		}
+		if (addr_str[i] == ':') {
+		    sep = ':';
+		    break;
+		}
+	    }
+	    if (sep == '\0') {
+		v = *blank;
+		return;
+	    }
+
+	    int mask_len;
+	    int addr_size;
+	    if (sep == '.') {
+		if (m_param[1]) {
+		    m_param[1]->evaluate(rows, num);
+		    mask_len=num.get_int();
+		} else {
+		    throw Error("missing IPv4 mask length argument to subnet()");
+		}
+		addr_size = 32;
+		af = AF_INET;
+	    } else {		// sep == ':'
+		if (m_param[2]) {
+		    m_param[2]->evaluate(rows, num);
+		    mask_len=num.get_int();
+		} else {
+		    throw Error("missing IPv6 mask length argument to subnet()");
+		}
+		addr_size = 128;
+		af = AF_INET6;
+	    }
+	    if (mask_len > addr_size) {
+		v = *address;
+		return;
+	    }
+
+	    // Masking code...
+	    if (af == AF_INET) {
+		uint8_t	sa[4];
+		uint8_t	mask[4] = {0,0,0,0};
+		inet_pton(af, addr_str, sa);
+
+		for (int i = mask_len, j = 0; i > 0; i -= 8, ++j)
+		    mask[ j ] = i >= 8 ? 0xff
+				       : (uint8_t)(( 0xffU << ( 8 - i ) ) & 0xffU );
+
+		for (int i = 0; i < addr_size/8; i++) {
+		    sa[i] = sa[i] & mask[i];
+		}
+		inet_ntop(af, sa, buf, 40);
+	    } else { 
+		uint8_t	sa[16];
+		uint8_t	mask[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+		inet_pton(af, addr_str, sa);
+
+		for (int i = mask_len, j = 0; i > 0; i -= 8, ++j)
+		    mask[ j ] = i >= 8 ? 0xff
+				       : (uint8_t)(( 0xffU << ( 8 - i ) ) & 0xffU );
+
+		for (int i = 0; i < addr_size/8; i++) {
+		    sa[i] = sa[i] & mask[i];
+		}
+
+		inet_ntop(af, sa, buf, 40);
+	    }
+
+ 	    RefCountStringHandle res(RefCountString::construct(buf));
+ 	    v = *res;
+	}
 };
 
 class Len_func : public OP

@@ -38,8 +38,6 @@
 #include "packet_handler.h"
 #include <assert.h>
 
-#define IPPROTO_ICMP 1
-
 namespace se {
 
 extern char visible_char_map[256];

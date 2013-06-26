@@ -2118,6 +2118,11 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
             m_t = Coltype::_text;
             ret = new Trim_func(*this);
         }
+	if (cmpi(get_token(),"subnet") )
+	{
+	    m_t = Coltype::_text;
+	    ret = new Subnet_func(*this);
+	}
         if (cmpi(get_token(),"rsplit") && m_param[1])
         {
             m_t = Coltype::_text;
