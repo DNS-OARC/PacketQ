@@ -30,7 +30,6 @@
  OF SUCH DAMAGE.
  */
 #include "packetq.h"
-#include "tcp.h"
 #include "packet_handler.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -184,6 +183,9 @@ void Parse_dns::add_lookup_tables()
     g_db.add_lut( "rcode", 20 ,"BADNAME" );
     g_db.add_lut( "rcode", 21 ,"BADALG" );
     g_db.add_lut( "rcode", 22 ,"BADTRUNC" );
+
+    g_db.add_lut( "ip_version", 4 , "IPv4" );
+    g_db.add_lut( "ip_version", 6 , "IPv6" );
 }
 
 void Parse_dns::on_table_created(Table *table, const std::vector<int> &columns)
