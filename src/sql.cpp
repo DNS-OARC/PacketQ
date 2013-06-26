@@ -2660,7 +2660,6 @@ void Query::execute(Reader &reader)
                 else
                     m_result->delete_row(rows[dest_i]);
             }
-            printf("size = %i\n", m_result->m_rows.size());
         }
         else
         {
