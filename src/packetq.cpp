@@ -307,7 +307,7 @@ int main (int argc, char * argv [])
 	}
 	catch(Error &e)
 	{
-	    printf( "Error: %s\n", e.m_err.c_str() );
+	    printf( "packetq: Error: %s\n", e.m_err.c_str() );
 	    fflush( stdout );
 	    exit(1);
 	}
