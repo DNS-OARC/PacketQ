@@ -35,7 +35,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "tcp.h"
 #include "packet_handler.h"
 #include <assert.h>
 
