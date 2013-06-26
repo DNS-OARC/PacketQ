@@ -366,6 +366,10 @@ bool Packet::parse_transport(unsigned char *data, int len)
         // get the assembled TCP packet and remove the individual segments.
         data += dataoffs;
         len -= dataoffs;
+	if (len < 0) {
+	    fprintf(stderr, "packetq: warning: Found TCP packet with bad length\n");
+	    return false;
+	}
         unsigned int rest=len;
         data = assemble_tcp (g_payload,&m_ip_header.src_ip, &m_ip_header.dst_ip, m_ip_header.src_port, m_ip_header.dst_port, &rest, seq, data, rest, syn, fin, rst, ack);
         len  = rest;
@@ -377,6 +381,10 @@ bool Packet::parse_transport(unsigned char *data, int len)
 
         data+=8;
         len-=8;
+	if (len < 0) {
+	    fprintf(stderr, "packetq: warning: Found UDP packet with bad length\n");
+	    return false;
+	}
     }
 
     if (data)
