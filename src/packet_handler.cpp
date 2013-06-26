@@ -213,8 +213,9 @@ void IP_header::reset()
     proto     = 0;
     ip_ttl    = 0;
     id        = 0; 
-    length    = 0; 
-
+    payload_len = 0; 
+    ip_version= 0;
+    hop_limit = 0;
 }
 
 int IP_header::decode(unsigned char * data,int itype, int i_id)
@@ -226,33 +227,41 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
     // ether frame done (ignored mac's)
     // ip
 
-    int ip_version = data[0] >> 4;
+    ip_version = data[0] >> 4;
     proto=0;
     if (ip_version==4)
     {
+	// Ethernet
         if (ethertype==0)
             ethertype=0x800;
+	// IPv4 header fields in order
         int header_len = (data[0]&0xf)*4;
-        proto = data[9];
+	int totallen    = get_short(&data[2]);
+	payload_len     = totallen-header_len;    
+	int flags       = get_short(&data[6]);
+	offset          = (flags & 0x1fff)<<3;
+	flags >>= 13;
+	if (flags&1)
+	    fragments = 1;
+	hop_limit = data[8];
 	ip_ttl = data[8];
-        src_ip.__in6_u.__u6_addr32[3] = get_int(&data[12]);
-        dst_ip.__in6_u.__u6_addr32[3] = get_int(&data[16]);
-        int totallen    = get_short(&data[2]);
-        length          = totallen-header_len;    
-        int flags       = get_short(&data[6]);
-        offset          = (flags & 0x1fff)<<3;
-        flags >>= 13;
-        if (flags&1)
-            fragments = 1;
-        data += header_len;
-        len  += header_len;
+	proto = data[9];
+	src_ip.__in6_u.__u6_addr32[3] = get_int(&data[12]);
+	dst_ip.__in6_u.__u6_addr32[3] = get_int(&data[16]);
+	// Data
+	data += header_len;
+	len  += header_len;
     }
     else if (ip_version==6)
     {
+	// Ethernet
         if (ethertype==0)
             ethertype=0x86DD;
+	// IPv6 header fields in order
+	payload_len    = get_short(&data[4]);
         proto = data[6];
-	ip_ttl = data[7];
+	hop_limit = data[7];	
+	ip_ttl = data[7];	
         src_ip.__in6_u.__u6_addr32[3] = get_int(&data[ 8]);
         src_ip.__in6_u.__u6_addr32[2] = get_int(&data[12]);
         src_ip.__in6_u.__u6_addr32[1] = get_int(&data[16]);
@@ -262,7 +271,7 @@ int IP_header::decode(unsigned char * data,int itype, int i_id)
         dst_ip.__in6_u.__u6_addr32[2] = get_int(&data[28]);
         dst_ip.__in6_u.__u6_addr32[1] = get_int(&data[32]);
         dst_ip.__in6_u.__u6_addr32[0] = get_int(&data[36]);
-
+	// Data
         data += 40;
         len  += 40;
 
@@ -450,8 +459,9 @@ void IP_header_to_table::add_packet_columns(Packet_handler &packet_handler)
 {
     packet_handler.add_packet_column("id",         "ID", Coltype::_int, COLUMN_ID);
     packet_handler.add_packet_column("s",          "Seconds", Coltype::_int, COLUMN_S);
-    packet_handler.add_packet_column("us",         "Milliseconds", Coltype::_int, COLUMN_US);
+    packet_handler.add_packet_column("us",         "Microseconds", Coltype::_int, COLUMN_US);
     packet_handler.add_packet_column("ether_type", "", Coltype::_int, COLUMN_ETHER_TYPE);
+    packet_handler.add_packet_column("payload_len","", Coltype::_int, COLUMN_PAYLOAD_LEN);
     packet_handler.add_packet_column("src_port",   "", Coltype::_int, COLUMN_SRC_PORT); // this is really tcp/udp but accidents do happen
     packet_handler.add_packet_column("dst_port",   "", Coltype::_int, COLUMN_DST_PORT);
     packet_handler.add_packet_column("src_addr",   "", Coltype::_text, COLUMN_SRC_ADDR);
@@ -459,6 +469,8 @@ void IP_header_to_table::add_packet_columns(Packet_handler &packet_handler)
     packet_handler.add_packet_column("protocol",   "", Coltype::_int, COLUMN_PROTOCOL);
     packet_handler.add_packet_column("ip_ttl",     "", Coltype::_int, COLUMN_IP_TTL);
     packet_handler.add_packet_column("fragments",  "", Coltype::_int, COLUMN_FRAGMENTS);
+    packet_handler.add_packet_column("ip_version", "", Coltype::_int, COLUMN_IP_VERSION);
+    packet_handler.add_packet_column("hop_limit",  "", Coltype::_int, COLUMN_HOP_LIMIT);
 }
 
 void IP_header_to_table::on_table_created(Table *table, const std::vector<int> &columns)
@@ -466,6 +478,7 @@ void IP_header_to_table::on_table_created(Table *table, const std::vector<int> &
     acc_src_addr   = table->get_accessor<text_column>("src_addr");
     acc_dst_addr   = table->get_accessor<text_column>("dst_addr");
     acc_ether_type = table->get_accessor<int_column>("ether_type");
+    acc_payload_len= table->get_accessor<int_column>("payload_len");
     acc_protocol   = table->get_accessor<int_column>("protocol");
     acc_ip_ttl     = table->get_accessor<int_column>("ip_ttl");
     acc_src_port   = table->get_accessor<int_column>("src_port");
@@ -474,6 +487,8 @@ void IP_header_to_table::on_table_created(Table *table, const std::vector<int> &
     acc_us         = table->get_accessor<int_column>("us");
     acc_id         = table->get_accessor<int_column>("id");
     acc_fragments  = table->get_accessor<int_column>("fragments");
+    acc_ip_version = table->get_accessor<int_column>("ip_version");
+    acc_hop_limit  = table->get_accessor<int_column>("hop_limit");
 }
 
 
@@ -499,6 +514,10 @@ void IP_header_to_table::assign(Row *row, IP_header *head, const std::vector<int
         case COLUMN_ETHER_TYPE:
             acc_ether_type.value(row) = head->ethertype;
             break;
+
+	case COLUMN_PAYLOAD_LEN:
+	    acc_payload_len.value(row) = head->payload_len;
+	    break;
 
         case COLUMN_PROTOCOL:
             acc_protocol.value(row) = head->proto;
@@ -533,6 +552,12 @@ void IP_header_to_table::assign(Row *row, IP_header *head, const std::vector<int
             else
                 acc_dst_addr.value(row) = v6_addr2str(head->dst_ip);
             break;
+	case COLUMN_IP_VERSION:
+	    acc_ip_version.value(row) = head->ip_version;
+	    break;
+	case COLUMN_HOP_LIMIT:
+	    acc_hop_limit.value(row) = head->hop_limit;
+	    break;
         }
     }
 }

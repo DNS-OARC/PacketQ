@@ -95,9 +95,23 @@ class IP_header
 public:
     void reset();
     int decode(unsigned char *data, int ether_type,int id); 
+    // These don't really belong to the IP packet
     unsigned int       s;
     unsigned int       us;
     unsigned short     ethertype;
+    // IP packet fields
+    unsigned short	ip_version;	// IP version
+    unsigned short	hop_limit;	// IPv4 TTL, IPv6 hop_limit;
+    unsigned short	payload_len;	// Payload length.  For IPv4, calculated as total length - header length.
+    // IPv4-specific fields
+//    unsigned short	ihl;		// Header length in 32bit words, minimum 5 
+//    unsigned short	tos;
+//    unsigned short	id;
+//    unsigned short	flags;
+//    unsigned short	frag_offs;	// Fragment offset
+//    unsigned short	ttl;
+//    unsigned short	hcheck;		// Header checksum
+    // Common fields
     in6addr_t          src_ip; 
     in6addr_t          dst_ip;
     unsigned short     src_port; 
@@ -105,7 +119,6 @@ public:
     unsigned short     proto;
     unsigned short     ip_ttl;
     unsigned int       id; 
-    unsigned int       length; 
     unsigned int       fragments; 
     unsigned int       ident; 
     unsigned int       offset; 
@@ -121,13 +134,16 @@ public:
         COLUMN_S,
         COLUMN_US,
         COLUMN_ETHER_TYPE,
+	COLUMN_PAYLOAD_LEN,
         COLUMN_PROTOCOL,
         COLUMN_IP_TTL,
         COLUMN_SRC_PORT,
         COLUMN_DST_PORT,
         COLUMN_SRC_ADDR,
         COLUMN_DST_ADDR,
-        COLUMN_FRAGMENTS
+	COLUMN_FRAGMENTS,
+	COLUMN_IP_VERSION,
+	COLUMN_HOP_LIMIT
     };
 
     void add_packet_columns(Packet_handler &packet_handler);
@@ -139,11 +155,14 @@ private:
     Int_accessor acc_s;
     Int_accessor acc_us;
     Int_accessor acc_ether_type;
+    Int_accessor acc_payload_len;
     Int_accessor acc_protocol;
     Int_accessor acc_ip_ttl;
     Int_accessor acc_src_port;
     Int_accessor acc_dst_port;
     Int_accessor acc_fragments;
+    Int_accessor acc_ip_version;
+    Int_accessor acc_hop_limit;
     Text_accessor acc_src_addr;
     Text_accessor acc_dst_addr;
 };
