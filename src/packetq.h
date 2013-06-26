@@ -49,26 +49,8 @@ class PacketQ
         };
         PacketQ()
         {
-            m_sample_counter = 0;
             m_limit          = 0;
             m_output         = json;
-	    m_sample	     = 0;
-	    m_query	     = new Query();
-        }
-        ~PacketQ()
-	{
-	    if (m_query) delete m_query;
-        }
-	void set_sample(int s) { m_sample = s;    }
-	int  get_sample()      { return m_sample; }
-        bool sample_this()
-        {
-	    // Return true if we're not sampling, or if we're sampling
-	    // and this is an item we should look at, otherwise false.
-            bool res = m_sample_counter++==0;
-            if (m_sample_counter>=m_sample)
-                m_sample_counter=0;
-            return res;
         }
         void set_limit(int limit)
         {
@@ -79,20 +61,12 @@ class PacketQ
             m_output = opt;
         }
         OutputOpts get_output() { return m_output; }
-        int get_limit()         { return m_limit;  } 
-        Query*   m_query;
-	void	new_query(const char *name = 0, const char *query = 0) {
-	    if (m_query) delete m_query;
-	    m_query = new Query(name, query);
-	}
+        int get_limit()         { return m_limit;  }
+
     private:
-        int         m_sample_counter;
         int         m_limit;
         OutputOpts  m_output;
-	int         m_sample;
 };
-
-void read_file(const char *filename);
 
 extern PacketQ *g_app;
 }

@@ -2,10 +2,6 @@
 
 #include "packet_handler.h"
 
-void se::Reader::open_pcap(std::string filename)
-{
-}
-
 void se::Reader::seek_to_start()
 {
     currently_reading = filenames.begin();
@@ -19,7 +15,7 @@ bool se::Reader::done()
         (max_packets > 0 && packets_read >= max_packets);
 }
 
-bool se::Reader::read_next(const std::string &application_protocol, Row &destination_row)
+bool se::Reader::read_next(Packet_handler *handler, const std::vector<int> &columns, Row &destination_row, int skip_packets)
 {
     bool filled_in_row = false;
 
@@ -48,8 +44,13 @@ bool se::Reader::read_next(const std::string &application_protocol, Row &destina
             ++packets_read;     // we count all packets
             if (read_success)
             {
-                Packet packet(data, len, s, us, packets_read, pcap->get_link_layer_type(), application_protocol, destination_row);
-                filled_in_row = packet.parse();
+                Packet packet(data, len, s, us, packets_read, pcap->get_link_layer_type());
+                Packet::ParseResult res = packet.parse(handler, columns, destination_row, skip_packets == 0);
+
+                if (res == Packet::NOT_SAMPLED)
+                    --skip_packets;
+
+                filled_in_row = res == Packet::OK;
             }
             else {
                 // last row in file

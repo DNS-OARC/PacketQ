@@ -44,28 +44,37 @@ namespace se {
 class Parse_icmp : public Packet_handler
 {
     public:
-    Parse_icmp()
+    enum 
     {
-        init_idx();
-    }
+        COLUMN_TYPE,
+        COLUMN_CODE,
+        COLUMN_ECHO_IDENTIFIER,
+        COLUMN_ECHO_SEQUENCE,
+        COLUMN_DU_PROTOCOL,
+        COLUMN_DU_SRC_ADDR,
+        COLUMN_DU_DST_ADDR,
+        COLUMN_DESC
+    };
 
-    const char *table_name() const;
-    virtual void add_columns(Table &table);
-    virtual bool parse(Packet &packet);
+    Parse_icmp();
+
+    virtual void on_table_created(Table *table, const std::vector<int> &columns);
+    virtual Packet::ParseResult parse(Packet &packet, const std::vector<int> &columns, Row &destination_row, bool sample);
+
     private:
-    void init_idx();
+    void add_packet_columns();
+
     Str_conv converter;
     IP_header_to_table m_ip_helper;
 
-    Int_accessor    *acc_type;
-    Int_accessor    *acc_code;
-    Int_accessor    *acc_echo_identifier;
-    Int_accessor    *acc_echo_sequence;
-    Int_accessor    *acc_du_protocol;
-    String_accessor *acc_du_src_addr;
-    String_accessor *acc_du_dst_addr;
-    String_accessor *acc_desc;
-    Table *m_table;
+    Int_accessor acc_type;
+    Int_accessor acc_code;
+    Int_accessor acc_echo_identifier;
+    Int_accessor acc_echo_sequence;
+    Int_accessor acc_du_protocol;
+    Text_accessor acc_du_src_addr;
+    Text_accessor acc_du_dst_addr;
+    Text_accessor acc_desc;
 };
 
 };
