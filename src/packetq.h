@@ -45,6 +45,7 @@ class PacketQ
             json,
             csv,
             csv_format,
+	    tsv,
             xml 
         };
         PacketQ()

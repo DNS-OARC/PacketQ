@@ -892,7 +892,7 @@ class Page
 
         }
 
-        Reader reader(in_files, g_app->get_limit());
+        Reader reader(in_files, g_app->get_limit(), false);
 
         query.execute(reader);
         if (query.m_result)

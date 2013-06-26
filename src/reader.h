@@ -15,11 +15,12 @@ namespace se
     class Reader
     {
     public:
-        Reader(std::vector<std::string> filenames, int max_packets)
+        Reader(std::vector<std::string> filenames, int max_packets, bool verbose)
         {
             this->filenames = filenames;
             this->currently_reading = filenames.end();
             this->max_packets = max_packets;
+	    this->verbose = verbose;
         }
 
         void seek_to_start();
@@ -33,6 +34,7 @@ namespace se
         std::vector<std::string> filenames;
         int max_packets, packets_read;
         std::unique_ptr<Pcap_file> pcap;
+	bool verbose;
     };
 }
 

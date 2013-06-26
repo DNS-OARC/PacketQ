@@ -431,6 +431,7 @@ class Table
     void dump();
     void json(bool trailing_comma);
     void csv(bool format = false);
+    void tsv();
     void xml();
 
     Column *add_column(const char *name, Coltype::Type type, int id=-1, bool hidden=false);

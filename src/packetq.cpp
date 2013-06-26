@@ -53,7 +53,7 @@
 namespace se {
 
 static void usage ( char * argv0, bool longversion ) {
-   fprintf (stdout, "usage: %s [ --select | -s select-statement ] [ --port | -p httpportnumber ] [ --json | -j ] [ --csv | -c ] [ --table | -t ] [ --xml | -x ] [ --daemon | -d ] [ --webroot | -w webdir ] [ --pcaproot | -r pcapdir ] [ --help | -h ] [ --limit | -l ] [ --maxconn | -m ] pcapfile(s)...\n", argv0);
+   fprintf (stdout, "usage: %s [ --select | -s select-statement ] [ --port | -p httpportnumber ] [ --json | -j ] [ --csv | -c ] [ --tsv | -i ] [ --table | -t ] [ --xml | -x ] [ --daemon | -d ] [ --webroot | -w webdir ] [ --pcaproot | -r pcapdir ] [ --help | -h ] [ --limit | -l ] [ --maxconn | -m ] pcapfile(s)...\n", argv0);
    if (!longversion)
        return;
 
@@ -152,6 +152,7 @@ int main (int argc, char * argv [])
     int limit	= 0;
     int max_conn= 7;
     bool daemon = false;
+    bool verbose = false;
 
     init_packet_handlers();  // set up tables
 
@@ -172,15 +173,17 @@ int main (int argc, char * argv [])
 	    {"port",	1, 0, 'p'},
 	    {"daemon",	0, 0, 'd'},
 	    {"csv",	0, 0, 'c'},
+	    {"tsv",	0, 0, 'i'},
 	    {"json",	0, 0, 'j'},
 	    {"table",	0, 0, 't'},
 	    {"xml",	0, 0, 'x'},
 	    {"help",	0, 0, 'h'},
 	    {"version", 0, 0, 'v'},
+	    {"verbose", 0, 0, 'V'},
 	    {NULL,  0, 0, 0}
 	};
 
-	int c = getopt_long (argc, argv, "w:r:s:l:p:hHdvcxtjm:", long_options, &option_index);
+	int c = getopt_long (argc, argv, "w:r:s:l:p:hHdvVcixtjm:", long_options, &option_index);
 	if (c == -1)
 	    break;
 
@@ -201,6 +204,9 @@ int main (int argc, char * argv [])
 		break;
 	    case 't':
 		g_app->set_output(PacketQ::csv_format);
+		break;
+	    case 'i':
+		g_app->set_output(PacketQ::tsv);
 		break;
 	    case 'x':
 		g_app->set_output(PacketQ::xml);
@@ -235,6 +241,9 @@ int main (int argc, char * argv [])
 	    case 'h':
 		usage (argv [0],true);
 		return 1;
+	    case 'V':
+		verbose = true;
+		break;
 	}
     }
     g_app->set_limit(limit);
@@ -257,7 +266,7 @@ int main (int argc, char * argv [])
 	optind++;
     }
 
-    Reader reader(in_files, g_app->get_limit());
+    Reader reader(in_files, g_app->get_limit(), verbose);
 
     if ( g_app->get_output() == PacketQ::json ) {
 	printf("[\n");
@@ -282,6 +291,10 @@ int main (int argc, char * argv [])
                     if (result)
                         result->csv();
                     break;
+		case( PacketQ::tsv ):
+		    if (result)
+			result->tsv();
+		    break;
                 case( PacketQ::xml ):
                     if (result)
                         result->xml();

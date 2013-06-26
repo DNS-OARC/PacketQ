@@ -1014,6 +1014,72 @@ void Table::csv(bool format)
     delete []tmp;
 }
 
+
+
+void Table::tsv()
+{
+    int cols = (int)m_cols.size();
+    std::vector<int> col_len( cols );
+
+    for ( int i = 0; i < cols; i++ )
+	col_len[i] = 0;
+    char *tmp = 0;
+
+    printf("#");
+    for (int i=0;i<cols;i++)
+    {
+	if (m_cols[i]->m_hidden)
+	    continue;
+
+	printf("%s", m_cols[i]->m_name.c_str());
+	if (i<cols-1)
+	    printf("\t");
+    }
+    printf("\n");
+    for (std::list<Row *>::iterator it=m_rows.begin(); it!=m_rows.end();it++)
+    {
+	Row *r = *it;
+
+	for ( int i = 0; i < cols; i++ )
+	{
+	    Column *c = m_cols[i];
+
+	    if (c->m_hidden)
+		continue;
+
+	    int offset = c->m_offset;
+	    static const int bufsize = 100;
+	    char buf[bufsize];
+
+	    std::string out;
+
+	    switch(c->m_type)
+	    {
+		case Coltype::_bool:
+		    out = r->access_column<bool_column>(offset) ? "1" : "0";
+		    break;
+		case Coltype::_int:
+		    snprintf(buf, bufsize, "%i", r->access_column<int_column>(offset));
+		    out = buf;
+		    break;
+		case Coltype::_float:
+		    snprintf(buf, bufsize, "%g", r->access_column<float_column>(offset));
+		    out = buf;
+		    break;
+		case Coltype::_text:
+		    out = r->access_column<text_column>(offset)->data;
+		    break;
+	    }
+
+	    fputs(out.c_str(), stdout);
+	    if (i<cols-1)
+		printf("\t");
+	}
+	printf("\n");
+    }
+    delete []tmp;
+}
+
 void Table::dump()
 {
     int cols = (int)m_cols.size();
