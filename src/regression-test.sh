@@ -58,6 +58,8 @@ for SQL in \
 	"select 'ALL' as All, rd as RD, count(1) as count from dns where qr==0 group by All,RD order by count desc ;" \
 	"select if(protocol==6,'tcp',if(protocol==17,'udp',protocol)) as Transport, qtype as Qtype, count(1) as count from dns where qr==0 group by Transport,Qtype order by Transport,Qtype,count desc ;" \
 	"select s, dst_addr as Dst_addr, qtype as questiontype, lower(src_addr) as lower_src, if(1 and s < 1 or s <= 1 or s > 1 or s >= 1, 't', 'f'), trim(trim('foofoo' || rsplit(src_addr, 1) || 'foofoo', 'foo'), 'bar'), count(*), len(src_addr), sum(msg_size + -1 - 2 % 4 << 3 >> 2 | 3 & ~4) + 1, min(msg_size), max(msg_size), truncate(1.1) as integer, 1.1 as float, sum(src_port + 1.0 - 2.0 / 1.5 * -2.5) + 1.0, max(src_port + 1.0), min(src_port + 1.0), avg(src_port), stdev(src_port), name('rcode', 0) from dns where src_addr like '%' and (qr or not qr) group by src_addr, s having s >= 0 order by s, dst_addr, lower_src, integer, float" \
+	"select name( 'qtype' , qtype ) as qt, count(*) as count from dns group by qtype order by count desc;"\
+	"select count(*) as count, lower(rsplit(qname,1)) as tld, istld(tld) as flag from dns group by tld order by count desc limit 50;" \
         ;
 do
     test=$test+1
