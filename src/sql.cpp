@@ -923,7 +923,7 @@ void Table::csv(bool format)
                     len = strlen(buf);
                     break;
                 case Coltype::_text:
-                    qoute_string(r->access_column<text_column>(offset)->data).length();
+                    len = qoute_string(r->access_column<text_column>(offset)->data).length();
                     break;
                 }
                 len++;
