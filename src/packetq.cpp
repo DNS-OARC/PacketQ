@@ -47,17 +47,36 @@
 #include "pcap.h"
 #include "server.h"
 #include "reader.h"
+#include "tld.h"
 
 #define NUM_QUERIES	32
+#define FNAMELEN	256
 
 namespace se {
 
 static void usage ( char * argv0, bool longversion ) {
-   fprintf (stdout, "usage: %s [ --select | -s select-statement ] [ --port | -p httpportnumber ] [ --json | -j ] [ --csv | -c ] [ --tsv | -i ] [ --table | -t ] [ --xml | -x ] [ --daemon | -d ] [ --webroot | -w webdir ] [ --pcaproot | -r pcapdir ] [ --help | -h ] [ --limit | -l ] [ --maxconn | -m ] pcapfile(s)...\n", argv0);
+    fprintf (stdout, "usage: %s <options> pcapfile(s)...\n"\
+		     "   where <options> is one or more of:\n"\
+		     "      -s | --select   <select-statement>\n"\
+		     "      -p | --port     <http-port-number> \n"\
+		     "      -w | --webroot  <webdir> \n"\
+		     "      -r | --pcaproot <pcapdir> \n"\
+		     "      -N | --newtlds  <newtldfile> \n"\
+		     "      -T | --tlds     <tldfile> \n"\
+		     "      -j | --json     \n"\
+		     "      -c | --csv      \n"\
+		     "      -i | --tsv      \n"\
+		     "      -t | --table    \n"\
+		     "      -x | --xml      \n"\
+		     "      -d | --daemon   \n"\
+		     "      -h | --help     \n"\
+		     "      -l | --limit    \n"\
+		     "      -m | --maxconn  \n"\
+	    , argv0);
    if (!longversion)
        return;
 
-   fprintf (stdout, "\n    sample:\n> packetq --csv -s \"select count(*) as mycount,protocol from dns group by protocol;\" myfile.pcap\n");
+   fprintf (stdout, "\Example invocation:\n> packetq --csv -s \"select count(*) as mycount,protocol from dns group by protocol;\" myfile.pcap\n");
    fprintf (stdout, "\n" \
 		    "    column names for use in the sql statements:\n\n" \
 		    "      qname\n" \
@@ -153,7 +172,9 @@ int main (int argc, char * argv [])
     int max_conn= 7;
     bool daemon = false;
     bool verbose = false;
-
+    char tldfilename[FNAMELEN] = "/usr/share/packetq/tlds";
+    char newtldfilename[FNAMELEN] = "/usr/share/packetq/newtlds";
+    
     init_packet_handlers();  // set up tables
 
     std::string webroot="",pcaproot="";
@@ -171,6 +192,8 @@ int main (int argc, char * argv [])
 	    {"webroot", 1, 0, 'w'},
 	    {"pcaproot",1, 0, 'r'},
 	    {"port",	1, 0, 'p'},
+	    {"tlds",	1, 0, 'T'},
+	    {"newtlds",	1, 0, 'N'},
 	    {"daemon",	0, 0, 'd'},
 	    {"csv",	0, 0, 'c'},
 	    {"tsv",	0, 0, 'i'},
@@ -183,7 +206,7 @@ int main (int argc, char * argv [])
 	    {NULL,  0, 0, 0}
 	};
 
-	int c = getopt_long (argc, argv, "w:r:s:l:p:hHdvVcixtjm:", long_options, &option_index);
+	int c = getopt_long (argc, argv, "w:r:s:l:p:T:N:hHdvVcixtjm:", long_options, &option_index);
 	if (c == -1)
 	    break;
 
@@ -234,6 +257,14 @@ int main (int argc, char * argv [])
 	    case 'p':
 		port = atoi(optarg);
 		break;
+	    case 'T':
+		strncpy(tldfilename, optarg, FNAMELEN);
+		tldfilename[(FNAMELEN-1)] = '\0';
+		break;
+	    case 'N':
+		strncpy(newtldfilename, optarg, FNAMELEN);
+		tldfilename[(FNAMELEN-1)] = '\0';
+		break;
 	    default:
 		fprintf (stderr, "Unknown option: %c\n", c);
 		usage (argv [0],false);
@@ -246,6 +277,9 @@ int main (int argc, char * argv [])
 		break;
 	}
     }
+
+    init_tld_lists(tldfilename, newtldfilename);
+
     g_app->set_limit(limit);
     if (port>0)
     {

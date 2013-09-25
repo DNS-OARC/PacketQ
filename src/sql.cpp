@@ -2179,6 +2179,16 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
             m_t = Coltype::_int;
             ret = new Len_func(*this);
         }
+	if (cmpi(get_token(),"istld"))
+	{
+	    m_t = Coltype::_bool;
+	    ret = new IsTld_func(*this);
+	}
+	if (cmpi(get_token(),"isnewtld"))
+	{
+	    m_t = Coltype::_bool;
+	    ret = new IsNewTld_func(*this);
+	}
         if (cmpi(get_token(),"truncate"))
         {
             m_t = Coltype::_int;

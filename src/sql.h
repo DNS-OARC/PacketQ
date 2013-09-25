@@ -51,6 +51,7 @@
 #include "refcountstring.h"
 #include "variant.h"
 #include <arpa/inet.h>
+#include "tld.h"
 
 #ifdef WIN32
 #define snprintf _snprintf
@@ -1044,6 +1045,36 @@ class Len_func : public OP
 	    m_param[0]->evaluate(rows, str);
             RefCountStringHandle t(str.get_text());
 	    v = int(strlen((*t)->data));
+	}
+};
+
+class IsTld_func : public OP
+{
+    public:
+	IsTld_func(const OP &op): OP(op)
+	{
+	}
+	void evaluate(Row **rows, Variant &v)
+	{
+	    Variant str; 
+	    m_param[0]->evaluate(rows, str);
+	    RefCountStringHandle t(str.get_text());
+	    v = bool(istld((*t)->data));
+	}
+};
+
+class IsNewTld_func : public OP
+{
+    public:
+	IsNewTld_func(const OP &op): OP(op)
+	{
+	}
+	void evaluate(Row **rows, Variant &v)
+	{
+	    Variant str; 
+	    m_param[0]->evaluate(rows, str);
+	    RefCountStringHandle t(str.get_text());
+	    v = bool(isnewtld((*t)->data));
 	}
 };
 
