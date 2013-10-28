@@ -31,16 +31,15 @@ bool Pcap_file::get_header()
     // establish: byte order and file format
     int res = get_int32();
     if (res != 0xa1b2c3d4) {
-        m_reverse_order = true;
-        res = get_int32();
+        res = flip32(res);
         if (res != 0xa1b2c3d4) {
             if (!m_gzipped) {
-                m_reverse_order = false;
                 set_gzipped();
                 return get_header();
             }
             return false;
         }
+        m_reverse_order = true;
     }
     // establish version
     int major_version = get_int16();
