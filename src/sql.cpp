@@ -923,7 +923,7 @@ void Table::csv(bool format)
                     len = strlen(buf);
                     break;
                 case Coltype::_text:
-                    qoute_string(r->access_column<text_column>(offset)->data).length();
+                    len = qoute_string(r->access_column<text_column>(offset)->data).length();
                     break;
                 }
                 len++;
@@ -2334,8 +2334,8 @@ void OP::combine_aggregate(Row *base_row, Row *other_row)
 }
 
 // return any column access ops found in given list of op trees - they don't
-// have to be compiled beforehand
-std::vector<OP *> find_column_ops(std::vector<OP *> ops)
+// have to be compiled beforehand; duplicate column tokens are skipped
+std::vector<OP *> find_unique_column_ops(std::vector<OP *> ops)
 {
     std::vector<OP *> res;
 
@@ -2417,13 +2417,13 @@ void Query::process_from()
     for (auto i = m_group_by.m_terms.begin(); i != m_group_by.m_terms.end(); ++i)
         all_ops.push_back(i->m_op);
     
-    auto used_columns = find_column_ops(all_ops);
+    auto used_columns = find_unique_column_ops(all_ops);
 
     // add from table with used columns
     Packet_handler *handler = get_packet_handler(m_from_name);
     for (auto j = handler->packet_columns.begin(); j != handler->packet_columns.end(); ++j)
         for (auto i = used_columns.begin(); i != used_columns.end(); ++i)
-            if (cmpi(j->name, (*i)->get_token()))
+            if (cmpii(j->name, (*i)->get_token()))
                 m_used_from_column_ids.push_back(j->id);
 
     m_from = handler->create_table(m_used_from_column_ids);
@@ -2569,7 +2569,7 @@ void Query::execute(Reader &reader)
         for (auto i = m_order_by.m_terms.begin(); i != m_order_by.m_terms.end(); ++i)
             ops.push_back(i->m_op);
 
-        std::vector<OP *> column_ops = find_column_ops(ops);
+        std::vector<OP *> column_ops = find_unique_column_ops(ops);
 
         for (auto i = column_ops.begin(); i != column_ops.end(); ++i)
         {
@@ -2660,7 +2660,6 @@ void Query::execute(Reader &reader)
                 else
                     m_result->delete_row(rows[dest_i]);
             }
-            printf("size = %i\n", m_result->m_rows.size());
         }
         else
         {
