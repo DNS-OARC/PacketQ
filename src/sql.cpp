@@ -2047,6 +2047,13 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
             m_t = Coltype::_text;
             ret = new Name_func(*this);
         }
+#ifdef HAVE_LIBGEOIP
+        if (cmpi(get_token(),"aslookup"))
+        {
+            m_t = Coltype::_text;
+            ret = new Aslookup_Func(*this);
+        }
+#endif
         if (cmpi(get_token(),"trim") )
         {
             m_t = Coltype::_text;

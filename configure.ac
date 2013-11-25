@@ -24,6 +24,16 @@ AC_CHECK_LIB([z], [deflate])
 AC_CHECK_LIB([socket], socket)
 AC_CHECK_LIB([nsl], inet_ntop)
 
+AC_ARG_WITH([GeoIP],
+    [AS_HELP_STRING([--with-GeoIP],
+      [enable experimental support for GeoIP])],
+    [],
+    [with_GeoIP=no])
+AS_IF([test "x$with_GeoIP" != xno],
+            [AC_CHECK_LIB([GeoIP], [GeoIP_org_by_name])]
+            )
+AM_CONDITIONAL([WITH_GEOIP], [test "$with_GeoIP" = "yes"])
+
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h stdlib.h string.h strings.h sys/socket.h sys/time.h])

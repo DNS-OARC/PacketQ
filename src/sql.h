@@ -31,6 +31,8 @@
  */
 #ifndef SQL_H
 #define SQL_H
+
+#include "../config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -50,6 +52,9 @@
 #include "stdarg.h"
 #include "refcountstring.h"
 #include "variant.h"
+#ifdef HAVE_LIBGEOIP
+#include "geo.h"
+#endif
 
 
 #ifdef WIN32
@@ -799,11 +804,13 @@ public:
     }
     void evaluate(Row **rows, Variant &v)
     {
-        Variant val; 
+        Variant val;
         m_param[0]->evaluate(rows, val);
         v = val.get_int();
     }
 };
+
+
 
 class Name_func : public OP
 {
@@ -827,6 +834,25 @@ public:
         v = *r;
     }
 };
+
+#ifdef HAVE_LIBGEOIP
+class Aslookup_Func : public OP
+{
+public:
+    Aslookup_Func(const OP &op): OP(op)
+    {
+    }
+    void evaluate(Row **rows, Variant &v)
+    {
+        Variant str;
+        m_param[0]->evaluate(rows, str);
+        RefCountStringHandle lookup(str.get_text());
+        RefCountString *p = RefCountString::construct(lookup_as((*lookup)->data));
+        RefCountStringHandle q(p);
+        v = *q;
+    }
+};
+#endif
 
 class Lower_func : public OP
 {
