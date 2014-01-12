@@ -1,6 +1,7 @@
 #ifndef VARIANT_H
 #define VARIANT_H
 
+#include <inttypes.h>
 #include <cstdlib>
 
 #include "refcountstring.h"
@@ -32,7 +33,7 @@ namespace se
     static const int bool_size = sizeof(bool_column);
     static const int bool_align = sizeof(bool_column);
     
-    typedef int int_column;
+    typedef uint64_t int_column;
     static const int int_size = sizeof(int_column);
     static const int int_align = sizeof(int_column);
 
@@ -52,7 +53,7 @@ namespace se
         return std::atoi(v->data);
     }
 
-    inline int_column convert_column_to_int(float_column v) { return int(v); }
+    inline int_column convert_column_to_int(float_column v) { return uint64_t(v); }
     inline int_column convert_column_to_int(int_column v) { return v; }
     inline int_column convert_column_to_int(bool_column v) { return v; }
     inline int_column convert_column_to_int(text_column v)
@@ -79,7 +80,7 @@ namespace se
     {
         const int bufsize = (sizeof(int_column) * 8 + 1) / 3 + 1;
         RefCountString *str = RefCountString::allocate(bufsize);
-        snprintf(str->data, bufsize, "%d", v);
+        snprintf(str->data, bufsize, "%lu", v);
         return str;
     }
     inline text_column convert_column_to_text(bool_column v)
@@ -268,7 +269,7 @@ namespace se
             switch(m_type)
             {
             case(Coltype::_bool):   return std::hash<bool>()(m_val.m_bool);
-            case(Coltype::_int):    return std::hash<int>()(m_val.m_int);
+            case(Coltype::_int):    return std::hash<uint64_t>()(m_val.m_int);
             case(Coltype::_float):  return std::hash<float>()(m_val.m_float);
             case(Coltype::_text):   return hash_bytes(m_val.m_text->data, strlen(m_val.m_text->data));
             }

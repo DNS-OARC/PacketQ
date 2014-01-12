@@ -53,7 +53,7 @@ Column *Table::add_column(const char *name, const char *type, int id, bool hidde
         return add_column(name,Coltype::_text, id, hidden);
     else if (strcmp(type,"bool") == 0)
         return add_column(name,Coltype::_bool, id, hidden);
-    else if (strcmp(type,"int") == 0)
+    else if (strcmp(type,"int64") == 0)
         return add_column(name,Coltype::_int, id, hidden);
     else if (strcmp(type,"float") == 0)
         return add_column(name,Coltype::_float, id, hidden);
@@ -684,7 +684,7 @@ void Table::xml()
                 t="float";
                 break;
             case(Coltype::_int):
-                t="int";
+                t="int64";
                 break;
             case(Coltype::_text):
                 t="text";
@@ -725,7 +725,7 @@ void Table::xml()
                 g_output.add_string(r->access_column<bool_column>(offset) ? "1" : "0");
                 break;
             case Coltype::_int:
-                snprintf(buf, bufsize, "%i", r->access_column<int_column>(offset));
+                snprintf(buf, bufsize, "%lu", r->access_column<int_column>(offset));
                 g_output.add_string(buf);
                 break;
             case Coltype::_float:
@@ -792,7 +792,7 @@ void Table::json(bool trailing_comma)
                 t="float";
                 break;
             case(Coltype::_int):
-                t="int";
+                t="int64";
                 break;
             case(Coltype::_text):
                 t="text";
@@ -840,7 +840,7 @@ void Table::json(bool trailing_comma)
                 g_output.add_string(r->access_column<bool_column>(offset) ? "1" : "0");
                 break;
             case Coltype::_int:
-                snprintf(buf, bufsize, "%i", r->access_column<int_column>(offset));
+                snprintf(buf, bufsize, "%lu", r->access_column<int_column>(offset));
                 g_output.add_string(buf);
                 break;
             case Coltype::_float:
@@ -915,7 +915,7 @@ void Table::csv(bool format)
                     len = 1;
                     break;
                 case Coltype::_int:
-                    snprintf(buf, bufsize, "%i", r->access_column<int_column>(offset));
+                    snprintf(buf, bufsize, "%lu", r->access_column<int_column>(offset));
                     len = strlen(buf);
                     break;
                 case Coltype::_float:
@@ -988,7 +988,7 @@ void Table::csv(bool format)
                 out = r->access_column<bool_column>(offset) ? "1" : "0";
                 break;
             case Coltype::_int:
-                snprintf(buf, bufsize, "%i", r->access_column<int_column>(offset));
+                snprintf(buf, bufsize, "%lu", r->access_column<int_column>(offset));
                 out = buf;
                 break;
             case Coltype::_float:
@@ -2660,7 +2660,7 @@ void Query::execute(Reader &reader)
                 else
                     m_result->delete_row(rows[dest_i]);
             }
-            printf("size = %i\n", m_result->m_rows.size());
+            printf("size = %lu\n", m_result->m_rows.size());
         }
         else
         {
