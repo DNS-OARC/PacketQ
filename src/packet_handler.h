@@ -89,6 +89,7 @@ public:
         , dst_port(0)
         , proto(0)
         , ip_ttl(0)
+        , ip_version(0)
         , id(0)
         , length(0)
         , fragments(0)
@@ -110,6 +111,7 @@ public:
     unsigned short dst_port;
     unsigned short proto;
     unsigned short ip_ttl;
+    unsigned short ip_version;
     unsigned int id;
     unsigned int length;
     unsigned int fragments;
@@ -128,6 +130,7 @@ public:
         COLUMN_ETHER_TYPE,
         COLUMN_PROTOCOL,
         COLUMN_IP_TTL,
+        COLUMN_IP_VERSION,
         COLUMN_SRC_PORT,
         COLUMN_DST_PORT,
         COLUMN_SRC_ADDR,
@@ -146,6 +149,7 @@ private:
     Int_accessor acc_ether_type;
     Int_accessor acc_protocol;
     Int_accessor acc_ip_ttl;
+    Int_accessor acc_ip_version;
     Int_accessor acc_src_port;
     Int_accessor acc_dst_port;
     Int_accessor acc_fragments;
