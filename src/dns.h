@@ -213,12 +213,10 @@ class DNSMessage
             {
                 while(n>=192)
                 {
-                    if (savedoffs)
+                    if (savedoffs == 0)
                     {
-                        out[p++]=0;
-                        return savedoffs;
+                    	savedoffs=offs+1;
                     }
-                    savedoffs=offs+1;
                     int n2=get_ubyte(offs++);
                     int ptr =(n&63)*0x100+n2;
                     offs=ptr;
