@@ -40,6 +40,7 @@
 #include <assert.h>
 
 #define IPPROTO_ICMP 1
+#define MAX_RRS 32
 
 namespace se {
 
@@ -173,9 +174,9 @@ class DNSMessage
         int              m_length;
         Header           m_header;
         Question         m_questions[2];
-        RR               m_answer[2];
-        RR               m_authority[2];
-        RR               m_additional[2];
+        RR               m_answer[MAX_RRS + 1];
+        RR               m_authority[MAX_RRS + 1];
+        RR               m_additional[MAX_RRS + 1];
         RR               *m_opt_rr;
         int              m_error;
         bool             m_edns0;
@@ -260,8 +261,8 @@ class DNSMessage
             cnt=m_header.ancount;
             while (cnt-->0)
             {
-                offs = m_answer[q].parse(*this,offs);
-                q=1;    // not ++ ignore further Q's
+                offs = m_answer[q % MAX_RRS].parse(*this,offs);
+                q++;
                 if (offs>m_length)
                 {
                     m_error=offs;
@@ -272,8 +273,8 @@ class DNSMessage
             cnt=m_header.nscount;
             while (cnt-->0)
             {
-                offs = m_authority[q].parse(*this,offs);
-                q=1;    // not ++ ignore further Q's
+                offs = m_authority[q % MAX_RRS].parse(*this,offs);
+                q++;
                 if (offs>m_length)
                 {
                     m_error=offs;
@@ -284,8 +285,8 @@ class DNSMessage
             cnt=m_header.arcount;
             while (cnt-->0)
             {
-                offs = m_additional[q].parse(*this,offs);
-                q=1;    // not ++ ignore further Q's
+                offs = m_additional[q % MAX_RRS].parse(*this,offs);
+                q++;
                 if (offs>m_length)
                 {
                     m_error=offs;
@@ -324,6 +325,9 @@ class Parse_dns : public Packet_handler
     enum {
         COLUMN_QNAME = IP_header_to_table::COLUMN_FRAGMENTS + 1,
         COLUMN_ANAME,
+        COLUMN_ANSWERS,
+        COLUMN_AUTHORITIES,
+        COLUMN_ADDITIONALS,
         COLUMN_MSG_ID,
         COLUMN_MSG_SIZE,
         COLUMN_OPCODE,
@@ -365,6 +369,8 @@ class Parse_dns : public Packet_handler
 
     IP_header_to_table m_ip_helper;
 
+    RefCountString* get_rrs(DNSMessage::Header&, int count, DNSMessage::RR*);
+
     Int_accessor acc_s;
     Int_accessor acc_us;
     Int_accessor acc_ether_type;
@@ -398,6 +404,9 @@ class Parse_dns : public Packet_handler
     Bool_accessor acc_edns0;
     Text_accessor acc_qname;
     Text_accessor acc_aname;
+    Text_accessor acc_answers;
+    Text_accessor acc_authorities;
+    Text_accessor acc_additionals;
     Text_accessor acc_src_addr;
     Text_accessor acc_dst_addr;
 };

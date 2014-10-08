@@ -37,6 +37,7 @@
 #include <cctype>
 #include "output.h"
 #include "dns.h"
+#include <sstream>
 
 namespace se {
 
@@ -64,6 +65,9 @@ void Parse_dns::add_packet_columns()
 
     add_packet_column("qname",          "", Coltype::_text, COLUMN_QNAME);
     add_packet_column("aname",          "", Coltype::_text, COLUMN_ANAME);
+    add_packet_column("answers",        "", Coltype::_text, COLUMN_ANSWERS);
+    add_packet_column("authorities",    "", Coltype::_text, COLUMN_AUTHORITIES);
+    add_packet_column("additionals",    "", Coltype::_text, COLUMN_ADDITIONALS);
     add_packet_column("msg_id",         "", Coltype::_int, COLUMN_MSG_ID);
     add_packet_column("msg_size",       "", Coltype::_int, COLUMN_MSG_SIZE);
     add_packet_column("opcode",         "", Coltype::_int, COLUMN_OPCODE);
@@ -184,6 +188,12 @@ void Parse_dns::add_lookup_tables()
     g_db.add_lut( "rcode", 20 ,"BADNAME" );
     g_db.add_lut( "rcode", 21 ,"BADALG" );
     g_db.add_lut( "rcode", 22 ,"BADTRUNC" );
+
+    g_db.add_lut( "qclass", 1,   "IN" );
+    g_db.add_lut( "qclass", 3,   "CH" );
+    g_db.add_lut( "qclass", 4,   "HS" );
+    g_db.add_lut( "qclass", 254, "NONE" );
+    g_db.add_lut( "qclass", 255, "ANY" );
 }
 
 void Parse_dns::on_table_created(Table *table, const std::vector<int> &columns)
@@ -220,6 +230,30 @@ void Parse_dns::on_table_created(Table *table, const std::vector<int> &columns)
 
     acc_qname          = table->get_accessor<text_column>("qname");
     acc_aname          = table->get_accessor<text_column>("aname");
+    acc_answers        = table->get_accessor<text_column>("answers");
+    acc_authorities    = table->get_accessor<text_column>("authorities");
+    acc_additionals    = table->get_accessor<text_column>("additionals");
+}
+
+#define SSTR(x) dynamic_cast<std::ostringstream &>((std::ostringstream() << std::dec << x)).str()
+RefCountString* Parse_dns::get_rrs(DNSMessage::Header &header, int count, DNSMessage::RR* rrs)
+{
+    std::string tmp;
+    for (int i=0;i<(count < MAX_RRS ? count : MAX_RRS);i++) {
+        if (i > 0) {
+            tmp.append(",");
+        }
+        tmp.append(rrs[i].name);
+        tmp.append(" ");
+        tmp.append(SSTR(rrs[i].ttl));
+        tmp.append(" ");
+        RefCountString* h = g_db.get_value("qclass",rrs[i].rr_class);
+        h ? tmp.append(h->data) : tmp.append(SSTR(rrs[i].rr_class));
+        tmp.append(" ");
+        h = g_db.get_value("qtype",rrs[i].type);
+        h ? tmp.append(h->data) : tmp.append(SSTR(rrs[i].type));
+    }
+    return RefCountString::construct(tmp.c_str());
 }
 
 Packet::ParseResult Parse_dns::parse(Packet &packet, const std::vector<int> &columns, Row &destination_row, bool sample)
@@ -355,6 +389,18 @@ Packet::ParseResult Parse_dns::parse(Packet &packet, const std::vector<int> &col
             acc_udp_size.value(r) = message.m_edns0 ? message.m_udp_size : 0;
             break;
 
+        case COLUMN_ANSWERS:
+            acc_answers.value(r) = get_rrs(header, header.ancount, message.m_answer);
+            break;
+         
+        case COLUMN_AUTHORITIES:
+            acc_authorities.value(r) = get_rrs(header, header.nscount, message.m_authority);
+            break;
+         
+        case COLUMN_ADDITIONALS:
+            acc_additionals.value(r) = get_rrs(header, header.arcount, message.m_additional);
+            break;
+         
         case COLUMN_ANAME:
             acc_aname.value(r) = header.ancount ? RefCountString::construct(message.m_answer[0].name) : RefCountString::construct("");
             break;
