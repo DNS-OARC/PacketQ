@@ -156,6 +156,11 @@ class Pcap_file
                     m_zip.inflate(m_filebuffer,m_zipbuffer);
             }
         }
+        void rewind()
+        {
+            m_filebuffer.m_buffer_pos = 0;
+            m_zipbuffer.m_buffer_pos = 0;
+        }
         void set_gzipped()
         {
             m_gzipped=true;

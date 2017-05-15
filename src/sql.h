@@ -753,13 +753,13 @@ class Static_int : public OP
 public:
     Static_int(const OP &op): OP(op)
     {
-        m_val = atoi(get_token());
+        m_val = atol(get_token());
     }
     void evaluate(Row **rows, Variant &v)
     {
         v = m_val;
     }
-    int m_val;
+    uint64_t m_val;
 };
 
 class Static_float : public OP
@@ -936,7 +936,7 @@ class Len_func : public OP
 	    Variant str; 
 	    m_param[0]->evaluate(rows, str);
             RefCountStringHandle t(str.get_text());
-	    v = int(strlen((*t)->data));
+	    v = uint64_t(strlen((*t)->data));
 	}
 };
 

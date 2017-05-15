@@ -42,6 +42,7 @@ bool Pcap_file::get_header()
     if (res!=0xa1b2c3d4)
     {
         m_reverse_order = true;
+        rewind();
         res = get_int32();
         if (res!=0xa1b2c3d4)
         {
