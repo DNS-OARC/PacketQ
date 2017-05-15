@@ -1,34 +1,24 @@
 /*
- Copyright (c) 2011, .SE - The Internet Infrastructure Foundation
- All rights reserved.
- 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
- 2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
- 3. All advertising materials mentioning features or use of this software
-    must display the following acknowledgement:
-    This product includes software developed by the .SE - The Internet 
-    Infrastructure Foundation.
- 4. Neither the name of .SE - The Internet Infrastructure Foundation nor the
-    names of its contributors may be used to endorse or promote products
-    derived from this software without specific prior written permission.
- 
- THIS SOFTWARE IS PROVIDED BY .SE - THE INTERNET INFRASTRUCTURE FOUNDATION 
- ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
- THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- ARE DISCLAIMED. IN NO EVENT SHALL .SE - The Internet Infrastructure Foundation
- BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
- GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
- STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY 
- WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
- OF SUCH DAMAGE.
+ * Copyright (c) 2017, OARC, Inc.
+ * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
+ * All rights reserved.
+ *
+ * This file is part of PacketQ.
+ *
+ * PacketQ is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * PacketQ is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "sql.h"
 #include "packetq.h"
 #include "output.h"
@@ -128,7 +118,7 @@ class Sorter
                 OP *op = it->m_op;
                 op->evaluate(it->m_asc?ia_rows:ib_rows, m_a);
                 op->evaluate(it->m_asc?ib_rows:ia_rows, m_b);
-                int res = m_a.cmp(m_b); 
+                int res = m_a.cmp(m_b);
                 if (res<0)
                     return true;
                 if (res>0)
@@ -148,7 +138,7 @@ class Sorter
                 OP *op = it->m_op;
                 op->evaluate(it->m_asc?ia_rows:ib_rows,m_a);
                 op->evaluate(it->m_asc?ib_rows:ia_rows,m_b);
-                int res = m_a.cmp(m_b); 
+                int res = m_a.cmp(m_b);
                 if (res!=0)
                     return false;
             }
@@ -166,7 +156,7 @@ class Sorter
                 OP *op = it->m_op;
                 op->evaluate(it->m_asc?ia_rows:ib_rows,m_a);
                 op->evaluate(it->m_asc?ib_rows:ia_rows,m_b);
-                int res = m_a.cmp(m_b); 
+                int res = m_a.cmp(m_b);
                 if (res!=0)
                     return res;
             }
@@ -537,7 +527,7 @@ void Table::merge_sort(Ordering_terms &order)
             // two equal size -> merge
 
             len= sp->l<<=1;
-            start = sp[-1].s; 
+            start = sp[-1].s;
             swap = sp[-1].b;
             sp--;
             sp--;
@@ -549,7 +539,7 @@ void Table::merge_sort(Ordering_terms &order)
             swap=0;
             len =2;
         }
-        
+
         int cnt = start+len>table_size?table_size-start:len;
         Spkt *s=rows[swap];
         Spkt *d=rows[1-swap];
@@ -704,7 +694,7 @@ void Table::xml()
     {
         g_output.add_string("<tr>");
         Row *r = *it;
-       
+
         Variant v;
         for ( int i = 0; i < cols; i++ )
         {
@@ -817,7 +807,7 @@ void Table::json(bool trailing_comma)
         outer_comma = true;
         bool comma  = false;
         Row *r = *it;
-       
+
         for ( int i = 0; i < cols; i++ )
         {
             Column *c = m_cols[i];
@@ -859,7 +849,7 @@ void Table::json(bool trailing_comma)
     if (trailing_comma) {
 	g_output.add_string("  },\n");
     } else {
-	g_output.add_string("  }\n");	
+	g_output.add_string("  }\n");
     }
     g_output.print();
 }
@@ -949,7 +939,7 @@ void Table::csv(bool format)
         tmp = new char[max+1];
         for (int i = 0; i < max; i++)
             tmp[i] = 32;
-        tmp[max] = 0; 
+        tmp[max] = 0;
     }
 
     for (int i=0;i<cols;i++)
@@ -968,7 +958,7 @@ void Table::csv(bool format)
     for (std::list<Row *>::iterator it=m_rows.begin(); it!=m_rows.end();it++)
     {
         Row *r = *it;
-       
+
         for ( int i = 0; i < cols; i++ )
         {
             Column *c = m_cols[i];
@@ -1006,7 +996,7 @@ void Table::csv(bool format)
                     printf("%s,", &tmp[ out.length() + max - col_len[i] + 1 ] );
                 else
                     printf(",");
-            
+
         }
 
         printf("\n");
@@ -1029,11 +1019,11 @@ void Table::dump()
     printf("Table::dump() table:%s cols:%d\n",m_name.c_str(),cols);
     printrep((width+2)*cols+1,'-'); printf("\n");
     printf("|");
-    for (int i=0;i<cols;i++)    
+    for (int i=0;i<cols;i++)
         printf(fmti,m_cols[i]->m_type);
     printf("\n");
     printf("|");
-    for (int i=0;i<cols;i++)    
+    for (int i=0;i<cols;i++)
         printf(fmts,m_cols[i]->m_name.c_str());
     printf("\n");
     printrep((width+2)*cols+1,'*'); printf("\n");
@@ -1108,7 +1098,7 @@ class Parser
                 ok = false;
                 if (get_sample_stmt(q,it))
                     ok = true;
-                   
+
                 if (get_select_stmt(q,it))
                     ok = true;
             }
@@ -1177,7 +1167,7 @@ class Parser
             }
             if ( it->get_type() == Token::_label )
             {
-                std::string table = it->get_token();  
+                std::string table = it->get_token();
                 it++;
                 if ( is(it, Token::_op, "." ) )
                 {
@@ -1268,7 +1258,7 @@ class Parser
                     {
                         throw Error("unhandled option:collate");
                     }
-                    else 
+                    else
                     {
                         ordering.m_terms.push_back(Ordering_terms::OP_dir(op,asc));
                         break;
@@ -1282,8 +1272,8 @@ class Parser
                 if(!is(it, Token::_op,","))
                     break;
                 it++;
-            } 
-            return true; 
+            }
+            return true;
         }
         bool get_group_by( Query &q, Lit &it )
         {
@@ -1416,14 +1406,14 @@ class Parser
             int pre = 0;
             if (!operator_stack.empty())
                 pre = operator_stack.top()->m_precedence;
-            return pre;   
+            return pre;
         }
-        
+
         // using The shunting yard algorithm
         OP *get_expr(Lit &it, int rec)
         {
-            std::stack<OP *> operator_stack; 
-            std::stack<OP *> operand_stack; 
+            std::stack<OP *> operator_stack;
+            std::stack<OP *> operand_stack;
             bool success=true;
             bool expect_expr=true;
             while(success)
@@ -1454,7 +1444,7 @@ class Parser
                         operand_stack.push(op);
                         expect_expr = false;
                         success=true;
-                        continue; 
+                        continue;
                     }
                     else
                         throw Error("Got unary '%s' but could not parse follwing expression",op->get_token() );
@@ -1464,7 +1454,7 @@ class Parser
                     expect_expr = false;
                     continue;
                 }
-                // match function-name ( 
+                // match function-name (
                 if (expect_expr && is(it,Token::_label) &&  is(next,Token::_paren,"("))
                 {
                     OP *func = new OP(*it);
@@ -1494,7 +1484,7 @@ class Parser
                     success=true;
                     continue;
                 }
-                // match [[databasename .] table-name . ] column name 
+                // match [[databasename .] table-name . ] column name
                 if (expect_expr &&  is(it,Token::_label))
                 {
                     OP *op = new OP(*it);
@@ -1526,10 +1516,10 @@ class Parser
                             operand_stack.push(op);
                             expect_expr = false;
                             success=true;
-                            continue; 
+                            continue;
                         }
                         throw Error("Error in expression no )");
-                        
+
                     }
                     it=save;
                     throw Error("Error in expression");
@@ -1553,7 +1543,7 @@ class Parser
                     OP *bop=new OP(*it);
                     while (bop->m_precedence <= get_stack_precedence(operator_stack) )
                     {
-                     
+
                         OP *stack_op = operator_stack.top();
                         operator_stack.pop();
                         if (operand_stack.size()>=2)
@@ -1568,7 +1558,7 @@ class Parser
                             operand_stack.push(stack_op);
                         }
                     }
-                    
+
                     operator_stack.push(bop);
                     it++;
                     success=true;
@@ -1629,7 +1619,7 @@ class Lexer
 public:
 	Lexer(Parser &p) : m_parser(p),num_state(_nan)
 	{
-    
+
 	}
 
 	Parser &m_parser;
@@ -1659,7 +1649,7 @@ public:
 		const char 	*p 			= i_str;
 		State 		state 		= _white;
 		const char 	*strstart 	= 0;
-		bool 		is_escaped  = false;	
+		bool 		is_escaped  = false;
 		std::string	str			= "";
 
 		while (true)
@@ -1668,7 +1658,7 @@ public:
 			{
 				case(_unknown):
 					{
-						if (is_white(*p)) 
+						if (is_white(*p))
 							state=_white;
 						else if (is_label_start(*p))
 							state = _label;
@@ -1756,7 +1746,7 @@ public:
 					{
 						if (parse_num(*p))
                         {
-                            if (!strstart) 
+                            if (!strstart)
                                 strstart=p;
                             p++;
                         }
@@ -1775,7 +1765,7 @@ public:
 					break;
 				case(_label):
 					{
-						if (!strstart) 
+						if (!strstart)
 						{
 							strstart=p++;
 						}
@@ -1824,10 +1814,10 @@ public:
                         switch(*p)
                         {
                             case('|'): if (n=='|') {p++;s+=*p;}  break;
-                            case('>'): if (n=='=') {p++;s+=*p;}  
+                            case('>'): if (n=='=') {p++;s+=*p;}
                                        if (n=='>') {p++;s+=*p;}  break;
-                            case('<'): if (n=='<') {p++;s+=*p;} 
-                                       if (n=='=') {p++;s+=*p;} 
+                            case('<'): if (n=='<') {p++;s+=*p;}
+                                       if (n=='=') {p++;s+=*p;}
                                        if (n=='>') {p++;s+=*p;}  break;
                             case('='): if (n=='=') {p++;s+=*p;}  break;
                             case('!'): if (n=='=') {p++;s+=*p;}  break;
@@ -1906,7 +1896,7 @@ public:
             }
                 break;
         }
-        return true;      
+        return true;
     }
     enum Num_state
     {
@@ -2057,7 +2047,7 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
             m_t = Coltype::_text;
             ret = new Rsplit_func(*this);
         }
-        if (m_param[0]->ret_type()==Coltype::_float) 
+        if (m_param[0]->ret_type()==Coltype::_float)
             m_t = Coltype::_float;
         else
             m_t = Coltype::_int;
@@ -2134,7 +2124,7 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
         }
         if (cmpi(get_token(),"*"))
         {
-            if (m_left->ret_type()==Coltype::_float || m_right->ret_type()==Coltype::_float) 
+            if (m_left->ret_type()==Coltype::_float || m_right->ret_type()==Coltype::_float)
             {
                 m_t = Coltype::_float;
                 ret = new Bin_op_mul_float(*this);
@@ -2157,7 +2147,7 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
         }
         if (cmpi(get_token(),"+"))
         {
-            if (m_left->ret_type()==Coltype::_float || m_right->ret_type()==Coltype::_float) 
+            if (m_left->ret_type()==Coltype::_float || m_right->ret_type()==Coltype::_float)
             {
                 m_t = Coltype::_float;
                 ret = new Bin_op_add_float(*this);
@@ -2170,7 +2160,7 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
         }
         if (cmpi(get_token(),"-"))
         {
-            if (m_left->ret_type()==Coltype::_float || m_right->ret_type()==Coltype::_float) 
+            if (m_left->ret_type()==Coltype::_float || m_right->ret_type()==Coltype::_float)
             {
                 m_t = Coltype::_float;
                 ret = new Bin_op_sub_float(*this);
@@ -2285,7 +2275,7 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
         }
         if (cmpi(get_token(),"-"))
         {
-            if (m_right->ret_type()==Coltype::_float) 
+            if (m_right->ret_type()==Coltype::_float)
             {
                 m_t = Coltype::_float;
                 ret = new Un_op_neg_float(*this);
@@ -2416,7 +2406,7 @@ void Query::process_from()
         all_ops.push_back(i->m_op);
     for (auto i = m_group_by.m_terms.begin(); i != m_group_by.m_terms.end(); ++i)
         all_ops.push_back(i->m_op);
-    
+
     auto used_columns = find_unique_column_ops(all_ops);
 
     // add from table with used columns
@@ -2746,7 +2736,7 @@ Table *DB::create_or_use_table(const char *i_name)
     Table *t = get_table(name.c_str());
     if (!t)
         t = create_table(name.c_str());
- 
+
     return t;
 }
 Table *DB::create_table(const char *i_name)
@@ -2754,7 +2744,7 @@ Table *DB::create_table(const char *i_name)
     std::string name = lower(i_name);
     Table *t = new Table(name.c_str());
     m_tables[std::string(name.c_str())]=t;
- 
+
     return t;
 }
 Column::Column(const char *name,Coltype::Type type, int id, bool hidden): m_name(name), m_type(type), m_def(Column::m_coldefs[type]), m_id(id)

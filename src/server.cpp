@@ -1,48 +1,38 @@
 /*
- Copyright (c) 2011, .SE - The Internet Infrastructure Foundation
- All rights reserved.
- 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
- 2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
- 3. All advertising materials mentioning features or use of this software
-    must display the following acknowledgement:
-    This product includes software developed by the .SE - The Internet 
-    Infrastructure Foundation.
- 4. Neither the name of .SE - The Internet Infrastructure Foundation nor the
-    names of its contributors may be used to endorse or promote products
-    derived from this software without specific prior written permission.
- 
- THIS SOFTWARE IS PROVIDED BY .SE - THE INTERNET INFRASTRUCTURE FOUNDATION 
- ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
- THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- ARE DISCLAIMED. IN NO EVENT SHALL .SE - The Internet Infrastructure Foundation
- BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
- GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
- STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY 
- WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
- OF SUCH DAMAGE.
+ * Copyright (c) 2017, OARC, Inc.
+ * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
+ * All rights reserved.
+ *
+ * This file is part of PacketQ.
+ *
+ * PacketQ is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * PacketQ is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <errno.h> 
-#include <unistd.h> 
-#include <signal.h> 
+
+#include <errno.h>
+#include <unistd.h>
+#include <signal.h>
 #include <arpa/inet.h>
-#include <sys/types.h> 
-#include <sys/socket.h> 
-#include <sys/wait.h> 
-#include <sys/stat.h> 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
-#include <netinet/in.h> 
-#include <netdb.h> 
+#include <netinet/in.h>
+#include <netdb.h>
 #include <getopt.h>
 #include <time.h>
 #include <fcntl.h>
@@ -51,7 +41,7 @@
 #include <map>
 #include <list>
 #include <string>
-#include "packetq.h" 
+#include "packetq.h"
 #include "pcap.h"
 #include "reader.h"
 
@@ -231,7 +221,7 @@ class Socket
                 on_write();
                 unsigned char ptr[4096];
                 int len;
-                
+
                 while( len = m_write.read( ptr, sizeof(ptr)))
                 {
                     int res = write( m_socket, ptr, len );
@@ -359,26 +349,26 @@ void SocketPool::select()
         syslog (LOG_ERR|LOG_USER, "sel -1 errno = %d %s max:%d", errno, strerror(errno), max );
         exit(-1);
     }
-    if (sel) 
+    if (sel)
     {
-        for (int i = 0; i < FD_SETSIZE; i++) 
+        for (int i = 0; i < FD_SETSIZE; i++)
         {
             if ( m_sockets[i] && m_sockets[i]->m_file )
             {
-                if ( FD_ISSET(m_sockets[i]->m_file, &m_readset) ) 
+                if ( FD_ISSET(m_sockets[i]->m_file, &m_readset) )
                 {
                     m_sockets[i]->file_read();
                 }
-                if ( m_sockets[i] && FD_ISSET(m_sockets[i]->m_file, &m_writeset) ) 
+                if ( m_sockets[i] && FD_ISSET(m_sockets[i]->m_file, &m_writeset) )
                 {
                     m_sockets[i]->file_write();
                 }
             }
-            if( m_sockets[i] && FD_ISSET(m_sockets[i]->m_socket, &m_readset) ) 
+            if( m_sockets[i] && FD_ISSET(m_sockets[i]->m_socket, &m_readset) )
             {
                 m_sockets[i]->process(true);
             }
-            if( m_sockets[i] && FD_ISSET(m_sockets[i]->m_socket, &m_writeset) ) 
+            if( m_sockets[i] && FD_ISSET(m_sockets[i]->m_socket, &m_writeset) )
             {
                 m_sockets[i]->process(false);
             }
@@ -410,21 +400,21 @@ class Server
         }
 
 
-        int get_connection() 
+        int get_connection()
         {
             int s=m_socket.m_socket;
-            int t; /* socket of connection */ 
-            if ((t = accept(s,NULL,NULL)) < 0) /* accept connection if there is one */ 
+            int t; /* socket of connection */
+            if ((t = accept(s,NULL,NULL)) < 0) /* accept connection if there is one */
                 return(-1);
 
-            return(t); 
-        } 
+            return(t);
+        }
 
 
-        int establish(unsigned short portnum) 
-        { 
-            int s,res; 
-            sockaddr_in sa; 
+        int establish(unsigned short portnum)
+        {
+            int s,res;
+            sockaddr_in sa;
             memset(&sa, 0, sizeof(struct sockaddr_in));
 
             sa.sin_family = AF_INET;
@@ -432,23 +422,23 @@ class Server
 
             sa.sin_port= htons(portnum);
 
-            if ((s= socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+            if ((s= socket(AF_INET, SOCK_STREAM, 0)) < 0)
                 return(-2);
             int on = 1;
 
             res = setsockopt( s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
 
-            if ((res=bind(s,(const sockaddr *)&sa,sizeof(struct sockaddr_in))) < 0) 
-            { 
-                close(s); 
-                return(res); /* bind address to socket */ 
-            } 
+            if ((res=bind(s,(const sockaddr *)&sa,sizeof(struct sockaddr_in))) < 0)
+            {
+                close(s);
+                return(res); /* bind address to socket */
+            }
             int x=fcntl(s,F_GETFL,0);              // Get socket flags
             fcntl(s,F_SETFL,x | O_NONBLOCK);   // Add non-blocking flag
 
-            listen(s, 511); /* max # of queued connects */ 
-            return(s); 
-        } 
+            listen(s, 511); /* max # of queued connects */
+            return(s);
+        }
 
 
         std::string m_pcaproot;
@@ -461,7 +451,7 @@ class Url
     public:
     Url(const char *url) :m_full(url)
     {
-        int i=0; 
+        int i=0;
         for (;i<m_full.length();i++)
         {
             char c = m_full.c_str()[i];
@@ -578,7 +568,7 @@ class Url
     }
     std::string get_path()
     {
-       return m_path; 
+       return m_path;
     }
 
     std::string m_full;
@@ -606,7 +596,7 @@ class Page
                 printf("no file selected\n");
                 return ;
             }
-            
+
             printf(header,"text/plain");
             if (m_url.get_param("sql"))
                 query(m_url.get_param("sql"));
@@ -625,8 +615,8 @@ class Page
         {
             serve_static();
         }
-        
-        
+
+
         delete g_app;
     }
     static std::string join_path(const std::string &a,const std::string &b)
@@ -709,7 +699,7 @@ class Page
         printf("%s","<a href=\"/query?file=sample.pcap&sql=select%20qr,qname,protocol%20from%20dns%20limit%2018;\">Test query</a><br/>\n" );
         printf("%s","<a href=\"/list\">list available files</a><br/>\n" );
     }
-    
+
     void resolve()
     {
         const char *ip   = m_url.get_param("ip");
@@ -728,12 +718,12 @@ class Page
 
             error = getaddrinfo(ip, NULL, NULL, &result);
             if (error == 0)
-            {   
+            {
                 for (res = result; res != NULL; res = res->ai_next)
-                {   
+                {
                     char hostname[NI_MAXHOST] = "";
 
-                    error = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0); 
+                    error = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0);
                     if (error != 0)
                     {
                         continue;
@@ -743,14 +733,14 @@ class Page
                         printf("\"%s\"", hostname);
                         break;
                     }
-                }   
+                }
                 freeaddrinfo(result);
-            }   
+            }
             printf("]\n");
         }
         else if (name)
         {
-            char tmp[100]; 
+            char tmp[100];
             printf(header,"application/json");
 
             printf("[");
@@ -763,9 +753,9 @@ class Page
             char empty[]="",line[]=",\n";
             char *sep=empty;
             if (error == 0)
-            {   
+            {
                 for (res = result; res != NULL; res = res->ai_next)
-                {   
+                {
                     void *ptr = &( (struct sockaddr_in *) res->ai_addr)->sin_addr;
                     if (res->ai_family==AF_INET6)
                             ptr = &( (struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
@@ -773,15 +763,15 @@ class Page
                     inet_ntop(res->ai_family, ptr, tmp, sizeof( tmp ) );
                     printf("%s\"%s\"", sep, tmp);
                     sep=line;
-                }   
+                }
                 freeaddrinfo(result);
-            }   
+            }
             printf("]\n");
         }
         else
             printf("[]\n");
     }
-        
+
     void serve_dir()
     {
         if (g_server->m_pcaproot=="")
@@ -866,7 +856,7 @@ class Page
 
         closedir(dir);
     }
-        
+
     void query(const char *sql)
     {
         Query query("result", sql);
@@ -879,7 +869,7 @@ class Page
         while(true)
         {
             char param[50]="file";
-            
+
             std::string par = "file";
             if (i>0)
                 sprintf(param,"file%d",i);
@@ -973,7 +963,7 @@ class Http_socket : public Socket
                     c = getc();
                     if( !(m_body_cnt==0 && c==10) )
                     {
-                        m_line+=char(c); 
+                        m_line+=char(c);
                         m_content_len--;
                     }
                     m_body_cnt++;
@@ -1003,14 +993,14 @@ class Http_socket : public Socket
         }
         virtual void file_read()
         {
-            set_want_write();           
+            set_want_write();
         }
         virtual void file_write()
         {
         }
         void on_write()
         {
-            set_want_write(false);           
+            set_want_write(false);
             if (m_state==wait_child)
             {
                 unsigned char buffer[4096];
@@ -1028,7 +1018,7 @@ class Http_socket : public Socket
                     pfd.fd = m_child_fd;
                     pfd.events  = POLLIN;
                     pfd.revents = 0;
-                    if ( 1==poll(&pfd,1,0) && ( pfd.revents&POLLIN!=0 ) ) 
+                    if ( 1==poll(&pfd,1,0) && ( pfd.revents&POLLIN!=0 ) )
                     {
                         if((res = read( m_child_fd, buffer,(int)sizeof(buffer) )) >0 )
                         {
@@ -1063,7 +1053,7 @@ class Http_socket : public Socket
                         m_state = error;
                         syslog (LOG_INFO|LOG_USER,"%s\n",m_line.c_str());
                         int p=0;
-                        if (m_line.find("GET ")!=-1) 
+                        if (m_line.find("GET ")!=-1)
                         {
                             if ( (p=m_line.find(" HTTP/1.1"))!=-1)
                             {
@@ -1134,7 +1124,7 @@ class Http_socket : public Socket
             if(pipe(fd)<0)
                 return;
             fcntl( fd[0], F_SETFD, fcntl( fd[0], F_GETFD, O_NONBLOCK ) | O_NONBLOCK );
-            
+
             m_child_pid=fork();
             if (m_child_pid<0)
             {
@@ -1174,7 +1164,7 @@ class Http_socket : public Socket
 
         int         m_child_read;
 
-        int         m_http_version; // 0 = HTTP/1.0 1 = HTTP/1.1 
+        int         m_http_version; // 0 = HTTP/1.0 1 = HTTP/1.1
 
         int         m_emptyline;
         std::string m_line;
