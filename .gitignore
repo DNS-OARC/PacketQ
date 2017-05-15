@@ -1,10 +1,72 @@
+# Object files
 *.o
-.deps
-src/Makefile
-src/packetq
-stamp-h1
-config.status
-config.log
-config.h
-autom4te.cache/
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+
+# Automake
+Makefile.in
+aclocal.m4
+ar-lib
+autom4te.cache
+compile
+config.guess
+config.sub
+configure
+depcomp
+install-sh
+ltmain.sh
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
+missing
+config.h.in
+config.h.in~
+test-driver
+
+# Configure
 Makefile
+config.log
+config.status
+libtool
+.deps
+src/config.h
+src/stamp-h1
+build
+
+# Project specific files
+src/packetq
+src/test/test-suite.log
+src/test/test*.sh.log
+src/test/test*.sh.trs
+src/test/*.dist

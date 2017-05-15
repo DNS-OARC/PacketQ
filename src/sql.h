@@ -1,34 +1,24 @@
 /*
- Copyright (c) 2011, .SE - The Internet Infrastructure Foundation
- All rights reserved.
- 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
- 2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
- 3. All advertising materials mentioning features or use of this software
-    must display the following acknowledgement:
-    This product includes software developed by the .SE - The Internet 
-    Infrastructure Foundation.
- 4. Neither the name of .SE - The Internet Infrastructure Foundation nor the
-    names of its contributors may be used to endorse or promote products
-    derived from this software without specific prior written permission.
- 
- THIS SOFTWARE IS PROVIDED BY .SE - THE INTERNET INFRASTRUCTURE FOUNDATION 
- ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
- THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- ARE DISCLAIMED. IN NO EVENT SHALL .SE - The Internet Infrastructure Foundation
- BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
- GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
- STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY 
- WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
- OF SUCH DAMAGE.
+ * Copyright (c) 2017, OARC, Inc.
+ * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
+ * All rights reserved.
+ *
+ * This file is part of PacketQ.
+ *
+ * PacketQ is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * PacketQ is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #ifndef SQL_H
 #define SQL_H
 #include <stdio.h>
@@ -142,7 +132,7 @@ class DB
         public:
         std::string m_function;
         int         m_key;
-        bool operator < (const Item &r) const 
+        bool operator < (const Item &r) const
         {
             if (m_key<r.m_key)
                 return true;
@@ -194,7 +184,7 @@ extern DB g_db;
 
 class Coldef
 {
-    public: 
+    public:
     int m_size;
     int m_align;
 };
@@ -225,12 +215,12 @@ class Allocator
     }
     T *allocate()
     {
-    
+
         T *obj = m_curr_buffer->allocate();
         if (!obj)
         {
-            for(typename std::list< Buffer * >::iterator it = m_buffers.begin() ; 
-                it != m_buffers.end() ; 
+            for(typename std::list< Buffer * >::iterator it = m_buffers.begin() ;
+                it != m_buffers.end() ;
                 it++ )
             {
                if ((*it)->m_has_space)
@@ -296,7 +286,7 @@ class Allocator
         {
             m_has_space = true;
             memset(item,0,m_allocator.m_size);
-            m_free_list.push(item);  
+            m_free_list.push(item);
         }
 
         bool            m_has_space;
@@ -528,7 +518,7 @@ inline void GenericAccessor::set(Row *row, const Variant &v)
 class Token
 {
     public:
-        enum Type 
+        enum Type
         {
             _invalid    =0,
             _label      =1,
@@ -548,10 +538,10 @@ class Token
             m_type	= type;
             m_token	= token;
         }
-        const char *get_token() const            { return m_token.c_str();} 
-        void        set_token(const char *istr)  { m_token = istr; } 
-        const Type  get_type()  const            { return m_type;} 
-        void        set_type(const Type type)    { m_type=type;} 
+        const char *get_token() const            { return m_token.c_str();}
+        void        set_token(const char *istr)  { m_token = istr; }
+        const Type  get_type()  const            { return m_type;}
+        void        set_type(const Type type)    { m_type=type;}
     private:
         Type		m_type;
         std::string	m_token;
@@ -799,7 +789,7 @@ public:
     }
     void evaluate(Row **rows, Variant &v)
     {
-        Variant val; 
+        Variant val;
         m_param[0]->evaluate(rows, val);
         v = val.get_int();
     }
@@ -816,7 +806,7 @@ public:
         Variant str, num;
         m_param[0]->evaluate(rows, str);
         m_param[1]->evaluate(rows, num);
-       
+
         int_column n = num.get_int();
         RefCountStringHandle lookup(str.get_text());
         RefCountStringHandle r(g_db.get_value((*lookup)->data, n));
@@ -836,7 +826,7 @@ public:
     }
     void evaluate(Row **rows, Variant &v)
     {
-        Variant str; 
+        Variant str;
         m_param[0]->evaluate(rows, str);
         RefCountStringHandle src(str.get_text());
 
@@ -933,7 +923,7 @@ class Len_func : public OP
 	}
 	void evaluate(Row **rows, Variant &v)
 	{
-	    Variant str; 
+	    Variant str;
 	    m_param[0]->evaluate(rows, str);
             RefCountStringHandle t(str.get_text());
 	    v = int(strlen((*t)->data));
@@ -957,7 +947,7 @@ public:
     }
     void evaluate(Row **rows, Variant &v)
     {
-        Variant cond; 
+        Variant cond;
         m_param[0]->evaluate(rows, cond);
         if (cond.get_bool())
             m_param[1]->evaluate(rows, v);
@@ -1238,7 +1228,7 @@ public:
     Bin_op_eq(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = bool(lhs==rhs);
@@ -1250,7 +1240,7 @@ public:
     Bin_op_not_eq(const OP &op):OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = !bool(lhs==rhs);
@@ -1295,7 +1285,7 @@ public:
     Bin_op_lt(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = bool(lhs < rhs);
@@ -1307,7 +1297,7 @@ public:
     Bin_op_gt(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = bool(rhs < lhs);
@@ -1319,7 +1309,7 @@ public:
     Bin_op_lteq(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = !bool(rhs < lhs);
@@ -1331,7 +1321,7 @@ public:
     Bin_op_gteq(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = !bool(lhs < rhs);
@@ -1343,7 +1333,7 @@ public:
     Bin_op_add(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_int() + rhs.get_int();
@@ -1355,7 +1345,7 @@ public:
     Bin_op_add_float(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_float() + rhs.get_float();
@@ -1367,7 +1357,7 @@ public:
     Bin_op_sub(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_int() - rhs.get_int();
@@ -1379,7 +1369,7 @@ public:
     Bin_op_sub_float(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_float() - rhs.get_float();
@@ -1392,7 +1382,7 @@ public:
     Bin_op_mul(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_int() * rhs.get_int();
@@ -1404,7 +1394,7 @@ public:
     Bin_op_mul_float(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_float() * rhs.get_float();
@@ -1416,7 +1406,7 @@ public:
     Bin_op_div(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_float() / rhs.get_float();
@@ -1428,7 +1418,7 @@ public:
     Bin_op_modulo(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = fmod(lhs.get_float(), rhs.get_float());
@@ -1440,7 +1430,7 @@ public:
     Bin_op_arithmetic_shift_left(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_int() << rhs.get_int();
@@ -1452,7 +1442,7 @@ public:
     Bin_op_arithmetic_shift_right(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_int() >> rhs.get_int();
@@ -1464,7 +1454,7 @@ public:
     Bin_op_bitwise_and(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_int() & rhs.get_int();
@@ -1476,7 +1466,7 @@ public:
     Bin_op_bitwise_or(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         v = lhs.get_int() | rhs.get_int();
@@ -1488,7 +1478,7 @@ public:
     Bin_op_concatenate(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant lhs,rhs; 
+        Variant lhs,rhs;
         m_left ->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         RefCountStringHandle lhandle(lhs.get_text()), rhandle(rhs.get_text());
@@ -1508,7 +1498,7 @@ public:
 class Bin_op_like : public OP
 {
     private:
-	regex_t m_re;	
+	regex_t m_re;
 	char	m_re_str[RE_LEN];
 	bool	m_compiled;
 	int	m_err;
@@ -1533,11 +1523,11 @@ class Bin_op_like : public OP
 			    s--;
 			}
 		    } else if ( *s == '.' ) {
-			*r++ = '\\'; *r = '.';		    
+			*r++ = '\\'; *r = '.';
 		    } else if ( *s == '*' ) {
-			*r++ = '\\'; *r = '*';		    
+			*r++ = '\\'; *r = '*';
 		    } else if ( *s == '%' ) {
-			*r++ = '.'; *r = '*';		    
+			*r++ = '.'; *r = '*';
 		    } else if ( *s == '_' ) {
 			*r = '.';
 		    } else {
@@ -1601,7 +1591,7 @@ public:
     Un_op_not(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant rhs; 
+        Variant rhs;
         m_right->evaluate(rows, rhs);
         v = !rhs.get_bool();
     }
@@ -1613,7 +1603,7 @@ public:
     Un_op_neg(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant rhs; 
+        Variant rhs;
         m_right->evaluate(rows, rhs);
         v = -rhs.get_int();
     }
@@ -1625,7 +1615,7 @@ public:
     Un_op_neg_float(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant rhs; 
+        Variant rhs;
         m_right->evaluate(rows, rhs);
         v = -rhs.get_float();
     }
@@ -1637,7 +1627,7 @@ public:
     Un_op_ones_complement(const OP &op): OP(op){}
     void evaluate(Row **rows, Variant &v)
     {
-        Variant rhs; 
+        Variant rhs;
         m_right->evaluate(rows, rhs);
         v = ~rhs.get_int();
     }
@@ -1717,7 +1707,7 @@ public:
     OP                  *m_having;
     Ordering_terms      m_order_by;
     Ordering_terms      m_group_by;
-    
+
     int                 m_limit;
     int                 m_offset;
     int                 m_sample;
@@ -1761,4 +1751,3 @@ namespace std {
 
 
 #endif
-
