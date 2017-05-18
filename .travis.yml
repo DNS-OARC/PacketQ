@@ -2,6 +2,9 @@ language: cpp
 compiler:
   - clang
   - gcc
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libpcap-dev zlib1g-dev
 install: ./autogen.sh
 script:
   - ./configure

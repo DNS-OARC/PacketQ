@@ -11,6 +11,21 @@ More information is provided in our wiki on https://github.com/dotse/packetq/wik
 
 A short demo-video of PacketQ's capabilities is available on http://www.youtube.com/watch?v=70wJmWZE9tY
 
+## Dependencies
+
+PacketQ requires a couple of libraries beside a normal C++ compiling
+environment with Autoconf and Automake.
+
+To install the dependencies under Debian/Ubuntu:
+```
+apt-get install -y libpcap-dev zlib1g-dev
+```
+
+To install the dependencies under CentOS (with EPEL enabled):
+```
+yum install -y libpcap-devel zlib-devel
+```
+
 ## Usage example
 
 Retrieves the 10 first packets containing DNS information from the file
