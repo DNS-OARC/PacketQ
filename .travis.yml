@@ -1,22 +1,21 @@
 dist: xenial
+env:
+  global:
+   - secure: "YaLgKOxeA3AEFOmzff/U+F3MudYMnS8RlmBHnLFrhHT6XvKQhkjWJf9aq1aDks/0gs/DPNyeYnryFc3IjSz/sa1jbZdBFyrirLU9Vqlv3M+mMdnTNYijTbZsqUEJUCEflv1V2PeSGjzkTq22rMHzQuqugiuzbVy7d7dRyzjlgM0="
 addons:
   apt:
     update: true
     packages:
     - zlib1g-dev
+  coverity_scan:
+    project:
+      name: "DNS-OARC/PacketQ"
+      description: "Build submitted via Travis CI"
+    notification_email: lundstrom.jerry@gmail.com
+    build_command_prepend: "./autogen.sh && ./configure && make clean"
+    build_command: "make"
+    branch_pattern: coverity_scan
 language: cpp
 compiler:
-  - clang
   - gcc
-install: ./autogen.sh
-script:
-  - ./configure
-  - make dist
-  - tar zxvf *.tar.gz
-  - cd packetq-[0-9]*
-  - mkdir build
-  - cd build
-  - ../configure
-  - make
-  - make test
-  - src/packetq -v
+script: true
