@@ -26,23 +26,6 @@ To install the dependencies under CentOS (with EPEL enabled):
 yum install -y libpcap-devel zlib-devel
 ```
 
-## Usage example
-
-Retrieves the 10 first packets containing DNS information from the file
-`sample.pcap`:
-
-```
-packetq -s "select * from dns limit 10" sample.pcap
-```
-
-Starts a web-server on port 8080 (`-p8080`) as a daemon (`-d`) serving files
-from the directory `html/` (`-w html/`) and PCAP files from the directory
-`pcap/` (`-r pcap/`):
-
-```
-packetq -d -p8080 -w html/ -r pcap/
-```
-
 ## Build from GitHub
 
 ```
@@ -61,6 +44,23 @@ cd packetq-VERSION...
 ./configure
 make
 make install
+```
+
+## Usage example
+
+Retrieves the 10 first packets containing DNS information from the file
+`sample.pcap`:
+
+```
+packetq -s "select * from dns limit 10" sample.pcap
+```
+
+Starts a web-server on port 8080 (`-p8080`) as a daemon (`-d`) serving files
+from the directory `html/` (`-w html/`) and PCAP files from the directory
+`pcap/` (`-r pcap/`):
+
+```
+packetq -d -p8080 -w html/ -r pcap/
 ```
 
 ## Author(s)
