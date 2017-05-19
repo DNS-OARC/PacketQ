@@ -23,4 +23,4 @@ MAINTAINERCLEANFILES = $(srcdir)/Makefile.in \
 
 SUBDIRS = src
 
-dist_doc_DATA = CHANGES COPYING README.md
+dist_doc_DATA = CHANGES COPYING README.md FAQ.md FIELDS.md FUNCTIONS.md
