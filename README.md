@@ -5,11 +5,26 @@
 `packetq` is a command line tool to run SQL queries directly on PCAP files,
 the results can be outputted as JSON (default), formatted/compact CSV and XML.
 It also contain a very simplistic web-server in order to inspect PCAP files
-remotely.
+remotely. PacketQ was previously known as DNS2db but was renamed in 2011 when
+it was rebuilt and could handle protocols other than DNS among other things.
 
-More information is provided in our wiki on https://github.com/dotse/packetq/wiki
+More information is provided in our [FAQ](FAQ.md), [functions](FUNCTIONS.md),
+and [fields](FIELDS.md) documentation.
 
 A short demo-video of PacketQ's capabilities is available on http://www.youtube.com/watch?v=70wJmWZE9tY
+
+## Features
+
+* Super-fast native decoding of PCAP-files (even gzipped) and dirt-quick in-memory sorting algorithms.
+* A extensible protocol decoding design with build in support for ICMP and DNS from start.
+* Support for grouping, sorting, counting and most other important SQL-functions.
+* Only dependent on zlib, no other hard-to-find libs needed. Compiles on everything.
+* Build-in web-server, JSON API and a simple JQuery-based GUI concept application with graphs.
+* Can be designed to cache queries by pre-processing PCAPs into static JSON-files that can be used to make queries again.
+* Built in DNS-resolver function (used by GUI).
+* Support for sampling. Helps when making queries to large, uniform PCAP-files.
+* Can convert flags in packet-headers to text on the fly.
+* Can make multiple queries towards the same data in memory.
 
 ## Dependencies
 
