@@ -27,38 +27,37 @@
 namespace packetq {
 
 // App class
-class PacketQ
-{
-    public:
-        enum OutputOpts
-        {
-            json,
-            csv,
-            csv_format,
-            xml
-        };
-        PacketQ()
-        {
-            m_limit          = 0;
-            m_output         = json;
-        }
-        void set_limit(int limit)
-        {
-            m_limit = limit;
-        }
-        void set_output(OutputOpts opt)
-        {
-            m_output = opt;
-        }
-        OutputOpts get_output() { return m_output; }
-        int get_limit()         { return m_limit;  }
+class PacketQ {
+public:
+    enum OutputOpts {
+        json,
+        csv,
+        csv_format,
+        xml
+    };
+    PacketQ()
+    {
+        m_limit = 0;
+        m_output = json;
+    }
+    void set_limit(int limit)
+    {
+        m_limit = limit;
+    }
+    void set_output(OutputOpts opt)
+    {
+        m_output = opt;
+    }
+    OutputOpts get_output() { return m_output; }
+    int get_limit() { return m_limit; }
 
-    private:
-        int         m_limit;
-        OutputOpts  m_output;
+private:
+    int m_limit;
+    OutputOpts m_output;
 };
 
-extern PacketQ *g_app;
-}
+extern PacketQ* g_app;
+
+} // namespace packetq
 
 #endif // __packetq_packetq_h

@@ -28,9 +28,14 @@ AM_CXXFLAGS = -I$(srcdir) \
 
 bin_PROGRAMS = packetq
 
-packetq_SOURCES = dns.cpp icmp.cpp MurmurHash3.cpp packet_handler.cpp \
-    packetq.cpp pcap.cpp reader.cpp server.cpp sql.cpp tcp.cpp
+packetq_SOURCES = dns.cpp dns.h icmp.cpp icmp.h output.h packet_handler.cpp \
+    packet_handler.h packetq.cpp packetq.h pcap.cpp pcap.h reader.cpp \
+    reader.h refcountstring.h segzip.h server.cpp server.h sql.cpp sql.h \
+    tcp.cpp tcp.h variant.h
 
-dist_packetq_SOURCES = dns.h icmp.h MurmurHash3.h output.h packet_handler.h \
-    packetq.h pcap.h reader.h refcountstring.h segzip.h server.h sql.h tcp.h \
-    variant.h
+dist_packetq_SOURCES = MurmurHash3.cpp MurmurHash3.h
+
+EXTRA_DIST = regression-test.sh
+
+fmt:
+	( cd $(srcdir) && clang-format-3.8 -style="{BasedOnStyle: webkit, IndentWidth: 4}" -i $(packetq_SOURCES) )

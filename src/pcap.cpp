@@ -19,9 +19,10 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "pcap.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "pcap.h"
 
 namespace packetq {
 
@@ -29,14 +30,11 @@ bool Pcap_file::get_header()
 {
     // establish: byte order and file format
     int res = get_int32();
-    if (res!=0xa1b2c3d4)
-    {
+    if (res != 0xa1b2c3d4) {
         m_reverse_order = true;
         res = get_int32();
-        if (res!=0xa1b2c3d4)
-        {
-            if (!m_gzipped)
-            {
+        if (res != 0xa1b2c3d4) {
+            if (!m_gzipped) {
                 m_reverse_order = false;
                 set_gzipped();
                 return get_header();
@@ -47,19 +45,16 @@ bool Pcap_file::get_header()
     // establish version
     int major_version = get_int16();
     int minor_version = get_int16();
-    if (major_version!=2 || minor_version!=4)
-    {
-        printf("maj:%d min:%d\n",major_version,minor_version);
+    if (major_version != 2 || minor_version != 4) {
+        printf("maj:%d min:%d\n", major_version, minor_version);
         return false;
     }
     // check for 0 timezone offset and accuracy
-    if (!get_int32()==0)
-    {
+    if (!get_int32() == 0) {
         printf("timezone offset != 0");
         return false;
     }
-    if (!get_int32()==0)
-    {
+    if (!get_int32() == 0) {
         printf("timezone offset != 0");
         return false;
     }
@@ -67,21 +62,20 @@ bool Pcap_file::get_header()
     m_snapshot_length = get_int32();
     // check for ethernet packets
     m_link_layer_type = get_int32();
-    if (m_link_layer_type!=1 && m_link_layer_type!=101)
-    {
-        fprintf(stderr,"PCAP file unsupported linklayer (%d)\n",m_link_layer_type);
+    if (m_link_layer_type != 1 && m_link_layer_type != 101) {
+        fprintf(stderr, "PCAP file unsupported linklayer (%d)\n", m_link_layer_type);
         return false;
     }
     return true;
 }
 
-unsigned char *Pcap_file::get_packet(int &len, int &s, int &us)
+unsigned char* Pcap_file::get_packet(int& len, int& s, int& us)
 {
-    s=0;
-    us=0;
-    len=0;
-    s   = get_int32();
-    us  = get_int32();
+    s = 0;
+    us = 0;
+    len = 0;
+    s = get_int32();
+    us = get_int32();
     len = get_int32();
 
     // skip past reallen
@@ -90,8 +84,9 @@ unsigned char *Pcap_file::get_packet(int &len, int &s, int &us)
     if (get_eof() || len < 0)
         return 0;
 
-    unsigned char * buf = get_bytes(len);
+    unsigned char* buf = get_bytes(len);
 
     return buf;
 }
-}
+
+} // namespace packetq
