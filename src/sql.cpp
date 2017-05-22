@@ -184,7 +184,7 @@ class Per_sort
 public:
     struct Tlink
     {
-        Tlink() : m_eq(0)
+        Tlink() : m_next(0), row(0), m_eq(0)
         {
         }
 
@@ -449,10 +449,12 @@ public:
             }
             p = p->m_next;
         };
-        if(cnt != table_size)
-        {
-            p++;
-        }
+        // CID 1436254 Dereference after null check
+        // Code disabled, it makes no sense
+        // if(cnt != table_size)
+        // {
+        //     p++;
+        // }
 
         delete []links;
     }
@@ -1230,8 +1232,7 @@ class Parser
                 else
                 {
                     success=false;
-                    it=save;
-                    return false;
+                    break;
                 }
 
                 if (is (it,Token::_op,","))
@@ -1446,14 +1447,7 @@ class Parser
                     OP *op = new OP(*it);
                     op->set_type(Token::_uop);
                     it++;
-                    if (op->m_right = get_expr(it,rec+1))
-                    {
-                        operand_stack.push(op);
-                        expect_expr = false;
-                        success=true;
-                        continue;
-                    }
-                    else
+                    if (!(op->m_right = get_expr(it,rec+1)))
                         throw Error("Got unary '%s' but could not parse following expression",op->get_token() );
 
                     operand_stack.push(op);
@@ -2001,7 +1995,7 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
             break;
         }
     }
-    if (get_type()==_number)
+    else if (get_type()==_number)
     {
         const char *p=get_token();
         bool integer = true;
@@ -2022,12 +2016,12 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
             ret = new Static_float(*this);
         }
     }
-    if (get_type()==_string)
+    else if (get_type()==_string)
     {
         m_t = Coltype::_text;
         ret = new Static_text(*this);
     }
-    if ((get_type()==_function)&&m_param[0])
+    else if ((get_type()==_function)&&m_param[0])
     {
         Table *dest_table = tables[m_row_index];
 
@@ -2039,97 +2033,90 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
                  m_t = m_param[2]->m_t;
             ret = new If_func(*this);
         }
-        if (cmpi(get_token(),"name") && m_param[1])
+        else if (cmpi(get_token(),"name") && m_param[1])
         {
             m_t = Coltype::_text;
             ret = new Name_func(*this);
         }
-        if (cmpi(get_token(),"trim") )
+        else if (cmpi(get_token(),"trim") )
         {
             m_t = Coltype::_text;
             ret = new Trim_func(*this);
         }
-        if (cmpi(get_token(),"rsplit") && m_param[1])
+        else if (cmpi(get_token(),"rsplit") && m_param[1])
         {
             m_t = Coltype::_text;
             ret = new Rsplit_func(*this);
         }
-        if (m_param[0]->ret_type()==Coltype::_float)
-            m_t = Coltype::_float;
-        else
-            m_t = Coltype::_int;
-
-        if (cmpi(get_token(),"count"))
+        else if (cmpi(get_token(),"count"))
         {
             m_t = Coltype::_int;
             ret = new Count_func(*this, dest_table);
         }
-        if (m_t == Coltype::_int)
+        else if (m_param[0]->ret_type()==Coltype::_float && cmpi(get_token(),"min"))
         {
-            if (cmpi(get_token(),"min"))
-            {
-                ret = new Min_func_int(*this, dest_table);
-            }
-            if (cmpi(get_token(),"max"))
-            {
-                ret = new Max_func_int(*this, dest_table);
-            }
-            if (cmpi(get_token(),"sum"))
-            {
-                ret = new Sum_func_int(*this, dest_table);
-            }
+            m_t = Coltype::_float;
+            ret = new Min_func_float(*this, dest_table);
         }
-        else
+        else if (m_param[0]->ret_type()==Coltype::_float && cmpi(get_token(),"max"))
         {
-            if (cmpi(get_token(),"min"))
-            {
-                ret = new Min_func_float(*this, dest_table);
-            }
-            if (cmpi(get_token(),"max"))
-            {
-                ret = new Max_func_float(*this, dest_table);
-            }
-            if (cmpi(get_token(),"sum"))
-            {
-                ret = new Sum_func_float(*this, dest_table);
-            }
+            m_t = Coltype::_float;
+            ret = new Max_func_float(*this, dest_table);
         }
-
-        if (cmpi(get_token(),"lower"))
+        else if (m_param[0]->ret_type()==Coltype::_float && cmpi(get_token(),"sum"))
+        {
+            m_t = Coltype::_float;
+            ret = new Sum_func_float(*this, dest_table);
+        }
+        else if (cmpi(get_token(),"min"))
+        {
+            m_t = Coltype::_int;
+            ret = new Min_func_int(*this, dest_table);
+        }
+        else if (cmpi(get_token(),"max"))
+        {
+            m_t = Coltype::_int;
+            ret = new Max_func_int(*this, dest_table);
+        }
+        else if (cmpi(get_token(),"sum"))
+        {
+            m_t = Coltype::_int;
+            ret = new Sum_func_int(*this, dest_table);
+        }
+        else if (cmpi(get_token(),"lower"))
         {
             m_t = Coltype::_text;
             ret = new Lower_func(*this);
         }
-        if (cmpi(get_token(),"len"))
+        else if (cmpi(get_token(),"len"))
         {
             m_t = Coltype::_int;
             ret = new Len_func(*this);
         }
-        if (cmpi(get_token(),"truncate"))
+        else if (cmpi(get_token(),"truncate"))
         {
             m_t = Coltype::_int;
             ret = new Truncate_func(*this);
         }
-        if (cmpi(get_token(),"stdev"))
+        else if (cmpi(get_token(),"stdev"))
         {
             m_t = Coltype::_float;
             ret = new Stdev_func(*this, dest_table);
         }
-        if (cmpi(get_token(),"avg"))
+        else if (cmpi(get_token(),"avg"))
         {
             m_t = Coltype::_float;
             ret = new Avg_func(*this, dest_table);
         }
     }
-
-    if ((get_type()==_op)&&m_left&&m_right)
+    else if ((get_type()==_op)&&m_left&&m_right)
     {
         if (cmpi(get_token(),"||"))
         {
             m_t = Coltype::_text;
             ret = new Bin_op_concatenate(*this);
         }
-        if (cmpi(get_token(),"*"))
+        else if (cmpi(get_token(),"*"))
         {
             if (m_left->ret_type()==Coltype::_float || m_right->ret_type()==Coltype::_float)
             {
@@ -2142,17 +2129,17 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
                 ret = new Bin_op_mul(*this);
             }
         }
-        if (cmpi(get_token(),"/"))
+        else if (cmpi(get_token(),"/"))
         {
             m_t = Coltype::_float;
             ret = new Bin_op_div(*this);
         }
-        if (cmpi(get_token(),"%"))
+        else if (cmpi(get_token(),"%"))
         {
             m_t = Coltype::_float;
             ret = new Bin_op_modulo(*this);
         }
-        if (cmpi(get_token(),"+"))
+        else if (cmpi(get_token(),"+"))
         {
             if (m_left->ret_type()==Coltype::_float || m_right->ret_type()==Coltype::_float)
             {
@@ -2165,7 +2152,7 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
                 ret = new Bin_op_add(*this);
             }
         }
-        if (cmpi(get_token(),"-"))
+        else if (cmpi(get_token(),"-"))
         {
             if (m_left->ret_type()==Coltype::_float || m_right->ret_type()==Coltype::_float)
             {
@@ -2178,109 +2165,109 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
                 ret = new Bin_op_sub(*this);
             }
         }
-        if (cmpi(get_token(),"<<"))
+        else if (cmpi(get_token(),"<<"))
         {
             m_t = Coltype::_int;
             ret = new Bin_op_arithmetic_shift_left(*this);
         }
-        if (cmpi(get_token(),">>"))
+        else if (cmpi(get_token(),">>"))
         {
             m_t = Coltype::_int;
             ret = new Bin_op_arithmetic_shift_right(*this);
         }
-        if (cmpi(get_token(),"&"))
+        else if (cmpi(get_token(),"&"))
         {
             m_t = Coltype::_int;
             ret = new Bin_op_bitwise_and(*this);
         }
-        if (cmpi(get_token(),"|"))
+        else if (cmpi(get_token(),"|"))
         {
             m_t = Coltype::_int;
             ret = new Bin_op_bitwise_or(*this);
         }
-        if (cmpi(get_token(),"<"))
+        else if (cmpi(get_token(),"<"))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_lt(*this);
         }
-        if (cmpi(get_token(),"<="))
+        else if (cmpi(get_token(),"<="))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_lteq(*this);
         }
-        if (cmpi(get_token(),">"))
+        else if (cmpi(get_token(),">"))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_gt(*this);
         }
-        if (cmpi(get_token(),">="))
+        else if (cmpi(get_token(),">="))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_gteq(*this);
         }
-        if (cmpi(get_token(),"="))
+        else if (cmpi(get_token(),"="))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_eq(*this);
         }
-        if (cmpi(get_token(),"=="))
+        else if (cmpi(get_token(),"=="))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_eq(*this);
         }
-	if (cmpi(get_token(),"like"))
-	{
-	    m_t = Coltype::_bool;
-	    ret = new Bin_op_like(*this);
-	}
-	if (cmpi(get_token(),"not like"))
-	{
-	    m_t = Coltype::_bool;
-	    ret = new Bin_op_not_like(*this);
-	}
-        if (cmpi(get_token(),"!="))
+        else if (cmpi(get_token(),"like"))
+    	{
+    	    m_t = Coltype::_bool;
+    	    ret = new Bin_op_like(*this);
+    	}
+    	else if (cmpi(get_token(),"not like"))
+    	{
+    	    m_t = Coltype::_bool;
+    	    ret = new Bin_op_not_like(*this);
+    	}
+        else if (cmpi(get_token(),"!="))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_not_eq(*this);
         }
-        if (cmpi(get_token(),"<>"))
+        else if (cmpi(get_token(),"<>"))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_not_eq(*this);
         }
-        if (cmpi(get_token(),"is"))
+        else if (cmpi(get_token(),"is"))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_eq(*this);
         }
-        if (cmpi(get_token(),"is not"))
+        else if (cmpi(get_token(),"is not"))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_not_eq(*this);
         }
-        if (cmpi(get_token(),"and"))
+        else if (cmpi(get_token(),"and"))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_and(*this);
         }
-        if (cmpi(get_token(),"or"))
+        else if (cmpi(get_token(),"or"))
         {
             m_t = Coltype::_bool;
             ret = new Bin_op_or(*this);
         }
     }
-    if ( ( get_type() == _uop ) && m_right )
+    else if ( ( get_type() == _uop ) && m_right )
     {
         if (cmpi(get_token(),"not"))
         {
             m_t = Coltype::_bool;
             ret = new Un_op_not(*this);
         }
-        if (cmpi(get_token(),"+"))
+        else if (cmpi(get_token(),"+"))
         {
             ret = m_right;
         }
-        if (cmpi(get_token(),"-"))
+        else if (cmpi(get_token(),"-"))
         {
             if (m_right->ret_type()==Coltype::_float)
             {
@@ -2293,7 +2280,7 @@ OP* OP::compile(const std::vector<Table *> &tables, const std::vector<int> &sear
                 ret = new Un_op_neg(*this);
             }
         }
-        if (cmpi(get_token(),"~"))
+        else if (cmpi(get_token(),"~"))
         {
             m_t = Coltype::_int;
             ret = new Un_op_ones_complement(*this);

@@ -76,7 +76,8 @@ bool se::Reader::read_next(Packet_handler *handler, const std::vector<int> &colu
             else {
                 // last row in file
                 pcap.reset();
-                ++currently_reading;
+                if (currently_reading != filenames.end())
+                    ++currently_reading;
             }
         }
     }

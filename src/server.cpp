@@ -195,7 +195,17 @@ class Socket
     public:
         Socket( int s, bool serv ) : m_want_write(false)
         {
-            fcntl( s, F_SETFL, fcntl( s, F_GETFL, 0 ) | O_NONBLOCK );   // Add non-blocking flag
+            int flags;
+
+            // Add non-blocking flag
+            if ((flags = fcntl(s, F_GETFL)) == -1) {
+                syslog(LOG_ERR|LOG_USER, "fcntl(%d, F_GETFL) failed: %d\n", s, errno);
+                exit(-1);
+            }
+            if (fcntl(s, F_SETFL, flags | O_NONBLOCK)) {
+                syslog(LOG_ERR|LOG_USER, "fcntl(%d, F_SETFL, 0x%x) failed: %d\n", s, errno, flags | O_NONBLOCK);
+                exit(-1);
+            }
 
             m_bytes_written     = 0;
             m_bytes_read        = 0;
@@ -432,8 +442,17 @@ class Server
                 close(s);
                 return(res); /* bind address to socket */
             }
-            int x=fcntl(s,F_GETFL,0);              // Get socket flags
-            fcntl(s,F_SETFL,x | O_NONBLOCK);   // Add non-blocking flag
+
+            // Add non-blocking flag
+            int flags;
+            if ((flags = fcntl(s, F_GETFL)) == -1) {
+                syslog(LOG_ERR|LOG_USER, "fcntl(%d, F_GETFL) failed: %d\n", s, errno);
+                exit(-1);
+            }
+            if (fcntl(s, F_SETFL, flags | O_NONBLOCK)) {
+                syslog(LOG_ERR|LOG_USER, "fcntl(%d, F_SETFL, 0x%x) failed: %d\n", s, errno, flags | O_NONBLOCK);
+                exit(-1);
+            }
 
             listen(s, 511); /* max # of queued connects */
             return(s);
@@ -801,8 +820,9 @@ class Page
         while ( (d=readdir(dir))!=0 )
         {
             std::string subject=join_path(directory,d->d_name);
+            const char* file = subject.c_str();
 
-            if (stat( subject.c_str(), &statbuf) ==-1)
+            if (stat(file, &statbuf) ==-1)
                 continue;
             if (S_ISDIR(statbuf.st_mode))
             {
@@ -818,7 +838,7 @@ class Page
                 bool found = false;
                 std::string str = subject;
                 transform(str.begin(), str.end(),str.begin(), tolower );
-                FILE *fp = fopen(subject.c_str(),"rb");
+                FILE *fp = fopen(file, "rb");
                 if (fp)
                 {
                     Pcap_file pfile(fp);
@@ -887,8 +907,7 @@ class Page
         Reader reader(in_files, g_app->get_limit());
 
         query.execute(reader);
-        if (query.m_result)
-            query.m_result->json(false);
+        query.m_result->json(false);
     }
     Url m_url;
 };
@@ -1014,8 +1033,18 @@ class Http_socket : public Socket
                 }
                 if (m_child_fd)
                 {
+                    // Add non-blocking flag
+                    int flags;
+                    if ((flags = fcntl(m_child_fd, F_GETFL)) == -1) {
+                        syslog(LOG_ERR|LOG_USER, "fcntl(%d, F_GETFL) failed: %d\n", m_child_fd, errno);
+                        exit(-1);
+                    }
+                    if (fcntl(m_child_fd, F_SETFL, flags | O_NONBLOCK)) {
+                        syslog(LOG_ERR|LOG_USER, "fcntl(%d, F_SETFL, 0x%x) failed: %d\n", m_child_fd, errno, flags | O_NONBLOCK);
+                        exit(-1);
+                    }
+
                     size_t res;
-                    fcntl( m_child_fd, F_SETFD, fcntl( m_child_fd, F_GETFD, O_NONBLOCK ) | O_NONBLOCK );
                     pollfd pfd;
                     pfd.fd = m_child_fd;
                     pfd.events  = POLLIN;
@@ -1125,7 +1154,17 @@ class Http_socket : public Socket
             int fd[2];
             if(pipe(fd)<0)
                 return;
-            fcntl( fd[0], F_SETFD, fcntl( fd[0], F_GETFD, O_NONBLOCK ) | O_NONBLOCK );
+
+            // Add non-blocking flag
+            int flags;
+            if ((flags = fcntl(fd[0], F_GETFL)) == -1) {
+                syslog(LOG_ERR|LOG_USER, "fcntl(%d, F_GETFL) failed: %d\n", fd[0], errno);
+                exit(-1);
+            }
+            if (fcntl(fd[0], F_SETFL, flags | O_NONBLOCK)) {
+                syslog(LOG_ERR|LOG_USER, "fcntl(%d, F_SETFL, 0x%x) failed: %d\n", fd[0], errno, flags | O_NONBLOCK);
+                exit(-1);
+            }
 
             m_child_pid=fork();
             if (m_child_pid<0)
