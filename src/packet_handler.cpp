@@ -76,7 +76,7 @@ public:
     {
         if (head.offset==0)
             m_first = head;
-        if (head.offset <0 || head.offset + len > 0x10000 || len <0 )
+        if (head.offset + len > 0x10000 || len < 0)
             return false;
         m_frags++;
         if(head.fragments == 0)
