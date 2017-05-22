@@ -1009,11 +1009,14 @@ void Table::dump()
     int cols = (int)m_cols.size();
     int width = 25;
     char fmti[40];
-    sprintf(fmti,"%%%dd |",width);
+    snprintf(fmti, sizeof(fmti) - 1, "%%%dd |", width);
+    fmti[39] = 0;
     char fmtd[40];
-    sprintf(fmtd,"%%%dg |",width);
+    snprintf(fmtd, sizeof(fmtd) - 1, "%%%dg |", width);
+    fmtd[39] = 0;
     char fmts[40];
-    sprintf(fmts,"%%%ds |",width);
+    snprintf(fmts, sizeof(fmts) - 1, "%%%ds |", width);
+    fmts[39] = 0;
 
 
     printf("Table::dump() table:%s cols:%d\n",m_name.c_str(),cols);

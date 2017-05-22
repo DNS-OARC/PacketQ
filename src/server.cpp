@@ -518,7 +518,8 @@ class Url
         int n = m_counts[key];
         m_counts[key] = n+1;
 
-        sprintf(cnt,"%d",n);
+        snprintf(cnt, sizeof(cnt) - 1, "%d", n);
+        cnt[99] = 0;
         std::string keyn=key;
         keyn+=cnt;
         m_params[keyn] = val;
@@ -871,8 +872,10 @@ class Page
             char param[50]="file";
 
             std::string par = "file";
-            if (i>0)
-                sprintf(param,"file%d",i);
+            if (i>0) {
+                snprintf(param, sizeof(param) - 1, "file%d", i);
+                param[49] = 0;
+            }
             i++;
             const char *f = m_url.get_param(param);
             if (!f)
