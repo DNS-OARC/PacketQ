@@ -24,8 +24,8 @@
 
 namespace packetq {
 
-void start_server(int port,bool fork, const std::string &pcaproot, const std::string &webroot, int max_conn );
+void start_server(int port, bool fork, const std::string& pcaproot, const std::string& webroot, int max_conn);
 
-}
+} // namespace packetq
 
 #endif // __packetq_server_h

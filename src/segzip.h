@@ -28,94 +28,89 @@
 
 namespace packetq {
 
-class Buffer
-{
-    public:
+class Buffer {
+public:
     Buffer()
     {
-        m_buffer_len    = 0;
-        m_buffer_pos    = 0;
-        m_nextread      = 1024;
+        m_buffer_len = 0;
+        m_buffer_pos = 0;
+        m_nextread = 1024;
     }
-    int size() {return sizeof(m_buffer);}
-    unsigned char    m_buffer[0x40000];
-    int              m_nextread;
-    int              m_buffer_len;
-    int              m_buffer_pos;
+    int size() { return sizeof(m_buffer); }
+    unsigned char m_buffer[0x40000];
+    int m_nextread;
+    int m_buffer_len;
+    int m_buffer_pos;
 };
 
-class Zip
-{
-    public:
-        Zip() : m_stream()
-        {
-            m_init    = true;
-            m_error   = false;
-            m_run_end = false;
-            m_stream.next_out = 0;
-            m_stream.avail_out = 0;
+class Zip {
+public:
+    Zip()
+        : m_stream()
+    {
+        m_init = true;
+        m_error = false;
+        m_run_end = false;
+        m_stream.next_out = 0;
+        m_stream.avail_out = 0;
+    }
+    ~Zip()
+    {
+        if (m_run_end)
+            ::inflateEnd(&m_stream);
+    }
+    bool inflate(Buffer& in, Buffer& out)
+    {
+        if (m_error) {
+            in.m_buffer_pos = in.m_buffer_len;
+            out.m_buffer_len = 0;
+            return false;
         }
-        ~Zip()
-        {
-            if (m_run_end)
-                ::inflateEnd(&m_stream);
-        }
-        bool inflate(Buffer &in,Buffer &out)
-        {
-            if (m_error)
-            {
-                in.m_buffer_pos  = in.m_buffer_len;
-                out.m_buffer_len = 0;
-                return false;
-            }
-            out.m_buffer_pos = 0;
-            out.m_buffer_len = sizeof(out.m_buffer);
-            m_stream.next_out = &out.m_buffer[out.m_buffer_pos];
-            m_stream.avail_out = out.m_buffer_len - out.m_buffer_pos;
-            if (m_init)
-            {
-                m_stream.next_in = 0;
-                m_stream.avail_in = 0;
-                m_stream.zalloc=0;
-                m_stream.zfree=0;
-                m_stream.opaque=0;
-                m_init=false;
-                if (inflateInit2(&m_stream,15+32)!=Z_OK)
-                {
-                    m_error=true;
-                    out.m_buffer_len = 0;
-                    in.m_buffer_pos = in.m_buffer_len;
-                    return false;
-                }
-            }
-            m_stream.next_in = &in.m_buffer[in.m_buffer_pos];
-            m_stream.avail_in = in.m_buffer_len-in.m_buffer_pos;
-
-            int ret = ::inflate(&m_stream,Z_NO_FLUSH);
-
-            if (ret != Z_OK)
-                ::inflateEnd(&m_stream);
-            else
-                m_run_end=true;
-            if (ret != Z_OK && ret != Z_STREAM_END)
-            {
+        out.m_buffer_pos = 0;
+        out.m_buffer_len = sizeof(out.m_buffer);
+        m_stream.next_out = &out.m_buffer[out.m_buffer_pos];
+        m_stream.avail_out = out.m_buffer_len - out.m_buffer_pos;
+        if (m_init) {
+            m_stream.next_in = 0;
+            m_stream.avail_in = 0;
+            m_stream.zalloc = 0;
+            m_stream.zfree = 0;
+            m_stream.opaque = 0;
+            m_init = false;
+            if (inflateInit2(&m_stream, 15 + 32) != Z_OK) {
                 m_error = true;
                 out.m_buffer_len = 0;
-                in.m_buffer_pos = in.m_buffer_len=0;
+                in.m_buffer_pos = in.m_buffer_len;
                 return false;
             }
-
-            in.m_buffer_pos = in.m_buffer_len-m_stream.avail_in;
-            out.m_buffer_len = sizeof(out.m_buffer) - m_stream.avail_out;
-            out.m_buffer_pos = 0;
-            return true;
         }
-        bool m_init;
-        bool m_run_end;
-        bool m_error;
-        z_stream m_stream;
+        m_stream.next_in = &in.m_buffer[in.m_buffer_pos];
+        m_stream.avail_in = in.m_buffer_len - in.m_buffer_pos;
+
+        int ret = ::inflate(&m_stream, Z_NO_FLUSH);
+
+        if (ret != Z_OK)
+            ::inflateEnd(&m_stream);
+        else
+            m_run_end = true;
+        if (ret != Z_OK && ret != Z_STREAM_END) {
+            m_error = true;
+            out.m_buffer_len = 0;
+            in.m_buffer_pos = in.m_buffer_len = 0;
+            return false;
+        }
+
+        in.m_buffer_pos = in.m_buffer_len - m_stream.avail_in;
+        out.m_buffer_len = sizeof(out.m_buffer) - m_stream.avail_out;
+        out.m_buffer_pos = 0;
+        return true;
+    }
+    bool m_init;
+    bool m_run_end;
+    bool m_error;
+    z_stream m_stream;
 };
 
-}
+} // namespace packetq
 
 #endif // __packetq_segzip_h

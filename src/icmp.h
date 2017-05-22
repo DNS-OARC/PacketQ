@@ -22,20 +22,22 @@
 #ifndef __packetq_icmp_h
 #define __packetq_icmp_h
 
+#include <assert.h>
+#include <cctype>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "output.h"
+#include "packet_handler.h"
+#include "sql.h"
 #include "tcp.h"
-#include <assert.h>
-#include <cctype>
 
 namespace packetq {
 
-class Parse_icmp : public Packet_handler
-{
-    public:
-    enum
-    {
+class Parse_icmp : public Packet_handler {
+public:
+    enum {
         COLUMN_TYPE,
         COLUMN_CODE,
         COLUMN_ECHO_IDENTIFIER,
@@ -48,10 +50,10 @@ class Parse_icmp : public Packet_handler
 
     Parse_icmp();
 
-    virtual void on_table_created(Table *table, const std::vector<int> &columns);
-    virtual Packet::ParseResult parse(Packet &packet, const std::vector<int> &columns, Row &destination_row, bool sample);
+    virtual void on_table_created(Table* table, const std::vector<int>& columns);
+    virtual Packet::ParseResult parse(Packet& packet, const std::vector<int>& columns, Row& destination_row, bool sample);
 
-    private:
+private:
     void add_packet_columns();
 
     Str_conv converter;
@@ -67,6 +69,6 @@ class Parse_icmp : public Packet_handler
     Text_accessor acc_desc;
 };
 
-};
+} // namespace packetq
 
 #endif // __packetq_icmp_h
