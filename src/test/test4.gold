@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>result-0</title>
+<style type="text/css">
+    th.int   { color: #0F0C00; }
+    th.float { color: #0F0900; }
+    th.text  { color: #0F0600; }
+    th.bool  { color: #0C0900; }
+</style>
+</head>
+<body>
+<table>
+<tr><th class="int">s</th><th class="text">Dst_addr</th><th class="int">questiontype</th><th class="text">lower_src</th><th class="text">if((1and((((s<1)or(s<=1))or(s>1))or(s>=1))),t,f)</th><th class="text">trim(trim(((foofoo||rsplit(src_addr,1))||foofoo),foo),bar)</th><th class="int">count(1)</th><th class="int">len(src_addr)</th><th class="int">(sum((msg_size+-((((((1-(2%4))<<3)>>2)|3)&~(4)))))+1)</th><th class="int">min(msg_size)</th><th class="int">max(msg_size)</th><th class="int">integer</th><th class="float">float</th><th class="float">(sum(((src_port+1.0)-((2.0/1.5)*-(2.5))))+1.0)</th><th class="float">max((src_port+1.0))</th><th class="float">min((src_port+1.0))</th><th class="float">avg(src_port)</th><th class="float">stdev(src_port)</th><th class="text">name(rcode,0)</th></tr>
+<tr><td>1297433016</td> <td>212.247.204.2</td> <td>12</td> <td>172.18.24.52</td> <td>t</td> <td>24</td> <td>1</td> <td>12</td> <td>48</td> <td>42</td> <td>42</td> <td>1</td> <td>1.1</td> <td>52271.3</td> <td>52267</td> <td>52267</td> <td>52266</td> <td>0</td> <td>NoError</td> </tr>
+<tr><td>1297433016</td> <td>172.18.24.52</td> <td>12</td> <td>212.247.204.2</td> <td>t</td> <td>204</td> <td>1</td> <td>13</td> <td>125</td> <td>119</td> <td>119</td> <td>1</td> <td>1.1</td> <td>58.3333</td> <td>54</td> <td>54</td> <td>53</td> <td>0</td> <td>NoError</td> </tr>
+<tr><td>1297433026</td> <td>212.247.204.2</td> <td>1</td> <td>172.18.24.52</td> <td>t</td> <td>24</td> <td>1</td> <td>12</td> <td>36</td> <td>30</td> <td>30</td> <td>1</td> <td>1.1</td> <td>54066.3</td> <td>54062</td> <td>54062</td> <td>54061</td> <td>0</td> <td>NoError</td> </tr>
+<tr><td>1297433027</td> <td>172.18.24.52</td> <td>1</td> <td>212.247.204.2</td> <td>t</td> <td>204</td> <td>1</td> <td>13</td> <td>84</td> <td>78</td> <td>78</td> <td>1</td> <td>1.1</td> <td>58.3333</td> <td>54</td> <td>54</td> <td>53</td> <td>0</td> <td>NoError</td> </tr>
+<tr><td>1297433030</td> <td>212.247.204.2</td> <td>1</td> <td>172.18.24.52</td> <td>t</td> <td>24</td> <td>1</td> <td>12</td> <td>30</td> <td>24</td> <td>24</td> <td>1</td> <td>1.1</td> <td>59489.3</td> <td>59485</td> <td>59485</td> <td>59484</td> <td>0</td> <td>NoError</td> </tr>
+<tr><td>1297433030</td> <td>172.18.24.52</td> <td>1</td> <td>212.247.204.2</td> <td>t</td> <td>204</td> <td>1</td> <td>13</td> <td>46</td> <td>40</td> <td>40</td> <td>1</td> <td>1.1</td> <td>58.3333</td> <td>54</td> <td>54</td> <td>53</td> <td>0</td> <td>NoError</td> </tr>
+<tr><td>1297433038</td> <td>212.247.204.2</td> <td>12</td> <td>172.18.24.52</td> <td>t</td> <td>24</td> <td>1</td> <td>12</td> <td>50</td> <td>44</td> <td>44</td> <td>1</td> <td>1.1</td> <td>49372.3</td> <td>49368</td> <td>49368</td> <td>49367</td> <td>0</td> <td>NoError</td> </tr>
+<tr><td>1297433039</td> <td>172.18.24.52</td> <td>12</td> <td>212.247.204.2</td> <td>t</td> <td>204</td> <td>1</td> <td>13</td> <td>102</td> <td>96</td> <td>96</td> <td>1</td> <td>1.1</td> <td>58.3333</td> <td>54</td> <td>54</td> <td>53</td> <td>0</td> <td>NoError</td> </tr>
+</table>
+</body>
+</html>

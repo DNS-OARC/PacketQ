@@ -36,8 +36,8 @@ class Output
 	public:
 	Output()
 	{
-		for(int i=0;i<256;i++)
-			sprintf(m_diglut[i],"%d",i);
+		for(int i = 0; i < 256; i++)
+			snprintf(m_diglut[i], 4, "%d", i);
 
 		m_len=0;
 		m_tot=0;
@@ -339,8 +339,8 @@ class Str_conv
 	public:
 	Str_conv()
 	{
-		for(int i=0;i<256;i++)
-			sprintf(m_diglut[i],"%d",i);
+		for(int i = 0; i < 256; i++)
+			snprintf(m_diglut[i], 4, "%d", i);
 
 		m_len=0;
 		m_tot=0;

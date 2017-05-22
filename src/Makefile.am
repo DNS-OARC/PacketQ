@@ -19,6 +19,8 @@
 
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
 
+SUBDIRS = test
+
 AM_CXXFLAGS = -I$(srcdir) \
     -I$(top_srcdir) \
     -std=c++0x \

@@ -1,0 +1,37 @@
+[
+  {
+    "table_name": "result-0",
+    "query": "select s, dst_addr as Dst_addr, qtype as questiontype, lower(src_addr) as lower_src, if(1 and s < 1 or s <= 1 or s > 1 or s >= 1, 't', 'f'), trim(trim('foofoo' || rsplit(src_addr, 1) || 'foofoo', 'foo'), 'bar'), count(*), len(src_addr), sum(msg_size + -1 - 2 % 4 << 3 >> 2 | 3 & ~4) + 1, min(msg_size), max(msg_size), truncate(1.1) as integer, 1.1 as float, sum(src_port + 1.0 - 2.0 / 1.5 * -2.5) + 1.0, max(src_port + 1.0), min(src_port + 1.0), avg(src_port), stdev(src_port), name('rcode', 0) from dns where src_addr like '%' and (qr or not qr) group by src_addr, s having s >= 0 order by s, lower_src, integer, float",
+    "head": [
+      { "name": "s","type": "int" },
+      { "name": "Dst_addr","type": "text" },
+      { "name": "questiontype","type": "int" },
+      { "name": "lower_src","type": "text" },
+      { "name": "if((1and((((s<1)or(s<=1))or(s>1))or(s>=1))),t,f)","type": "text" },
+      { "name": "trim(trim(((foofoo||rsplit(src_addr,1))||foofoo),foo),bar)","type": "text" },
+      { "name": "count(1)","type": "int" },
+      { "name": "len(src_addr)","type": "int" },
+      { "name": "(sum((msg_size+-((((((1-(2%4))<<3)>>2)|3)&~(4)))))+1)","type": "int" },
+      { "name": "min(msg_size)","type": "int" },
+      { "name": "max(msg_size)","type": "int" },
+      { "name": "integer","type": "int" },
+      { "name": "float","type": "float" },
+      { "name": "(sum(((src_port+1.0)-((2.0/1.5)*-(2.5))))+1.0)","type": "float" },
+      { "name": "max((src_port+1.0))","type": "float" },
+      { "name": "min((src_port+1.0))","type": "float" },
+      { "name": "avg(src_port)","type": "float" },
+      { "name": "stdev(src_port)","type": "float" },
+      { "name": "name(rcode,0)","type": "text" }
+    ],
+    "data": [
+      [1297433016,"212.247.204.2",12,"172.18.24.52","t","24",1,12,48,42,42,1,1.1,52271.3,52267,52267,52266,0,"NoError"],
+      [1297433016,"172.18.24.52",12,"212.247.204.2","t","204",1,13,125,119,119,1,1.1,58.3333,54,54,53,0,"NoError"],
+      [1297433026,"212.247.204.2",1,"172.18.24.52","t","24",1,12,36,30,30,1,1.1,54066.3,54062,54062,54061,0,"NoError"],
+      [1297433027,"172.18.24.52",1,"212.247.204.2","t","204",1,13,84,78,78,1,1.1,58.3333,54,54,53,0,"NoError"],
+      [1297433030,"212.247.204.2",1,"172.18.24.52","t","24",1,12,30,24,24,1,1.1,59489.3,59485,59485,59484,0,"NoError"],
+      [1297433030,"172.18.24.52",1,"212.247.204.2","t","204",1,13,46,40,40,1,1.1,58.3333,54,54,53,0,"NoError"],
+      [1297433038,"212.247.204.2",12,"172.18.24.52","t","24",1,12,50,44,44,1,1.1,49372.3,49368,49368,49367,0,"NoError"],
+      [1297433039,"172.18.24.52",12,"212.247.204.2","t","204",1,13,102,96,96,1,1.1,58.3333,54,54,53,0,"NoError"]
+    ]
+  }
+]

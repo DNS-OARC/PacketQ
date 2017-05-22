@@ -26,6 +26,7 @@
 #include "output.h"
 #include "icmp.h"
 #include <stdlib.h>
+#include <string.h>
 
 namespace se {
 
@@ -70,13 +71,12 @@ Packet::ParseResult Parse_icmp::parse(Packet &packet, const std::vector<int> &co
     acc_type.value(r) = type;
     acc_code.value(r) = code;
     char desc[300];
-
-    desc[0] = 0;
+    memset(desc, 0, sizeof(desc));
 
     switch(type)
     {
         case(0):
-            sprintf(desc,"Echo Reply");
+            snprintf(desc, sizeof(desc) - 1, "Echo Reply");
             acc_echo_identifier.value(r) = get_short(&raw[4]);
             acc_echo_sequence.value(r) = get_short(&raw[6]);
             //    acc_echo_sequence->set_i(   r,4);
@@ -87,7 +87,7 @@ Packet::ParseResult Parse_icmp::parse(Packet &packet, const std::vector<int> &co
                 const char *codes[]={"network ","host ","protocol ","port "};
                 if (code<4)
                     what=codes[code];
-                sprintf(desc,"Destination %sunreachable",what);
+                snprintf(desc, sizeof(desc) - 1, "Destination %sunreachable",what);
                 IP_header head;
                 head.decode(&raw[8],packet.m_ip_header.ethertype,0);
                 acc_du_protocol.value(r) = head.proto;
@@ -96,51 +96,51 @@ Packet::ParseResult Parse_icmp::parse(Packet &packet, const std::vector<int> &co
             }
             break;
         case(4):
-            sprintf(desc,"Source quench");
+            snprintf(desc, sizeof(desc) - 1, "Source quench");
             break;
         case(5):
-            sprintf(desc,"Redirect Message");
+            snprintf(desc, sizeof(desc) - 1, "Redirect Message");
             break;
         case(6):
-            sprintf(desc,"Alternate Host Address");
+            snprintf(desc, sizeof(desc) - 1, "Alternate Host Address");
             break;
         case(8):
-            sprintf(desc,"Echo Request");
+            snprintf(desc, sizeof(desc) - 1, "Echo Request");
             acc_echo_identifier.value(r) = get_short(&raw[4]);
             acc_echo_sequence.value(r) = get_short(&raw[6]);
             break;
         case(9):
-            sprintf(desc,"Router Advertisement");
+            snprintf(desc, sizeof(desc) - 1, "Router Advertisement");
             break;
         case(10):
-            sprintf(desc,"Router Solicitation");
+            snprintf(desc, sizeof(desc) - 1, "Router Solicitation");
             break;
         case(11):
-            sprintf(desc,"Time Exceeded");
+            snprintf(desc, sizeof(desc) - 1, "Time Exceeded");
             break;
         case(12):
-            sprintf(desc,"Bad IP header");
+            snprintf(desc, sizeof(desc) - 1, "Bad IP header");
             break;
         case(13):
-            sprintf(desc,"Timestamp");
+            snprintf(desc, sizeof(desc) - 1, "Timestamp");
             break;
         case(14):
-            sprintf(desc,"Timestamp Reply");
+            snprintf(desc, sizeof(desc) - 1, "Timestamp Reply");
             break;
         case(15):
-            sprintf(desc,"Information Request");
+            snprintf(desc, sizeof(desc) - 1, "Information Request");
             break;
         case(16):
-            sprintf(desc,"Information Reply");
+            snprintf(desc, sizeof(desc) - 1, "Information Reply");
             break;
         case(17):
-            sprintf(desc,"Address Mask Request");
+            snprintf(desc, sizeof(desc) - 1, "Address Mask Request");
             break;
         case(18):
-            sprintf(desc,"Address Mask Reply");
+            snprintf(desc, sizeof(desc) - 1, "Address Mask Reply");
             break;
         case(30):
-            sprintf(desc,"Traceroute");
+            snprintf(desc, sizeof(desc) - 1, "Traceroute");
             break;
     }
 
