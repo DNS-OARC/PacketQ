@@ -56,7 +56,7 @@ class DNSMessage
                 int  ancount;
                 int  nscount;
                 int  arcount;
-                Header()
+                Header() : z(0)
                 {
                     id=0;
                     qr=0;

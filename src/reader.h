@@ -36,7 +36,7 @@ namespace se
     class Reader
     {
     public:
-        Reader(std::vector<std::string> filenames, int max_packets)
+        Reader(std::vector<std::string> filenames, int max_packets) : packets_read(0)
         {
             this->filenames = filenames;
             this->currently_reading = filenames.end();

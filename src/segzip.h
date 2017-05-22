@@ -46,7 +46,7 @@ class Buffer
 class Zip
 {
     public:
-        Zip()
+        Zip() : m_stream()
         {
             m_init    = true;
             m_error   = false;

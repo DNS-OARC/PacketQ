@@ -184,6 +184,10 @@ class Per_sort
 public:
     struct Tlink
     {
+        Tlink() : m_eq(0)
+        {
+        }
+
         Tlink *get_eq() {return m_eq;}
         void reset()
         {
@@ -1450,7 +1454,7 @@ class Parser
                         continue;
                     }
                     else
-                        throw Error("Got unary '%s' but could not parse follwing expression",op->get_token() );
+                        throw Error("Got unary '%s' but could not parse following expression",op->get_token() );
 
                     operand_stack.push(op);
                     success = true;
@@ -2750,7 +2754,7 @@ Table *DB::create_table(const char *i_name)
 
     return t;
 }
-Column::Column(const char *name,Coltype::Type type, int id, bool hidden): m_name(name), m_type(type), m_def(Column::m_coldefs[type]), m_id(id)
+Column::Column(const char *name,Coltype::Type type, int id, bool hidden): m_name(name), m_type(type), m_def(Column::m_coldefs[type]), m_id(id), m_offset(0)
 {
     m_hidden = hidden;
 }

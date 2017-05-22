@@ -83,6 +83,12 @@ class Payload
 class IP_header
 {
 public:
+    IP_header() : s(0), us(0), ethertype(0), src_port(0), dst_port(0), proto(0), ip_ttl(0), id(0), length(0), fragments(0), ident(0), offset(0)
+    {
+        memset(&src_ip, 0, sizeof(src_ip));
+        memset(&dst_ip, 0, sizeof(dst_ip));
+    }
+
     void reset();
     int decode(unsigned char *data, int ether_type,int id);
     unsigned int       s;
@@ -180,7 +186,7 @@ struct Packet_column
 class Packet_handler
 {
 public:
-    Packet_handler()
+    Packet_handler() : table_name(0)
     {
     }
     virtual ~Packet_handler()
