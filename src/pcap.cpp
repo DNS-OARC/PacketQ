@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include "pcap.h"
 
-namespace se {
+namespace packetq {
 
 bool Pcap_file::get_header()
 {

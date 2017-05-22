@@ -19,8 +19,8 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SEREADER_H
-#define SEREADER_H
+#ifndef __packetq_reader_h
+#define __packetq_reader_h
 
 #include <memory>
 #include <vector>
@@ -28,7 +28,7 @@
 #include "pcap.h"
 #include "sql.h"
 
-namespace se
+namespace packetq
 {
     class Packet_handler;
 
@@ -57,4 +57,4 @@ namespace se
     };
 }
 
-#endif
+#endif // __packetq_reader_h

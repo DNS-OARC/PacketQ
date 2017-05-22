@@ -23,20 +23,22 @@
 
 #include "packet_handler.h"
 
-void se::Reader::seek_to_start()
+using namespace packetq;
+
+void Reader::seek_to_start()
 {
     currently_reading = filenames.begin();
     pcap.reset();
     packets_read = 0;
 }
 
-bool se::Reader::done()
+bool Reader::done()
 {
     return (!pcap && currently_reading == filenames.end()) ||
         (max_packets > 0 && packets_read >= max_packets);
 }
 
-bool se::Reader::read_next(Packet_handler *handler, const std::vector<int> &columns, Row &destination_row, int skip_packets)
+bool Reader::read_next(Packet_handler *handler, const std::vector<int> &columns, Row &destination_row, int skip_packets)
 {
     bool filled_in_row = false;
 

@@ -29,7 +29,7 @@
 #include "icmp.h"
 #include "sql.h"
 
-namespace se {
+namespace packetq {
 
 Payload g_payload;
 

@@ -19,8 +19,8 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef D2TCP_H
-#define D2TCP_H
+#ifndef __packetq_tcp_h
+#define __packetq_tcp_h
 
 #include <stdio.h>
 
@@ -31,7 +31,7 @@
 #define IPPROTO_TCP 6
 #define IPPROTO_UDP 17
 
-namespace se {
+namespace packetq {
 
 struct in6_addr {
         union {
@@ -65,5 +65,7 @@ unsigned char *assemble_tcp(
 	char fin,
 	char rst,
 	char ack);
+
 }
-#endif
+
+#endif // __packetq_tcp_h

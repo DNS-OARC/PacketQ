@@ -26,7 +26,7 @@
 #include <list>
 #include <cstring>
 #include "stdlib.h"
-namespace se {
+namespace packetq {
 
 
 /// TCP Stream id class - serves as the key in the streams map

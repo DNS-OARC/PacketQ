@@ -19,8 +19,8 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PACKET_HANDLER_H
-#define PACKET_HANDLER_H
+#ifndef __packetq_packet_handler_h
+#define __packetq_packet_handler_h
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +34,7 @@
 
 #define IPPROTO_ICMP 1
 
-namespace se {
+namespace packetq {
 
 class Table;
 class Row;
@@ -210,4 +210,5 @@ void destroy_packet_handlers();
 Packet_handler *get_packet_handler(std::string table_name);
 
 }
-#endif
+
+#endif // __packetq_packet_handler_h

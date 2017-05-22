@@ -19,8 +19,9 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SQL_H
-#define SQL_H
+#ifndef __packetq_sql_h
+#define __packetq_sql_h
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -48,7 +49,7 @@
 
 #define RE_LEN	64
 
-namespace se {
+namespace packetq {
 
 extern int g_allocs;
 static const int max_func_param=4;
@@ -1738,11 +1739,11 @@ private:
 
 };
 
-// support for hashing std::vector<Variant>
 namespace std {
-    template <> struct hash<std::vector<se::Variant>>
+    // support for hashing std::vector<packetq::Variant>
+    template <> struct hash<std::vector<packetq::Variant>>
     {
-        size_t operator()(const std::vector<se::Variant> &seq) const
+        size_t operator()(const std::vector<packetq::Variant> &seq) const
         {
             // combination procedure from boost::hash_combine
             std::size_t accumulator = 0;
@@ -1753,5 +1754,4 @@ namespace std {
     };
 }
 
-
-#endif
+#endif // __packetq_sql_h

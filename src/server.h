@@ -19,12 +19,13 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PACKETQSERVER_H
-#define PACKETQSERVER_H
+#ifndef __packetq_server_h
+#define __packetq_server_h
 
-namespace se {
+namespace packetq {
 
 void start_server(int port,bool fork, const std::string &pcaproot, const std::string &webroot, int max_conn );
 
 }
-#endif
+
+#endif // __packetq_server_h
