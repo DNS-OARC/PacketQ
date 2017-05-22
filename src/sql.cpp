@@ -72,7 +72,7 @@ void Table::delete_row(Row* row)
 Row* Table::create_row()
 {
     if (!m_row_allocator) {
-        m_rsize = sizeof(Row) - sizeof(Row::m_data); // exclude the dummy
+        m_rsize = sizeof(Row) - ROW_DUMMY_SIZE; // exclude the dummy
         m_dsize = m_curpos;
         m_row_allocator = new Allocator<Row>(m_rsize + m_dsize, 10000);
     }
@@ -1778,7 +1778,7 @@ std::pair<Column*, int> lookup_column_in_tables(const std::vector<Table*>& table
     const char* name)
 {
     if (strcmp(name, "*") == 0)
-        return std::pair<Column*, int>(0, 0);
+        return std::pair<Column*, int>((Column*)0, 0);
 
     for (auto i = search_order.begin(); i != search_order.end(); ++i) {
         Table* table = tables[*i];
@@ -1787,7 +1787,7 @@ std::pair<Column*, int> lookup_column_in_tables(const std::vector<Table*>& table
             return std::pair<Column*, int>(table->m_cols[col_index], *i);
     }
 
-    return std::pair<Column*, int>(0, 0);
+    return std::pair<Column*, int>((Column*)0, 0);
 }
 
 OP* OP::compile(const std::vector<Table*>& tables, const std::vector<int>& search_order, Query& q)

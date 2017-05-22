@@ -432,6 +432,8 @@ public:
     std::vector<int> m_text_column_offsets;
 };
 
+#define ROW_DUMMY_SIZE 4
+
 class Row {
 public:
     void zero_text_columns(const std::vector<int>& text_column_offsets)
@@ -467,7 +469,7 @@ public:
         return *reinterpret_cast<T*>(ptr);
     }
 
-    char m_data[4]; // dummy
+    char m_data[ROW_DUMMY_SIZE]; // dummy
 };
 
 template <typename T>
