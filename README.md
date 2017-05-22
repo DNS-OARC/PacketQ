@@ -1,6 +1,6 @@
 # PacketQ
 
-[![Build Status](https://travis-ci.org/DNS-OARC/PacketQ.svg?branch=develop)](https://travis-ci.org/DNS-OARC/PacketQ)
+[![Build Status](https://travis-ci.org/DNS-OARC/PacketQ.svg?branch=develop)](https://travis-ci.org/DNS-OARC/PacketQ) [![Coverity Scan Build Status](https://scan.coverity.com/projects/12743/badge.svg)](https://scan.coverity.com/projects/dns-oarc-packetq)
 
 `packetq` is a command line tool to run SQL queries directly on PCAP files,
 the results can be outputted as JSON (default), formatted/compact CSV and XML.
