@@ -820,10 +820,14 @@ class Page
         while ( (d=readdir(dir))!=0 )
         {
             std::string subject=join_path(directory,d->d_name);
-            const char* file = subject.c_str();
+            int fd = open(subject.c_str(), O_RDONLY);
 
-            if (stat(file, &statbuf) ==-1)
+            if (fd < 0)
                 continue;
+            if (fstat(fd, &statbuf) ==-1) {
+                close(fd);
+                continue;
+            }
             if (S_ISDIR(statbuf.st_mode))
             {
                 if ( (strcmp(d->d_name,".")!=0) && (strcmp(d->d_name,"..")!=0 ) )
@@ -836,9 +840,7 @@ class Page
             else
             {
                 bool found = false;
-                std::string str = subject;
-                transform(str.begin(), str.end(),str.begin(), tolower );
-                FILE *fp = fopen(file, "rb");
+                FILE *fp = fdopen(fd, "rb");
                 if (fp)
                 {
                     Pcap_file pfile(fp);
@@ -866,10 +868,10 @@ class Page
                         printf("  %c{\n     \"data\" : \"%s\",\n     \"attr\" : { \"id\" : \"%s\", \"size\": %d, \"type\": \"json\" },\n    \"children\" : []  }\n",
                                 comma,d->d_name,join_path(m_url.get_path(),d->d_name).substr(5).c_str(), int(statbuf.st_size) );
                         comma=  ',';
-                        found = true;
                     }
                 }
             }
+            close(fd);
         }
 
         printf("]\n");
