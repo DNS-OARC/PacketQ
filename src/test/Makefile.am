@@ -17,17 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
-MAINTAINERCLEANFILES = $(srcdir)/Makefile.in \
-    $(srcdir)/src/config.h.in~ \
-    $(srcdir)/configure
+MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
 
-SUBDIRS = src
+CLEANFILES = test*.log test*.trs \
+    test1.out test2.out test3.out test4.out
 
-dist_doc_DATA = CHANGES COPYING README.md FAQ.md FIELDS.md FUNCTIONS.md
+TESTS = test1.sh test2.sh test3.sh test4.sh
 
-EXTRA_DIST = collector_sample \
-    html \
-    html_NG \
-    pcap
-
-test: check
+EXTRA_DIST = $(TESTS) \
+    test1.gold test2.gold test3.gold test4.gold
