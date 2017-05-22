@@ -104,7 +104,6 @@ class SocketPool
         fd_set      m_readset;
         fd_set      m_writeset;
         int         m_free;
-        int         m_max;
         int         m_socket_count;
         Socket      *m_sockets[FD_SETSIZE];
 };
@@ -194,7 +193,7 @@ class Stream
 class Socket
 {
     public:
-        Socket( int s, bool serv )
+        Socket( int s, bool serv ) : m_want_write(false)
         {
             fcntl( s, F_SETFL, fcntl( s, F_GETFL, 0 ) | O_NONBLOCK );   // Add non-blocking flag
 
@@ -903,7 +902,7 @@ class Http_socket : public Socket
         {
             get_post,header,body,error,wait_child,done
         };
-        Http_socket( int socket ) : Socket( socket, false )
+        Http_socket( int socket ) : Socket( socket, false ), m_http_version(0), m_emptyline(0)
         {
             m_state      = get_post;
             m_nextc      = -1;
@@ -1205,7 +1204,7 @@ void start_server(int port,bool fork_me, const std::string &pcaproot, const std:
     }
     openlog("packetq",LOG_PID,LOG_USER);
 
-    httpd::Server server(port,webroot,pcaproot);
+    httpd::Server server(port,pcaproot,webroot);
     g_server = &server;
 
     while(true)
@@ -1215,7 +1214,7 @@ void start_server(int port,bool fork_me, const std::string &pcaproot, const std:
         if ( cnt<max_conn )
         {
             int c=server.get_connection();
-            if (c>0)
+            if (c>-1)
             {
                 Http_socket *s=new Http_socket(c);
                 if ( s && s->failed() )

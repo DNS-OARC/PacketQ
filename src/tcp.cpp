@@ -34,8 +34,10 @@ class Stream_id
 {
     public:
         /// constructor
-        Stream_id()
+        Stream_id() : m_src_port(0), m_dst_port(0)
         {
+            memset(&m_src_ip, 0, sizeof(m_src_ip));
+            memset(&m_dst_ip, 0, sizeof(m_dst_ip));
         }
         /// constructor taking source and destination adresses
         Stream_id(  in6addr_t &src_ip,

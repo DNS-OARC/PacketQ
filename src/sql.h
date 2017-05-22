@@ -338,6 +338,10 @@ template <typename T>
 class Accessor
 {
 public:
+    Accessor() : m_offset(0)
+    {
+    }
+
     T &value(Row *row);
 
     int m_offset;
@@ -361,7 +365,7 @@ public:
 class Table
 {
     public:
-    Table(const char *name = 0, const char *query = 0)
+    Table(const char *name = 0, const char *query = 0) : m_rsize(0), m_dsize(0)
     {
         m_row_allocator = 0;
         m_name = name?name:"result";
@@ -1503,7 +1507,7 @@ class Bin_op_like : public OP
 	bool	m_compiled;
 	int	m_err;
     public:
-	Bin_op_like(const OP &op): OP(op){
+	Bin_op_like(const OP &op): OP(op), m_re() {
 	    m_err = 0;
 	    m_compiled = false;
 	}
