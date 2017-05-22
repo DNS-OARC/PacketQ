@@ -19,15 +19,15 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VARIANT_H
-#define VARIANT_H
+#ifndef __packetq_variant_h
+#define __packetq_variant_h
 
 #include <cstdlib>
 
 #include "refcountstring.h"
 #include "MurmurHash3.h"
 
-namespace se
+namespace packetq
 {
     inline std::size_t hash_bytes(const char *bytes, int len)
     {
@@ -310,4 +310,4 @@ namespace se
     };
 }
 
-#endif
+#endif // __packetq_variant_h

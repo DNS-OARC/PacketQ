@@ -19,12 +19,12 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PACKETQ_H
-#define PACKETQ_H
+#ifndef __packetq_packetq_h
+#define __packetq_packetq_h
 
 #include "sql.h"
 
-namespace se {
+namespace packetq {
 
 // App class
 class PacketQ
@@ -60,4 +60,5 @@ class PacketQ
 
 extern PacketQ *g_app;
 }
-#endif
+
+#endif // __packetq_packetq_h

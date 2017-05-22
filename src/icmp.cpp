@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-namespace se {
+namespace packetq {
 
 Parse_icmp::Parse_icmp()
 {

@@ -31,7 +31,7 @@
 #include <windows.h>
 #endif
 
-namespace se {
+namespace packetq {
 
 bool verbose = false;
 

@@ -19,8 +19,8 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef REFCOUNTSTRING_H
-#define REFCOUNTSTRING_H
+#ifndef __packetq_refcountstring_h
+#define __packetq_refcountstring_h
 
 #include <cstdlib>
 #include <cstring>
@@ -122,4 +122,4 @@ public:
 };
 
 
-#endif
+#endif // __packetq_refcountstring_h

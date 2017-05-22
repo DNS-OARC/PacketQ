@@ -19,13 +19,14 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SEGZIP_H
-#define SEGZIP_H
+#ifndef __packetq_segzip_h
+#define __packetq_segzip_h
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <zlib.h>
 
-namespace se {
+namespace packetq {
 
 class Buffer
 {
@@ -115,6 +116,6 @@ class Zip
         z_stream m_stream;
 };
 
-};
+}
 
-#endif
+#endif // __packetq_segzip_h

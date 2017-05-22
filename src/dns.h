@@ -19,8 +19,8 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DNS_H
-#define DNS_H
+#ifndef __packetq_dns_h
+#define __packetq_dns_h
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +31,7 @@
 
 #define IPPROTO_ICMP 1
 
-namespace se {
+namespace packetq {
 
 extern char visible_char_map[256];
 
@@ -394,6 +394,6 @@ class Parse_dns : public Packet_handler
     Text_accessor acc_dst_addr;
 };
 
-};
+}
 
-#endif
+#endif // __packetq_dns_h

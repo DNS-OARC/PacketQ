@@ -19,8 +19,8 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SE_ICMP_H
-#define SE_ICMP_H
+#ifndef __packetq_icmp_h
+#define __packetq_icmp_h
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +29,7 @@
 #include <assert.h>
 #include <cctype>
 
-namespace se {
+namespace packetq {
 
 class Parse_icmp : public Packet_handler
 {
@@ -69,4 +69,4 @@ class Parse_icmp : public Packet_handler
 
 };
 
-#endif
+#endif // __packetq_icmp_h

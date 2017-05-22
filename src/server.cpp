@@ -46,7 +46,7 @@
 #include "reader.h"
 
 #define MAXHOSTNAME 256
-namespace se {
+namespace packetq {
 namespace httpd
 {
 class Socket;

@@ -41,7 +41,7 @@
 
 #define NUM_QUERIES	32
 
-namespace se {
+namespace packetq {
 
 static void usage ( char * argv0, bool longversion ) {
    fprintf (stdout, "usage: %s [ --select | -s select-statement ] [ --port | -p httpportnumber ] [ --json | -j ] [ --csv | -c ] [ --table | -t ] [ --xml | -x ] [ --daemon | -d ] [ --webroot | -w webdir ] [ --pcaproot | -r pcapdir ] [ --help | -h ] [ --limit | -l ] [ --maxconn | -m ] pcapfile(s)...\n", argv0);
@@ -133,7 +133,7 @@ PacketQ *g_app = new PacketQ();
 
 } // end se namespace
 
-using namespace se;
+using namespace packetq;
 
 // The main funtion
 int main (int argc, char * argv [])

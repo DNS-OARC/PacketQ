@@ -19,15 +19,16 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SEPCAP_H
-#define SEPCAP_H
+#ifndef __packetq_pcap_h
+#define __packetq_pcap_h
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "sql.h"
 #include <zlib.h>
 #include "segzip.h"
 
-namespace se {
+namespace packetq {
 
 class Pcap_file
 {
@@ -210,6 +211,6 @@ class Pcap_file
         Zip              m_zip;
 };
 
-};
+}
 
-#endif
+#endif // __packetq_pcap_h

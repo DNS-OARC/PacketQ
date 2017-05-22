@@ -19,13 +19,13 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef OUTPUT_H
-#define OUTPUT_H
+#ifndef __packetq_output_h
+#define __packetq_output_h
 
 #include <stdio.h>
 #include <stdlib.h>
 
-namespace se {
+namespace packetq {
 
 class Output
 {
@@ -452,4 +452,5 @@ class Str_conv
 
 extern Output g_output;
 }
-#endif
+
+#endif // __packetq_output_h

@@ -28,7 +28,7 @@
 #include "output.h"
 #include "dns.h"
 
-namespace se {
+namespace packetq {
 
 char visible_char_map[256];
 
