@@ -27,15 +27,15 @@
 [
   {
     "table_name": "result-0",
-    "query": "select rcode as Rcode, if(qr==1,dst_addr,src_addr) as ClientAddr, count(1) as count from dns where qr==1 group by Rcode,ClientAddr order by count desc limit 50;",
+    "query": "select rcode as Rcode, if(qr==1,dst_addr,src_addr) as ClientAddr, count(1) as count from dns where qr==1 group by Rcode,ClientAddr order by count,Rcode,ClientAddr desc limit 50;",
     "head": [
       { "name": "Rcode","type": "int" },
       { "name": "ClientAddr","type": "text" },
       { "name": "count","type": "int" }
     ],
     "data": [
-      [0,"172.18.24.52",3],
-      [3,"172.18.24.52",1]
+      [3,"172.18.24.52",1],
+      [0,"172.18.24.52",3]
     ]
   }
 ]
@@ -70,30 +70,30 @@
 [
   {
     "table_name": "result-0",
-    "query": "select if(qr==1,'sent','recv') as Direction, if(protocol==6,'tcp',if(protocol==17,'udp',if(protocol==1,'icmp',if(protocol==58,'ipv6-icmp',protocol)))) as IPProto, count(1) as count from dns  group by Direction,IPProto order by count,Direction desc;",
+    "query": "select if(qr==1,'sent','recv') as Direction, if(protocol==6,'tcp',if(protocol==17,'udp',if(protocol==1,'icmp',if(protocol==58,'ipv6-icmp',protocol)))) as IPProto, count(1) as count from dns  group by Direction,IPProto order by count,Direction,IPProto desc;",
     "head": [
       { "name": "Direction","type": "text" },
       { "name": "IPProto","type": "text" },
       { "name": "count","type": "int" }
     ],
     "data": [
-      ["sent","udp",4],
-      ["recv","udp",4]
+      ["recv","udp",4],
+      ["sent","udp",4]
     ]
   }
 ]
 [
   {
     "table_name": "result-0",
-    "query": "select if(ether_type==34525,'IPv6','IPv4') as IPVersion, qtype as Qtype, count(1) as count from dns where qr==0 group by IPVersion,Qtype order by count desc;",
+    "query": "select if(ether_type==34525,'IPv6','IPv4') as IPVersion, qtype as Qtype, count(1) as count from dns where qr==0 group by IPVersion,Qtype order by count,IPVersion,Qtype desc;",
     "head": [
       { "name": "IPVersion","type": "text" },
       { "name": "Qtype","type": "int" },
       { "name": "count","type": "int" }
     ],
     "data": [
-      ["IPv4",1,2],
-      ["IPv4",12,2]
+      ["IPv4",12,2],
+      ["IPv4",1,2]
     ]
   }
 ]
@@ -173,7 +173,7 @@
 [
   {
     "table_name": "result-0",
-    "query": "select 'ALL' as All, opcode as Opcode, count(1) as count from dns where qr==0 group by All,Opcode order by count desc;",
+    "query": "select 'ALL' as All, opcode as Opcode, count(1) as count from dns where qr==0 group by All,Opcode order by count,Opcode desc;",
     "head": [
       { "name": "All","type": "text" },
       { "name": "Opcode","type": "int" },
@@ -187,15 +187,15 @@
 [
   {
     "table_name": "result-0",
-    "query": "select 'ALL' as All, qtype as Qtype, count(1) as count from dns where qr==0 group by All,Qtype order by count desc;",
+    "query": "select 'ALL' as All, qtype as Qtype, count(1) as count from dns where qr==0 group by All,Qtype order by count,Qtype desc;",
     "head": [
       { "name": "All","type": "text" },
       { "name": "Qtype","type": "int" },
       { "name": "count","type": "int" }
     ],
     "data": [
-      ["ALL",1,2],
-      ["ALL",12,2]
+      ["ALL",12,2],
+      ["ALL",1,2]
     ]
   }
 ]
@@ -235,22 +235,22 @@
 [
   {
     "table_name": "result-0",
-    "query": "select 'ALL' as All, rcode as Rcode, count(1) as count from dns where qr==1 group by All,Rcode order by count desc;",
+    "query": "select 'ALL' as All, rcode as Rcode, count(1) as count from dns where qr==1 group by All,Rcode order by count,Rcode desc;",
     "head": [
       { "name": "All","type": "text" },
       { "name": "Rcode","type": "int" },
       { "name": "count","type": "int" }
     ],
     "data": [
-      ["ALL",0,3],
-      ["ALL",3,1]
+      ["ALL",3,1],
+      ["ALL",0,3]
     ]
   }
 ]
 [
   {
     "table_name": "result-0",
-    "query": "select rcode as Rcode, msg_size as ReplyLen, count(1) as count from dns where qr==1 group by Rcode,ReplyLen order by count desc;",
+    "query": "select rcode as Rcode, msg_size as ReplyLen, count(1) as count from dns where qr==1 group by Rcode,ReplyLen order by count,Rcode,ReplyLen desc;",
     "head": [
       { "name": "Rcode","type": "int" },
       { "name": "ReplyLen","type": "int" },
@@ -333,14 +333,14 @@
 [
   {
     "table_name": "result-0",
-    "query": "select name( 'qtype' , qtype ) as qt, count(*) as count from dns group by qtype order by count desc;",
+    "query": "select name( 'qtype' , qtype ) as qt, count(*) as count from dns group by qtype order by count, qt desc;",
     "head": [
       { "name": "qt","type": "text" },
       { "name": "count","type": "int" }
     ],
     "data": [
-      ["A",4],
-      ["PTR",4]
+      ["PTR",4],
+      ["A",4]
     ]
   }
 ]
