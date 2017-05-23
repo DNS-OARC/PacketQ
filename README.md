@@ -80,7 +80,18 @@ packetq -d -p8080 -w html/ -r pcap/
 
 ## Author(s)
 
-Per Granå @Per-Grana
+- Per Granå [@Per-Grana](https://github.com/Per-Grana)
+
+## Contributor(s)
+
+- Ole Laursen [@OleLaursen](https://github.com/OleLaursen)
+- Rickard Dahlstrand [@rickarddahlstrand](https://github.com/rickarddahlstrand)
+- Jerry Lundström [@jelu](https://github.com/jelu)
+- Magnus Lundén [@ripoff](https://github.com/ripoff)
+- Roger Murray [@romu42](https://github.com/romu42)
+- Henrik Levkowetz [@levkowetz](https://github.com/levkowetz)
+
+See also the [full list of contributors](https://github.com/DNS-OARC/PacketQ/graphs/contributors).
 
 ## Copyright
 
