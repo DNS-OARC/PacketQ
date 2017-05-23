@@ -1,20 +1,27 @@
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
+# Copyright (c) 2017, OARC, Inc.
+# Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
+# All rights reserved.
+#
+# This file is part of PacketQ.
+#
+# PacketQ is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# PacketQ is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
-AC_PREREQ(2.59)
-AC_INIT([packetq], [1.1.0], [rd@iis.se], [PacketQ],[https://github.com/dotse/packetq/wiki])
-AC_CONFIG_SRCDIR([config.h.in])
-AC_CONFIG_HEADER([config.h])
-AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE
-
-# Platform-specific tweaks
-case $target in
-*openbsd*)
-    CFLAGS="$CFLAGS -I/usr/local/include"
-    CPPFLAGS="$CPPFLAGS -I/usr/local/include"
-    LIBS="$LIBS -L/usr/local/lib/";;
-esac
+AC_PREREQ(2.61)
+AC_INIT([packetq], [1.3.0], [admin@dns-oarc.net], [packetq], [https://github.com/DNS-OARC/packetq/issues])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+AC_CONFIG_SRCDIR([src/packetq.cpp])
+AC_CONFIG_HEADER([src/config.h])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -49,9 +56,9 @@ AC_CHECK_HEADERS([syslog.h])
 # Language used for further checks.
 AC_LANG([C])
 
-
-AC_CONFIG_FILES([Makefile
-                 src/Makefile])
-
+AC_CONFIG_FILES([
+    Makefile
+    src/Makefile
+    src/test/Makefile
+])
 AC_OUTPUT
-

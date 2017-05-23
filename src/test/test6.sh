@@ -1,3 +1,4 @@
+#!/bin/sh -e
 # Copyright (c) 2017, OARC, Inc.
 # Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
 # All rights reserved.
@@ -17,17 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
-MAINTAINERCLEANFILES = $(srcdir)/Makefile.in \
-    $(srcdir)/src/config.h.in~ \
-    $(srcdir)/configure
+../packetq -s "select count(*) from dns" "$srcdir/../../pcap/sample-bigendian.pcap.gz" > test6.out
 
-SUBDIRS = src
-
-dist_doc_DATA = CHANGES COPYING README.md FAQ.md FIELDS.md FUNCTIONS.md
-
-EXTRA_DIST = collector_sample \
-    html \
-    html_NG \
-    pcap
-
-test: check
+diff -uw "$srcdir/test6.gold" test6.out

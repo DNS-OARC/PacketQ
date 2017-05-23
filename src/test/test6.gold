@@ -1,0 +1,12 @@
+[
+  {
+    "table_name": "result-0",
+    "query": "select count(*) from dns",
+    "head": [
+      { "name": "count(1)","type": "int" }
+    ],
+    "data": [
+      [2]
+    ]
+  }
+]
