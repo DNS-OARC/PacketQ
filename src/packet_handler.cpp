@@ -284,8 +284,15 @@ bool Packet::parse_ethernet()
         return false; // check for etherframe size + ipv4 header
 
     int ethertype = data[13] | (data[12] << 8);
-    data += 14;
-    len -= 14;
+    if (ethertype == 0x8100) {
+        // VLAN-tagged
+        ethertype = data[17] | (data[16] << 8);
+        data += 18;
+        len -= 18;
+    } else {
+        data += 14;
+        len -= 14;
+    }
 
     return parse_ip(data, len, ethertype);
 }
@@ -312,6 +319,9 @@ bool Packet::parse_transport(unsigned char* data, int len)
 {
     // tcp/udp
     if (m_ip_header.proto == IPPROTO_TCP) {
+        if (len < 14)
+            return false;
+
         m_ip_header.src_port = get_short(data);
         m_ip_header.dst_port = get_short(&data[2]);
 
@@ -328,15 +338,28 @@ bool Packet::parse_transport(unsigned char* data, int len)
         // get the assembled TCP packet and remove the individual segments.
         data += dataoffs;
         len -= dataoffs;
+        if (len < 0) {
+            fprintf(stderr, "warning: Found TCP packet with bad length\n");
+            return false;
+        }
+
         unsigned int rest = len;
         data = assemble_tcp(g_payload, &m_ip_header.src_ip, &m_ip_header.dst_ip, m_ip_header.src_port, m_ip_header.dst_port, &rest, seq, data, rest, syn, fin, rst, ack);
         len = rest;
     } else if (m_ip_header.proto == IPPROTO_UDP) {
+        if (len < 4)
+            return false;
+
         m_ip_header.src_port = get_short(data);
         m_ip_header.dst_port = get_short(&data[2]);
 
         data += 8;
         len -= 8;
+
+        if (len < 0) {
+            fprintf(stderr, "warning: Found UDP packet with bad length\n");
+            return false;
+        }
     }
 
     if (data) {
