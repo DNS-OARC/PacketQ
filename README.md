@@ -33,12 +33,12 @@ environment with Autoconf and Automake.
 
 To install the dependencies under Debian/Ubuntu:
 ```
-apt-get install -y libpcap-dev zlib1g-dev
+apt-get install -y zlib1g-dev
 ```
 
 To install the dependencies under CentOS (with EPEL enabled):
 ```
-yum install -y libpcap-devel zlib-devel
+yum install -y zlib-devel
 ```
 
 ## Build from GitHub

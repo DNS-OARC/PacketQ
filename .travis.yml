@@ -4,7 +4,7 @@ compiler:
   - gcc
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y libpcap-dev zlib1g-dev
+  - sudo apt-get install -y zlib1g-dev
 install: ./autogen.sh
 script:
   - ./configure
