@@ -1,3 +1,4 @@
+#!/bin/sh -e
 # Copyright (c) 2017, OARC, Inc.
 # Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
 # All rights reserved.
@@ -17,13 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
-MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
+rm -f test5.out
 
-CLEANFILES = test*.log test*.trs \
-    test1.out test2.out test3.out test4.out test5.out
+cat "$srcdir/sql.txt" | grep -v '^#' | while read sql; do
+  ../packetq -s "$sql" "$srcdir/../../pcap/sample.pcap.gz" >> test5.out
+done
 
-TESTS = test1.sh test2.sh test3.sh test4.sh test5.sh
-
-EXTRA_DIST = $(TESTS) \
-    test1.gold test2.gold test3.gold test4.gold test5.gold \
-    sql.txt
+diff -uw "$srcdir/test5.gold" test5.out
