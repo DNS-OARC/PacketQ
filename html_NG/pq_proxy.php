@@ -1,5 +1,7 @@
 <?
 
+require('settings.php');
+
 // Checking if it is a _GET or a _Post and acting accordingly
 error_log("entering the gets and posts");
 if (isset($_GET['srv']) || isset($_GET['cmd'])){
@@ -12,34 +14,28 @@ if (isset($_POST['srv']) || isset($_POST['cmd'])){
 }
 error_log("exiting the gets and posts");
 
-// Checking if it is a _GET or a _Post and acting accordingly
-if (isset($_GET['srv']) || isset($_GET['cmd'])){
-	$cmd = $_GET['cmd'];
+function get_server_list($filename) {
+	$json = file_get_contents($filename);
+	return json_decode($json, true);
+}
 
-	switch ($_GET['srv']) {
-    	case "x.ns.se":
-		$svr = "http://xx.xx.xx.xx:8080/";
-        	break;
-	    	case "y.ns.se":
-			$svr = "http://yy.yy.yy.yy:8080/";
-        	break;
+function get_server_hostname($server, $list) {
+	foreach ($list as $srv) {
+		if ($server == $srv['name']) {
+			return $srv['api'];
+		}
 	}
 }
 
-if (isset($_POST['srv']) || isset($_POST['cmd'])){
-        $cmd = $_POST['cmd'];
-
-        switch ($_POST['srv']) {
-	    	case "x.ns.se":
-			$svr = "http://xx.xx.xx.xx:8080/";
-	        	break;
-		    	case "y.ns.se":
-				$svr = "http://yy.yy.yy.yy:8080/";
-	        	break;
-
-        }
+if (isset($_GET['srv'])) {
+	$srv = get_server_hostname($_GET['srv'], $servlist);
+	$cmd = $_GET['cmd'];
 }
 
+if (isset($_POST['srv'])) {
+	$srv = get_server_hostname($_POST['srv'], $servlist);
+	$cmd = $_POST['cmd'];
+}
 
 header("Content-Type:application/json");
 header("Access-Control-Allow-Origin: *");
@@ -47,9 +43,9 @@ header("Access-Control-Allow-Origin: *");
 //header("content-type: text/xml");
 //echo($svr."".$cmd);
 
-error_log($svr."".$cmd);
+error_log($srv."".$cmd);
 
-$fp = fopen($svr."".$cmd, 'r');
+$fp = fopen($srv."".$cmd, 'r');
 fpassthru($fp);
 
 ?>
