@@ -1,0 +1,20 @@
+Source: packetq
+Section: net
+Priority: optional
+Maintainer: Jerry Lundström <lundstrom.jerry@gmail.com>
+Build-Depends: debhelper (>= 8.0.0), build-essential, automake, autoconf,
+ zlib1g-dev, netbase, libtool
+Standards-Version: 3.9.4
+Homepage: https://www.dns-oarc.net/tools/packetq
+Vcs-Git: https://github.com/DNS-OARC/PacketQ.git
+Vcs-Browser: https://github.com/DNS-OARC/PacketQ
+
+Package: packetq
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: A tool that provides a basic SQL-frontend to PCAP-files
+ packetq is a command line tool to run SQL queries directly on PCAP files,
+ the results can be outputted as JSON (default), formatted/compact CSV and XML.
+ It also contain a very simplistic web-server in order to inspect PCAP files
+ remotely. PacketQ was previously known as DNS2db but was renamed in 2011 when
+ it was rebuilt and could handle protocols other than DNS among other things.

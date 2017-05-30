@@ -1,0 +1,106 @@
+Name:           packetq
+Version:        1.3.0
+Release:        1%{?dist}
+Summary:        A tool that provides a basic SQL-frontend to PCAP-files
+Group:          Productivity/Networking/DNS/Utilities
+
+License:        GPL-3.0
+URL:            https://github.com/DNS-OARC/PacketQ
+Source0:        %{name}_%{version}.orig.tar.gz
+
+BuildRequires:  zlib-devel
+BuildRequires:  autoconf
+BuildRequires:  automake
+BuildRequires:  libtool
+%if 0%{?suse_version} || 0%{?sle_version}
+BuildRequires:  gcc-c++
+%endif
+
+%description
+packetq is a command line tool to run SQL queries directly on PCAP files,
+the results can be outputted as JSON (default), formatted/compact CSV and XML.
+It also contain a very simplistic web-server in order to inspect PCAP files
+remotely. PacketQ was previously known as DNS2db but was renamed in 2011 when
+it was rebuilt and could handle protocols other than DNS among other things.
+
+
+%prep
+%setup -q -n %{name}_%{version}
+
+
+%build
+sh autogen.sh
+%configure
+make %{?_smp_mflags}
+
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT
+
+
+%check
+make test
+
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+
+%files
+%defattr(-,root,root)
+%{_bindir}/*
+%{_datadir}/doc/*
+
+
+%changelog
+* Tue May 30 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 1.3.0-1
+- Release 1.3.0
+  * First release under DNS-OARC management with license changed to GPL v3.0,
+    minor version jump to not conflict with forked repositories that
+    increased the version themselves.
+  * Software now using Travis-CI and Jenkins to compile and test under Debian,
+    Ubuntu, CentOS, FreeBSD and OpenBSD. Coverity Scan used for code analysis
+    and 30 defects have been solved.
+  * Bug fixes / enhancements:
+    - Big endian supported correctly
+    - Check data length when processing TCP/UDP packets
+    - Support VLAN-tagged packets
+    - Support for older compilers (CentOS 6)
+    - Prevent "time of check, time of use"
+    - Use `snprintf()` instead of `sprinf()`
+  * Commits:
+    6782f1f libpcap is not needed
+    23a1ca0 Add more 'order by' in tests to ahve concurrent results
+    f14ab5d Run tests in Travis also
+    1a0c98a Add test for bigendian PCAP
+    64ee5a8 - fixed reading of big-endian pcap files (including gzipped pcap)
+            - added sample-bigendian.pcap.gz
+    dd6ab57 Add test based on the extended regression tests
+    27518c5 More regression tests
+    d889228 Updated regression-test.sh to make the ordering of test query
+            results more consistent, to avoid false positives.
+    d157fef Expanded the regression tests.
+    b3df6c2 Added checks for bad TCP and UDP packet lengths (which could
+            cause malloc requests for humongous amounts of memory...)
+    2e46729 Added support for VLAN-tagged ethertypes.
+    10ae2d6 Fix #20: Support CentOS 6 compiler (and hopefully RHEL6 also)
+    e7a8163 Format code using `clang-format`
+    a9ae0fe Change namespace to `packetq` and uniform header defines
+    6ab0fde Add Coverity badge
+    63b480b Use `open()`, `fstat()` and `fdopen()` to prevent "time of check,
+            time of use" problem
+    446a5bf Fix CIDs
+    01be348 Fix CIDs
+    d11a61f Use `snprintf()`
+    0bc8e57 Add regression test (from example) for all output formats
+    09b9037 Move wiki documentation into the repository
+    5e41dbb Update README.md
+    6b2263f Add dependencies
+    9cd6e5a Add Travis-CI badge
+    cf582f8 Add Travis-CI
+    d7eaa55 Cleanup and license change
+* Wed Apr 23 2014 Roger Murray <undocumented@release> 1.1.11-1
+- Release 1.1.11
+  * This release and prior releases was not documented here, see repository
+    for more information.
