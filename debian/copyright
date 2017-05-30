@@ -1,0 +1,33 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: drool
+Source: https://github.com/DNS-OARC/drool
+
+Files: *
+Copyright: 2017, OARC, Inc.
+           2011-2017, IIS - The Internet Foundation in Sweden
+License: GPLv3
+
+Files: debian/*
+Copyright: 2017 Jerry Lundström <lundstrom.jerry@gmail.com>
+License: GPLv3
+
+Files: src/MurmurHash3.*
+Copyright: Austin Appleby
+License: Public Domain
+
+License: GPLv3
+ This is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this.  If not, see <http://www.gnu.org/licenses/>.
+
+License: Public Domain
+ The author hereby disclaims copyright to this source code.
