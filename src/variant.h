@@ -49,19 +49,19 @@ namespace Coltype {
 
 typedef bool bool_column;
 static const int bool_size = sizeof(bool_column);
-static const int bool_align = sizeof(bool_column);
+static const int bool_align = ((sizeof(bool_column) / sizeof(void*)) + 1) * sizeof(void*);
 
 typedef int int_column;
 static const int int_size = sizeof(int_column);
-static const int int_align = sizeof(int_column);
+static const int int_align = ((sizeof(int_column) / sizeof(void*)) + 1) * sizeof(void*);
 
 typedef double float_column;
 static const int float_size = sizeof(float_column);
-static const int float_align = sizeof(float_column);
+static const int float_align = ((sizeof(float_column) / sizeof(void*)) + 1) * sizeof(void*);
 
 typedef RefCountString* text_column;
 static const int text_size = sizeof(text_column);
-static const int text_align = sizeof(text_column);
+static const int text_align = ((sizeof(text_column) / sizeof(void*)) + 1) * sizeof(void*);
 
 inline bool_column convert_column_to_bool(float_column v) { return v; }
 inline bool_column convert_column_to_bool(int_column v) { return v; }
