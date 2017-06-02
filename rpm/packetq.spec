@@ -1,5 +1,5 @@
 Name:           packetq
-Version:        1.3.0
+Version:        1.3.1
 Release:        1%{?dist}
 Summary:        A tool that provides a basic SQL-frontend to PCAP-files
 Group:          Productivity/Networking/DNS/Utilities
@@ -54,6 +54,25 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Jun 02 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 1.3.1-1
+- Release 1.3.1
+  * This release add packaging files for DEB and RPM distributions and
+    fixes a couple of bugs:
+    - ICMP code to fill the tables was wrong and created segfault using
+      normal select, aggregation or group functions. The code has been
+      rewritten to work as the DNS code does and ICMP tests have been
+      added.
+    - Historically PacketQ parses all resource records but only saves
+      the first and last record, this would overwrite EDNS information
+      if it was not the first or last record. This has been fixed by
+      saving the EDNS information as it is found.
+  * Thanks to Anand Buddhdev (RIPE NCC) and Daniel Stirnimann (SWITCH)
+    for providing PCAPs to help resolve the bugs.
+  * Commits:
+    9c2627f Fix CID 1439421
+    5423c1d Fix #17: Save EDNS information when it's found
+    ecb166e Fix #48: ICMP parsing and a little better memory handling
+    0052024 Fix #45: Add packaging files
 * Tue May 30 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 1.3.0-1
 - Release 1.3.0
   * First release under DNS-OARC management with license changed to GPL v3.0,
