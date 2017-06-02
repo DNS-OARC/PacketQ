@@ -172,6 +172,7 @@ Packet::ParseResult Parse_icmp::parse(Packet& packet, const std::vector<int>& co
                 break;
             case 8:
                 acc_desc.value(r) = RefCountString::construct("Echo Request");
+                break;
             case 9:
                 acc_desc.value(r) = RefCountString::construct("Router Advertisement");
                 break;
