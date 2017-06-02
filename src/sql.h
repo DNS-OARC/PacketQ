@@ -247,7 +247,7 @@ private:
             m_has_space = true;
             m_used = 0;
             m_stride = (sizeof(Buffer*) + m_allocator.m_size);
-            m_memory = (char*)malloc(m_stride * m_allocator.m_buffersize);
+            m_memory = (char*)calloc(m_stride, m_allocator.m_buffersize);
         }
         ~Buffer()
         {

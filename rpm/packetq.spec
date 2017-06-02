@@ -1,8 +1,62 @@
-2017-06-02 Jerry Lundström
+Name:           packetq
+Version:        1.3.1
+Release:        1%{?dist}
+Summary:        A tool that provides a basic SQL-frontend to PCAP-files
+Group:          Productivity/Networking/DNS/Utilities
 
-    Release 1.3.1
+License:        GPL-3.0
+URL:            https://github.com/DNS-OARC/PacketQ
+Source0:        %{name}_%{version}.orig.tar.gz
 
-    This release add packaging files for DEB and RPM distributions and
+BuildRequires:  zlib-devel
+BuildRequires:  autoconf
+BuildRequires:  automake
+BuildRequires:  libtool
+%if 0%{?suse_version} || 0%{?sle_version}
+BuildRequires:  gcc-c++
+%endif
+
+%description
+packetq is a command line tool to run SQL queries directly on PCAP files,
+the results can be outputted as JSON (default), formatted/compact CSV and XML.
+It also contain a very simplistic web-server in order to inspect PCAP files
+remotely. PacketQ was previously known as DNS2db but was renamed in 2011 when
+it was rebuilt and could handle protocols other than DNS among other things.
+
+
+%prep
+%setup -q -n %{name}_%{version}
+
+
+%build
+sh autogen.sh
+%configure
+make %{?_smp_mflags}
+
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT
+
+
+%check
+make test
+
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+
+%files
+%defattr(-,root,root)
+%{_bindir}/*
+%{_datadir}/doc/*
+
+
+%changelog
+* Fri Jun 02 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 1.3.1-1
+- Release 1.3.1
+  * This release add packaging files for DEB and RPM distributions and
     fixes a couple of bugs:
     - ICMP code to fill the tables was wrong and created segfault using
       normal select, aggregation or group functions. The code has been
@@ -12,39 +66,29 @@
       the first and last record, this would overwrite EDNS information
       if it was not the first or last record. This has been fixed by
       saving the EDNS information as it is found.
-
-    Thanks to Anand Buddhdev (RIPE NCC) and Daniel Stirnimann (SWITCH)
+  * Thanks to Anand Buddhdev (RIPE NCC) and Daniel Stirnimann (SWITCH)
     for providing PCAPs to help resolve the bugs.
-
-    Commits:
-
+  * Commits:
     9c2627f Fix CID 1439421
     5423c1d Fix #17: Save EDNS information when it's found
     ecb166e Fix #48: ICMP parsing and a little better memory handling
     0052024 Fix #45: Add packaging files
-
-2017-05-23 Jerry Lundström
-
-    Release 1.3.0
-
-    First release under DNS-OARC management with license changed to GPL v3.0,
+* Tue May 30 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 1.3.0-1
+- Release 1.3.0
+  * First release under DNS-OARC management with license changed to GPL v3.0,
     minor version jump to not conflict with forked repositories that
     increased the version themselves.
-
-    Software now using Travis-CI and Jenkins to compile and test under Debian,
+  * Software now using Travis-CI and Jenkins to compile and test under Debian,
     Ubuntu, CentOS, FreeBSD and OpenBSD. Coverity Scan used for code analysis
     and 30 defects have been solved.
-
-    Bug fixes / enhancements:
+  * Bug fixes / enhancements:
     - Big endian supported correctly
     - Check data length when processing TCP/UDP packets
     - Support VLAN-tagged packets
     - Support for older compilers (CentOS 6)
     - Prevent "time of check, time of use"
     - Use `snprintf()` instead of `sprinf()`
-
-    Commits:
-
+  * Commits:
     6782f1f libpcap is not needed
     23a1ca0 Add more 'order by' in tests to ahve concurrent results
     f14ab5d Run tests in Travis also
@@ -75,10 +119,7 @@
     9cd6e5a Add Travis-CI badge
     cf582f8 Add Travis-CI
     d7eaa55 Cleanup and license change
-
-2014-04-23 Roger Murray
-
-    Release 1.1.11
-
-    This release and prior releases was not documented here, see repository
+* Wed Apr 23 2014 Roger Murray <undocumented@release> 1.1.11-1
+- Release 1.1.11
+  * This release and prior releases was not documented here, see repository
     for more information.

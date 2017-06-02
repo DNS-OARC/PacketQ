@@ -269,11 +269,21 @@ public:
                 m_error = offs;
                 return;
             }
+
+            if (m_opt_rr && !m_edns0) {
+                m_edns0 = true;
+                unsigned long ttl = m_opt_rr->ttl;
+                m_do = (ttl >> 15) & 1;
+                m_extended_rcode = ttl >> 24;
+                m_edns_version = (ttl >> 16) & 0xff;
+                m_z = ttl & 0x7fff;
+                m_udp_size = m_opt_rr->rr_class;
+            }
         }
         if (offs > m_length)
             m_error = offs;
 
-        if (m_opt_rr) {
+        if (m_opt_rr && !m_edns0) {
             m_edns0 = true;
             unsigned long ttl = m_opt_rr->ttl;
             m_do = (ttl >> 15) & 1;

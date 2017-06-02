@@ -344,3 +344,43 @@
     ]
   }
 ]
+[
+  {
+    "table_name": "result-0",
+    "query": "select * from icmp;",
+    "head": [
+      { "name": "id","type": "int" },
+      { "name": "s","type": "int" },
+      { "name": "us","type": "int" },
+      { "name": "ether_type","type": "int" },
+      { "name": "src_port","type": "int" },
+      { "name": "dst_port","type": "int" },
+      { "name": "src_addr","type": "text" },
+      { "name": "dst_addr","type": "text" },
+      { "name": "protocol","type": "int" },
+      { "name": "ip_ttl","type": "int" },
+      { "name": "fragments","type": "int" },
+      { "name": "type","type": "int" },
+      { "name": "code","type": "int" },
+      { "name": "echo_identifier","type": "int" },
+      { "name": "echo_sequence","type": "int" },
+      { "name": "du_protocol","type": "int" },
+      { "name": "du_src_addr","type": "text" },
+      { "name": "du_dst_addr","type": "text" },
+      { "name": "desc","type": "text" }
+    ],
+    "data": [
+    ]
+  }
+]
+[
+  {
+    "table_name": "result-0",
+    "query": "select count(*) from icmp;",
+    "head": [
+      { "name": "count(1)","type": "int" }
+    ],
+    "data": [
+    ]
+  }
+]

@@ -1,3 +1,4 @@
+#!/bin/sh -e
 # Copyright (c) 2017, OARC, Inc.
 # Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
 # All rights reserved.
@@ -17,13 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
-MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
+../packetq -s "select * from icmp" "$srcdir/../../pcap/icmp.pcap.gz" > test7.out
+../packetq -s "select count(*) from icmp" "$srcdir/../../pcap/icmp.pcap.gz" >> test7.out
 
-CLEANFILES = test*.log test*.trs \
-    test1.out test2.out test3.out test4.out test5.out test6.out test7.out
-
-TESTS = test1.sh test2.sh test3.sh test4.sh test5.sh test6.sh test7.sh
-
-EXTRA_DIST = $(TESTS) \
-    test1.gold test2.gold test3.gold test4.gold test5.gold test6.gold \
-    test7.gold sql.txt
+diff -uw "$srcdir/test7.gold" test7.out

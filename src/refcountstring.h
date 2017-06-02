@@ -52,7 +52,7 @@ struct RefCountString {
     {
         std::size_t size = sizeof(RefCountString) - sizeof(char[sizeof(int)]) + data_length * sizeof(char);
 
-        void* chunk = std::malloc(size);
+        void* chunk = std::calloc(1, size);
         if (!chunk)
             throw std::bad_alloc();
 

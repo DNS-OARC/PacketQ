@@ -38,7 +38,7 @@ namespace packetq {
 class Parse_icmp : public Packet_handler {
 public:
     enum {
-        COLUMN_TYPE,
+        COLUMN_TYPE = IP_header_to_table::COLUMN_FRAGMENTS + 1,
         COLUMN_CODE,
         COLUMN_ECHO_IDENTIFIER,
         COLUMN_ECHO_SEQUENCE,
@@ -53,10 +53,12 @@ public:
     virtual void on_table_created(Table* table, const std::vector<int>& columns);
     virtual Packet::ParseResult parse(Packet& packet, const std::vector<int>& columns, Row& destination_row, bool sample);
 
-private:
     void add_packet_columns();
+    void add_lookup_tables();
 
+private:
     Str_conv converter;
+
     IP_header_to_table m_ip_helper;
 
     Int_accessor acc_type;
