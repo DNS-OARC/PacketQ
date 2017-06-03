@@ -80,6 +80,8 @@ static void usage(char* argv0, bool longversion)
                     "      ad\n"
                     "      do\n"
                     "      edns0\n"
+                    "      edns_opcode\n"
+                    "      ecs_addr\n"
                     "      qr\n");
 }
 

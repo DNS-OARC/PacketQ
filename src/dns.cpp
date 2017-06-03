@@ -63,6 +63,8 @@ void Parse_dns::add_packet_columns()
     add_packet_column("edns_version", "", Coltype::_int, COLUMN_EDNS_VERSION);
     add_packet_column("z", "", Coltype::_int, COLUMN_Z);
     add_packet_column("udp_size", "", Coltype::_int, COLUMN_UDP_SIZE);
+    add_packet_column("edns_opcode", "", Coltype::_int, COLUMN_EDNS_OPCODE);
+    add_packet_column("ecs_addr", "", Coltype::_text, COLUMN_ECS_ADDR);
     add_packet_column("qd_count", "", Coltype::_int, COLUMN_QD_COUNT);
     add_packet_column("an_count", "", Coltype::_int, COLUMN_AN_COUNT);
     add_packet_column("ns_count", "", Coltype::_int, COLUMN_NS_COUNT);
@@ -189,6 +191,7 @@ void Parse_dns::on_table_created(Table* table, const std::vector<int>& columns)
     acc_edns_version = table->get_accessor<int_column>("edns_version");
     acc_z = table->get_accessor<int_column>("z");
     acc_udp_size = table->get_accessor<int_column>("udp_size");
+    acc_edns_opcode = table->get_accessor<int_column>("edns_opcode");
     acc_qd_count = table->get_accessor<int_column>("qd_count");
     acc_an_count = table->get_accessor<int_column>("an_count");
     acc_ns_count = table->get_accessor<int_column>("ns_count");
@@ -211,6 +214,7 @@ void Parse_dns::on_table_created(Table* table, const std::vector<int>& columns)
 
     acc_qname = table->get_accessor<text_column>("qname");
     acc_aname = table->get_accessor<text_column>("aname");
+    acc_ecs_addr = table->get_accessor<text_column>("ecs_addr");
 }
 
 Packet::ParseResult Parse_dns::parse(Packet& packet, const std::vector<int>& columns, Row& destination_row, bool sample)
@@ -343,6 +347,14 @@ Packet::ParseResult Parse_dns::parse(Packet& packet, const std::vector<int>& col
 
         case COLUMN_UDP_SIZE:
             acc_udp_size.value(r) = message.m_edns0 ? message.m_udp_size : 0;
+            break;
+
+        case COLUMN_EDNS_OPCODE:
+            acc_edns_opcode.value(r) = message.m_edns_opcode ? message.m_edns_opcode : 0;
+            break;
+
+        case COLUMN_ECS_ADDR:
+            acc_ecs_addr.value(r) = message.m_ecs ? RefCountString::construct(message.m_ecs_addr) : RefCountString::construct("");
             break;
 
         case COLUMN_ANAME:

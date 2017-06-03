@@ -135,6 +135,8 @@ public:
         unsigned int ttl;
         int rdlength;
         int doffs;
+        unsigned int opt_code_length;
+        char ecs_addr[0x200];
 
         int parse(DNSMessage& m, int offs)
         {
@@ -151,6 +153,18 @@ public:
             rdlength = m.get_ushort(offs);
             offs += 2;
             doffs = offs;
+            if (type == 41 && rdlength >= 4)
+            {
+                opt_code_length = m.get_ushort(offs) << 16;
+                opt_code_length |= m.get_ushort(offs + 2);
+                // We only support EDNS ECS, this copies address field
+                // and rest of opt_rdata. I.e. it skips family, and
+                // prefix-length fields
+                if (rdlength >= 8)
+                {
+                    memcpy(ecs_addr, m.m_data + offs + 4, rdlength - 4);
+                }
+            }
             offs += rdlength;
             return offs;
         }
@@ -172,6 +186,9 @@ public:
     int m_edns_version;
     int m_z;
     int m_udp_size;
+    int m_edns_opcode;
+    bool m_ecs;
+    char m_ecs_addr[16];
 
     DNSMessage(unsigned char* data, int len, IP_header& head)
         : m_ip_header(head)
@@ -186,6 +203,8 @@ public:
         m_edns_version = 0;
         m_z = 0;
         m_udp_size = 0;
+        m_edns_opcode = 0;
+        m_ecs = false;
 
         parse();
     }
@@ -278,6 +297,17 @@ public:
                 m_edns_version = (ttl >> 16) & 0xff;
                 m_z = ttl & 0x7fff;
                 m_udp_size = m_opt_rr->rr_class;
+                if (m_opt_rr->rdlength >= 4)
+                {
+                    m_edns_opcode = (m_opt_rr->opt_code_length >> 16);
+                    // m_edns_oplength = (m_opt_rr->opt_code_length & 0xffff);
+                    // only supports ECS for IPv4 addresses
+                    if (m_edns_opcode == 8)
+                    {
+                        m_ecs = true;
+                        set_ecs_addr((unsigned char*)m_opt_rr->ecs_addr + 4);
+                    }
+                }
             }
         }
         if (offs > m_length)
@@ -291,6 +321,17 @@ public:
             m_edns_version = (ttl >> 16) & 0xff;
             m_z = ttl & 0x7fff;
             m_udp_size = m_opt_rr->rr_class;
+            if (m_opt_rr->rdlength >= 4)
+            {
+                m_edns_opcode = (m_opt_rr->opt_code_length >> 16);
+                // m_edns_optlength = (m_opt_rr->opt_code_length & 0xffff);
+                // only supports ECS for IPv4 addresses
+                if (m_edns_opcode == 8)
+                {
+                    m_ecs = true;
+                    set_ecs_addr((unsigned char*)m_opt_rr->ecs_addr + 4);
+                }
+            }
         }
     }
 
@@ -319,6 +360,10 @@ public:
             return 0;
         return ((get_ushort(offs) << bit) & 0xffff) >> (16 - bits);
     }
+    void set_ecs_addr(unsigned char* buf)
+    {
+        snprintf(m_ecs_addr, sizeof(m_ecs_addr), "%u.%u.%u.0", buf[0], buf[1], buf[2]);
+    }
 };
 
 class Parse_dns : public Packet_handler {
@@ -334,6 +379,8 @@ public:
         COLUMN_EDNS_VERSION,
         COLUMN_Z,
         COLUMN_UDP_SIZE,
+        COLUMN_EDNS_OPCODE,
+        COLUMN_ECS_ADDR,
         COLUMN_QD_COUNT,
         COLUMN_AN_COUNT,
         COLUMN_NS_COUNT,
@@ -380,6 +427,7 @@ private:
     Int_accessor acc_edns_version;
     Int_accessor acc_z;
     Int_accessor acc_udp_size;
+    Int_accessor acc_edns_opcode;
     Int_accessor acc_qd_count;
     Int_accessor acc_an_count;
     Int_accessor acc_ns_count;
@@ -398,6 +446,7 @@ private:
     Bool_accessor acc_ad;
     Bool_accessor acc_do;
     Bool_accessor acc_edns0;
+    Text_accessor acc_ecs_addr;
     Text_accessor acc_qname;
     Text_accessor acc_aname;
     Text_accessor acc_src_addr;
