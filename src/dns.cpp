@@ -82,11 +82,11 @@ void Parse_dns::add_packet_columns()
     add_packet_column("edns0", "", Coltype::_bool, COLUMN_EDNS0);
     add_packet_column("qr", "", Coltype::_bool, COLUMN_QR);
 
-    add_packet_column("edns0_esc", "", Coltype::_bool, COLUMN_EDNS0_ECS);
-    add_packet_column("edns0_esc_family", "", Coltype::_int, COLUMN_EDNS0_ECS_FAMILY);
-    add_packet_column("edns0_esc_source", "", Coltype::_int, COLUMN_EDNS0_ECS_SOURCE);
-    add_packet_column("edns0_esc_scope", "", Coltype::_int, COLUMN_EDNS0_ECS_SCOPE);
-    add_packet_column("edns0_esc_address", "", Coltype::_text, COLUMN_EDNS0_ECS_ADDRESS);
+    add_packet_column("edns0_ecs", "", Coltype::_bool, COLUMN_EDNS0_ECS);
+    add_packet_column("edns0_ecs_family", "", Coltype::_int, COLUMN_EDNS0_ECS_FAMILY);
+    add_packet_column("edns0_ecs_source", "", Coltype::_int, COLUMN_EDNS0_ECS_SOURCE);
+    add_packet_column("edns0_ecs_scope", "", Coltype::_int, COLUMN_EDNS0_ECS_SCOPE);
+    add_packet_column("edns0_ecs_address", "", Coltype::_text, COLUMN_EDNS0_ECS_ADDRESS);
 }
 
 void Parse_dns::add_lookup_tables()
@@ -218,11 +218,11 @@ void Parse_dns::on_table_created(Table* table, const std::vector<int>& columns)
     acc_qname = table->get_accessor<text_column>("qname");
     acc_aname = table->get_accessor<text_column>("aname");
 
-    acc_edns0_ecs = table->get_accessor<bool_column>("edns0_esc");
-    acc_edns0_ecs_family = table->get_accessor<int_column>("edns0_esc_family");
-    acc_edns0_ecs_source = table->get_accessor<int_column>("edns0_esc_source");
-    acc_edns0_ecs_scope = table->get_accessor<int_column>("edns0_esc_scope");
-    acc_edns0_ecs_address = table->get_accessor<text_column>("edns0_esc_address");
+    acc_edns0_ecs = table->get_accessor<bool_column>("edns0_ecs");
+    acc_edns0_ecs_family = table->get_accessor<int_column>("edns0_ecs_family");
+    acc_edns0_ecs_source = table->get_accessor<int_column>("edns0_ecs_source");
+    acc_edns0_ecs_scope = table->get_accessor<int_column>("edns0_ecs_scope");
+    acc_edns0_ecs_address = table->get_accessor<text_column>("edns0_ecs_address");
 }
 
 Packet::ParseResult Parse_dns::parse(Packet& packet, const std::vector<int>& columns, Row& destination_row, bool sample)

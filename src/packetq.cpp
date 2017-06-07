@@ -81,11 +81,11 @@ static void usage(char* argv0, bool longversion)
                     "      do\n"
                     "      edns0\n"
                     "      qr\n"
-                    "      edns0_esc\n"
-                    "      edns0_esc_family\n"
-                    "      edns0_esc_source\n"
-                    "      edns0_esc_scope\n"
-                    "      edns0_esc_address\n"
+                    "      edns0_ecs\n"
+                    "      edns0_ecs_family\n"
+                    "      edns0_ecs_source\n"
+                    "      edns0_ecs_scope\n"
+                    "      edns0_ecs_address\n"
     );
 }
 
