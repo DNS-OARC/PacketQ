@@ -45,11 +45,11 @@ the dns table, presented as JSON identifiers.
       { "name": "do","type": "bool" },
       { "name": "edns0","type": "bool" },
       { "name": "qr","type": "bool" },
-      { "name": "edns0_esc","type": "bool" },
-      { "name": "edns0_esc_family","type": "int" },
-      { "name": "edns0_esc_source","type": "int" },
-      { "name": "edns0_esc_scope","type": "int" },
-      { "name": "edns0_esc_address","type": "text" }
+      { "name": "edns0_ecs","type": "bool" },
+      { "name": "edns0_ecs_family","type": "int" },
+      { "name": "edns0_ecs_source","type": "int" },
+      { "name": "edns0_ecs_scope","type": "int" },
+      { "name": "edns0_ecs_address","type": "text" }
   }
 ]
 ```
