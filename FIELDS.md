@@ -15,13 +15,16 @@ the dns table, presented as JSON identifiers.
       { "name": "src_addr","type": "text" },
       { "name": "dst_addr","type": "text" },
       { "name": "protocol","type": "int" },
+      { "name": "ip_ttl","type": "int" },
+      { "name": "fragments","type": "int" },
       { "name": "qname","type": "text" },
       { "name": "aname","type": "text" },
       { "name": "msg_id","type": "int" },
+      { "name": "msg_size","type": "int" },
       { "name": "opcode","type": "int" },
       { "name": "rcode","type": "int" },
       { "name": "extended_rcode","type": "int" },
-      { "name": "version","type": "int" },
+      { "name": "edns_version","type": "int" },
       { "name": "z","type": "int" },
       { "name": "udp_size","type": "int" },
       { "name": "qd_count","type": "int" },
@@ -41,7 +44,12 @@ the dns table, presented as JSON identifiers.
       { "name": "ad","type": "bool" },
       { "name": "do","type": "bool" },
       { "name": "edns0","type": "bool" },
-      { "name": "qr","type": "bool" }
+      { "name": "qr","type": "bool" },
+      { "name": "edns0_esc","type": "bool" },
+      { "name": "edns0_esc_family","type": "int" },
+      { "name": "edns0_esc_source","type": "int" },
+      { "name": "edns0_esc_scope","type": "int" },
+      { "name": "edns0_esc_address","type": "text" }
   }
 ]
 ```
