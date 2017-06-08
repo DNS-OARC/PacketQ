@@ -140,8 +140,10 @@ public:
         {
             offs = m.parse_dname(name, sizeof(name), offs);
             type = m.get_ushort(offs);
-            if (type == 41)
+            if (type == 41) {
                 m.m_opt_rr = this;
+                m.m_new_opt_rr = true;
+            }
             offs += 2;
             rr_class = m.get_ushort(offs);
             offs += 2;
@@ -165,6 +167,7 @@ public:
     RR m_authority[2];
     RR m_additional[2];
     RR* m_opt_rr;
+    bool m_new_opt_rr;
     int m_error;
     bool m_edns0;
     bool m_do;
@@ -183,6 +186,7 @@ public:
         : m_ip_header(head)
     {
         m_opt_rr = 0;
+        m_new_opt_rr = false;
         m_error = 0;
         m_data = data;
         m_length = len;
@@ -236,7 +240,8 @@ public:
         out[p++] = 0;
         return offs;
     }
-    void parse_opt_rr() {
+    void parse_opt_rr()
+    {
         if (m_opt_rr) {
             if (!m_edns0) {
                 m_edns0 = true;
@@ -247,7 +252,7 @@ public:
                 m_z = ttl & 0x7fff;
                 m_udp_size = m_opt_rr->rr_class;
             }
-            if ((m_opt_rr->ttl >> 16) & 0xff == 0) {
+            if (((m_opt_rr->ttl >> 16) & 0xff) == 0 && m_opt_rr->rdlength > 0) {
                 // Parse this OPT RR that is EDNS0
                 int rdlen = m_opt_rr->rdlength,
                     offs = m_opt_rr->doffs,
@@ -270,18 +275,36 @@ public:
                         m_edns0_ecs_family = get_ushort(offs);
                         m_edns0_ecs_source = get_ubyte(offs + 2);
                         m_edns0_ecs_scope = get_ubyte(offs + 3);
-                        if (m_edns0_ecs_family == 1 && oplen == 8) {
-                            m_edns0_ecs_addr.__in6_u.__u6_addr32[3] = get_uint32(offs + 4);
-                            m_edns0_ecs_addr_set = true;
-                        }
-                        else if (m_edns0_ecs_family == 2 && oplen == 20) {
-                            m_edns0_ecs_addr.__in6_u.__u6_addr32[3] = get_uint32(offs + 4);
-                            m_edns0_ecs_addr.__in6_u.__u6_addr32[2] = get_uint32(offs + 8);
-                            m_edns0_ecs_addr.__in6_u.__u6_addr32[1] = get_uint32(offs + 12);
-                            m_edns0_ecs_addr.__in6_u.__u6_addr32[0] = get_uint32(offs + 16);
-                            m_edns0_ecs_addr_set = true;
+
+                        int addrlen = (m_edns0_ecs_source / 8) + (m_edns0_ecs_source % 8 ? 1 : 0);
+                        int fill = 0;
+
+                        if (addrlen <= (oplen - 4)) {
+                            switch (m_edns0_ecs_family) {
+                            case 1:
+                                fill = 4;
+                                m_edns0_ecs_addr_set = true;
+                                break;
+                            case 2:
+                                fill = 16;
+                                m_edns0_ecs_addr_set = true;
+                                break;
+                            }
+
+                            int a, b;
+                            for (a = 0, b = 15; fill && b > -1; fill--, b--) {
+                                if (a < addrlen) {
+                                    m_edns0_ecs_addr.__in6_u.__u6_addr8[b] = get_ubyte(offs + 4 + a);
+                                    a++;
+                                } else {
+                                    m_edns0_ecs_addr.__in6_u.__u6_addr8[b] = 0;
+                                }
+                            }
                         }
                     }
+
+                    rdlen -= oplen;
+                    offs += oplen;
                 }
             }
         }
@@ -330,7 +353,10 @@ public:
                 m_error = offs;
                 return;
             }
-            parse_opt_rr();
+            if (m_new_opt_rr) {
+                parse_opt_rr();
+                m_new_opt_rr = false;
+            }
         }
         if (offs > m_length)
             m_error = offs;

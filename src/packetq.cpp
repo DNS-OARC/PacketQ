@@ -85,8 +85,7 @@ static void usage(char* argv0, bool longversion)
                     "      edns0_ecs_family\n"
                     "      edns0_ecs_source\n"
                     "      edns0_ecs_scope\n"
-                    "      edns0_ecs_address\n"
-    );
+                    "      edns0_ecs_address\n");
 }
 
 #ifdef WIN32
