@@ -81,6 +81,12 @@ void Parse_dns::add_packet_columns()
     add_packet_column("do", "", Coltype::_bool, COLUMN_DO);
     add_packet_column("edns0", "", Coltype::_bool, COLUMN_EDNS0);
     add_packet_column("qr", "", Coltype::_bool, COLUMN_QR);
+
+    add_packet_column("edns0_ecs", "", Coltype::_bool, COLUMN_EDNS0_ECS);
+    add_packet_column("edns0_ecs_family", "", Coltype::_int, COLUMN_EDNS0_ECS_FAMILY);
+    add_packet_column("edns0_ecs_source", "", Coltype::_int, COLUMN_EDNS0_ECS_SOURCE);
+    add_packet_column("edns0_ecs_scope", "", Coltype::_int, COLUMN_EDNS0_ECS_SCOPE);
+    add_packet_column("edns0_ecs_address", "", Coltype::_text, COLUMN_EDNS0_ECS_ADDRESS);
 }
 
 void Parse_dns::add_lookup_tables()
@@ -211,6 +217,12 @@ void Parse_dns::on_table_created(Table* table, const std::vector<int>& columns)
 
     acc_qname = table->get_accessor<text_column>("qname");
     acc_aname = table->get_accessor<text_column>("aname");
+
+    acc_edns0_ecs = table->get_accessor<bool_column>("edns0_ecs");
+    acc_edns0_ecs_family = table->get_accessor<int_column>("edns0_ecs_family");
+    acc_edns0_ecs_source = table->get_accessor<int_column>("edns0_ecs_source");
+    acc_edns0_ecs_scope = table->get_accessor<int_column>("edns0_ecs_scope");
+    acc_edns0_ecs_address = table->get_accessor<text_column>("edns0_ecs_address");
 }
 
 Packet::ParseResult Parse_dns::parse(Packet& packet, const std::vector<int>& columns, Row& destination_row, bool sample)
@@ -359,6 +371,31 @@ Packet::ParseResult Parse_dns::parse(Packet& packet, const std::vector<int>& col
 
         case COLUMN_ATTL:
             acc_attl.value(r) = header.ancount ? message.m_answer[0].ttl : 0;
+            break;
+
+        case COLUMN_EDNS0_ECS:
+            acc_edns0_ecs.value(r) = message.m_edns0_ecs ? 1 : 0;
+            break;
+
+        case COLUMN_EDNS0_ECS_FAMILY:
+            acc_edns0_ecs_family.value(r) = message.m_edns0_ecs_family;
+            break;
+
+        case COLUMN_EDNS0_ECS_SOURCE:
+            acc_edns0_ecs_source.value(r) = message.m_edns0_ecs_source;
+            break;
+
+        case COLUMN_EDNS0_ECS_SCOPE:
+            acc_edns0_ecs_scope.value(r) = message.m_edns0_ecs_scope;
+            break;
+
+        case COLUMN_EDNS0_ECS_ADDRESS:
+            if (message.m_edns0_ecs_addr_set && message.m_edns0_ecs_family == 1)
+                acc_edns0_ecs_address.value(r) = v4_addr2str(message.m_edns0_ecs_addr);
+            else if (message.m_edns0_ecs_addr_set && message.m_edns0_ecs_family == 2)
+                acc_edns0_ecs_address.value(r) = v6_addr2str(message.m_edns0_ecs_addr);
+            else
+                acc_edns0_ecs_address.value(r) = RefCountString::construct("");
             break;
         }
     }

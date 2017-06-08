@@ -80,7 +80,12 @@ static void usage(char* argv0, bool longversion)
                     "      ad\n"
                     "      do\n"
                     "      edns0\n"
-                    "      qr\n");
+                    "      qr\n"
+                    "      edns0_ecs\n"
+                    "      edns0_ecs_family\n"
+                    "      edns0_ecs_source\n"
+                    "      edns0_ecs_scope\n"
+                    "      edns0_ecs_address\n");
 }
 
 #ifdef WIN32
