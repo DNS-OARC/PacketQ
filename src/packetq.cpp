@@ -46,46 +46,56 @@ namespace packetq {
 
 static void usage(char* argv0, bool longversion)
 {
-    fprintf(stdout, "usage: %s [ --select | -s select-statement ] [ --port | -p httpportnumber ] [ --json | -j ] [ --csv | -c ] [ --table | -t ] [ --xml | -x ] [ --daemon | -d ] [ --webroot | -w webdir ] [ --pcaproot | -r pcapdir ] [ --help | -h ] [ --limit | -l ] [ --maxconn | -m ] pcapfile(s)...\n", argv0);
-    if (!longversion)
+    if (!longversion) {
+        fprintf(stdout,
+            "usage: %s [-vhjctxd] [-s stmt] [-l pkts] [-p port] [-w dir] [-r dir] [-m num] <pcapfile ...>\n",
+            argv0);
         return;
+    }
 
-    fprintf(stdout, "\n    sample:\n> packetq --csv -s \"select count(*) as mycount,protocol from dns group by protocol;\" myfile.pcap\n");
-    fprintf(stdout, "\n"
-                    "    column names for use in the sql statements:\n\n"
-                    "      qname\n"
-                    "      aname\n"
-                    "      msg_id\n"
-                    "      msg_size\n"
-                    "      opcode\n"
-                    "      rcode\n"
-                    "      extended_rcode\n"
-                    "      edns_version\n"
-                    "      z\n"
-                    "      udp_size\n"
-                    "      qd_count\n"
-                    "      an_count\n"
-                    "      ns_count\n"
-                    "      ar_count\n"
-                    "      qtype\n"
-                    "      qclass\n"
-                    "      atype\n"
-                    "      aclass\n"
-                    "      attl\n"
-                    "      aa\n"
-                    "      tc\n"
-                    "      rd\n"
-                    "      cd\n"
-                    "      ra\n"
-                    "      ad\n"
-                    "      do\n"
-                    "      edns0\n"
-                    "      qr\n"
-                    "      edns0_ecs\n"
-                    "      edns0_ecs_family\n"
-                    "      edns0_ecs_source\n"
-                    "      edns0_ecs_scope\n"
-                    "      edns0_ecs_address\n");
+    fprintf(stdout,
+        "usage: %s [options] pcapfile(s)...\n"
+        /* -o                description                                             .*/
+        "  --select statements |\n"
+        "  -s statement      Set the SQL statement, can be given multiple times.\n"
+        "  --limit packets |\n"
+        "  -l packets        Set maximum number of packets to process, from all\n"
+        "                    files and not per file.\n"
+        "  --version | -v    Display version and exit.\n"
+        "  --help | -h       Display this help.\n"
+        "\n"
+        "Output:\n"
+        "  --json | -j       JSON (default)\n"
+        "  --csv | -c        CSV\n"
+        "  --table | -t      Text table\n"
+        "  --xml | -x ]      XML\n"
+        "\n"
+        "Web Server:\n"
+        "  --daemon | -d     Run web server in daemon mode.\n"
+        "  --port number |\n"
+        "  -p number         Set the port number to listen on.\n"
+        "  --webroot dir |\n"
+        "  -w dir            Set the root directory for the web content.\n"
+        "  --pcaproot dir |\n"
+        "  -r dir            Set the root for the PCAP files to make available.\n"
+        "  --maxconn number |\n"
+        "  -m number         Set the maximum number of concurrent connections.\n"
+        "\n"
+        "example> packetq --csv -s \"select count(*) as mycount, protocol from dns group by protocol;\" myfile.pcap\n"
+        "\n"
+        "Packet fields (available in all tables):\n"
+        "  id, s, us, ether_type, src_addr, src_port, dst_addr, dst_port, protocol,\n"
+        "  ip_ttl, ip_version, fragments\n"
+        "\"dns\" table fields:\n"
+        "  qname, aname, msg_id, msg_size, opcode, rcode, extended_rcode,\n"
+        "  edns_version, z, udp_size, qd_count, an_count, ns_count, ar_count,\n"
+        "  qtype, qclass, atype, aclass, attl, aa, tc, rd, cd, ra, ad, do, edns0, qr,\n"
+        "  edns0_ecs, edns0_ecs_family, edns0_ecs_source, edns0_ecs_scope,\n"
+        "  edns0_ecs_address\n"
+        "\"icmp\" table fields:\n"
+        "  type, code, echo_identifier, echo_sequence, du_protocol, du_src_addr,\n"
+        "  du_dst_addr, desc\n",
+        argv0);
 }
 
 #ifdef WIN32
