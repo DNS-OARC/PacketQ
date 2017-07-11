@@ -1,5 +1,5 @@
 Name:           packetq
-Version:        1.3.1
+Version:        1.4.0
 Release:        1%{?dist}
 Summary:        A tool that provides a basic SQL-frontend to PCAP-files
 Group:          Productivity/Networking/DNS/Utilities
@@ -54,6 +54,31 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Jul 11 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 1.4.0-1
+- Release 1.4.0
+  * This release adds new fields for IP version and EDNS0 Client Subnet along
+    with documentation updates, new usage (`--help`) and a buffer overflow
+    check. Rework of the way OPT records are parsed has been done to make it
+    easier to add support for other EDNS options in the future.
+  * New fields:
+    - `ip_version`: The IP version as an int (4/6)
+    - `edns0_ecs`: A bool that is true if Client Subnet (RFC7871) was found
+    - `edns0_ecs_family`: An int with the address family
+    - `edns0_ecs_source`: An int with the source prefix length
+    - `edns0_ecs_scope`: An int with the scope prefix length
+    - `edns0_ecs_address`: A textual representation of the address
+  * Bugfix:
+    - `get_ushort()` in DNS parsing was not checking length of buffer before
+      accessing it.
+  * Commits:
+    0e7c34a Rewrote usage, add option descriptions, tables and fields
+    3943dda Update documentation and tests
+    f4b9464 Add IP_Version
+    0b309e6 ECS addresses and OPT RR parsing
+    875fd60 Correct type in documentation also
+    b5a91b7 Damn the common keyboard sequences...
+    358b9af Buf overflow check, move OPT RR parsing, rework EDNS0 ECS
+    d38fffc Add EDNS option codes and EDNS Client Subnet (ECS) support
 * Fri Jun 02 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 1.3.1-1
 - Release 1.3.1
   * This release add packaging files for DEB and RPM distributions and
