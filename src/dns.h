@@ -140,8 +140,10 @@ public:
         {
             offs = m.parse_dname(name, sizeof(name), offs);
             type = m.get_ushort(offs);
-            if (type == 41)
+            if (type == 41) {
                 m.m_opt_rr = this;
+                m.m_new_opt_rr = true;
+            }
             offs += 2;
             rr_class = m.get_ushort(offs);
             offs += 2;
@@ -165,6 +167,7 @@ public:
     RR m_authority[2];
     RR m_additional[2];
     RR* m_opt_rr;
+    bool m_new_opt_rr;
     int m_error;
     bool m_edns0;
     bool m_do;
@@ -172,11 +175,18 @@ public:
     int m_edns_version;
     int m_z;
     int m_udp_size;
+    bool m_edns0_ecs;
+    int m_edns0_ecs_family;
+    int m_edns0_ecs_source;
+    int m_edns0_ecs_scope;
+    in6addr_t m_edns0_ecs_addr;
+    bool m_edns0_ecs_addr_set;
 
     DNSMessage(unsigned char* data, int len, IP_header& head)
         : m_ip_header(head)
     {
         m_opt_rr = 0;
+        m_new_opt_rr = false;
         m_error = 0;
         m_data = data;
         m_length = len;
@@ -186,6 +196,11 @@ public:
         m_edns_version = 0;
         m_z = 0;
         m_udp_size = 0;
+        m_edns0_ecs = false;
+        m_edns0_ecs_family = 0;
+        m_edns0_ecs_source = 0;
+        m_edns0_ecs_scope = 0;
+        m_edns0_ecs_addr_set = false;
 
         parse();
     }
@@ -224,6 +239,75 @@ public:
             offs = savedoffs;
         out[p++] = 0;
         return offs;
+    }
+    void parse_opt_rr()
+    {
+        if (m_opt_rr) {
+            if (!m_edns0) {
+                m_edns0 = true;
+                unsigned long ttl = m_opt_rr->ttl;
+                m_do = (ttl >> 15) & 1;
+                m_extended_rcode = ttl >> 24;
+                m_edns_version = (ttl >> 16) & 0xff;
+                m_z = ttl & 0x7fff;
+                m_udp_size = m_opt_rr->rr_class;
+            }
+            if (((m_opt_rr->ttl >> 16) & 0xff) == 0 && m_opt_rr->rdlength > 0) {
+                // Parse this OPT RR that is EDNS0
+                int rdlen = m_opt_rr->rdlength,
+                    offs = m_opt_rr->doffs,
+                    opcode = 0,
+                    oplen = 0;
+
+                while (rdlen > 3) {
+                    // Minimum op code and length
+                    opcode = get_ushort(offs);
+                    oplen = get_ushort(offs + 2);
+                    offs += 4;
+                    rdlen -= 4;
+
+                    if (rdlen < oplen)
+                        break;
+
+                    if (opcode == 8 && !m_edns0_ecs && oplen > 3) {
+                        // ECS - Client Subnet - RFC7871
+                        m_edns0_ecs = true;
+                        m_edns0_ecs_family = get_ushort(offs);
+                        m_edns0_ecs_source = get_ubyte(offs + 2);
+                        m_edns0_ecs_scope = get_ubyte(offs + 3);
+
+                        int addrlen = (m_edns0_ecs_source / 8) + (m_edns0_ecs_source % 8 ? 1 : 0);
+                        int fill = 0;
+
+                        if (addrlen <= (oplen - 4)) {
+                            switch (m_edns0_ecs_family) {
+                            case 1:
+                                fill = 4;
+                                m_edns0_ecs_addr_set = true;
+                                break;
+                            case 2:
+                                fill = 16;
+                                m_edns0_ecs_addr_set = true;
+                                break;
+                            }
+
+                            int a, b;
+                            for (a = 0, b = 15; fill && b > -1; fill--, b--) {
+                                if (a < addrlen) {
+                                    m_edns0_ecs_addr.__in6_u.__u6_addr8[b] = get_ubyte(offs + 4 + a);
+                                    a++;
+                                } else {
+                                    m_edns0_ecs_addr.__in6_u.__u6_addr8[b] = 0;
+                                }
+                            }
+                        }
+                    }
+
+                    rdlen -= oplen;
+                    offs += oplen;
+                }
+            }
+        }
     }
     void parse()
     {
@@ -269,29 +353,13 @@ public:
                 m_error = offs;
                 return;
             }
-
-            if (m_opt_rr && !m_edns0) {
-                m_edns0 = true;
-                unsigned long ttl = m_opt_rr->ttl;
-                m_do = (ttl >> 15) & 1;
-                m_extended_rcode = ttl >> 24;
-                m_edns_version = (ttl >> 16) & 0xff;
-                m_z = ttl & 0x7fff;
-                m_udp_size = m_opt_rr->rr_class;
+            if (m_new_opt_rr) {
+                parse_opt_rr();
+                m_new_opt_rr = false;
             }
         }
         if (offs > m_length)
             m_error = offs;
-
-        if (m_opt_rr && !m_edns0) {
-            m_edns0 = true;
-            unsigned long ttl = m_opt_rr->ttl;
-            m_do = (ttl >> 15) & 1;
-            m_extended_rcode = ttl >> 24;
-            m_edns_version = (ttl >> 16) & 0xff;
-            m_z = ttl & 0x7fff;
-            m_udp_size = m_opt_rr->rr_class;
-        }
     }
 
     unsigned int get_ubyte(int offs)
@@ -303,9 +371,15 @@ public:
     // returns 16 bit number at byte offset offs
     unsigned int get_ushort(int offs)
     {
-        if (offs >= m_length)
+        if ((offs + 1) >= m_length)
             return 0;
         return (int(m_data[offs]) << 8) | int(m_data[offs + 1]);
+    }
+    uint32_t get_uint32(int offs)
+    {
+        if ((offs + 3) >= m_length)
+            return 0;
+        return (uint32_t(m_data[offs]) << 24) | (uint32_t(m_data[offs + 1]) << 16) | (uint32_t(m_data[offs + 2]) << 8) | uint32_t(m_data[offs + 3]);
     }
     bool get_bit(int offs, int bit)
     {
@@ -352,6 +426,11 @@ public:
         COLUMN_DO,
         COLUMN_EDNS0,
         COLUMN_QR,
+        COLUMN_EDNS0_ECS,
+        COLUMN_EDNS0_ECS_FAMILY,
+        COLUMN_EDNS0_ECS_SOURCE,
+        COLUMN_EDNS0_ECS_SCOPE,
+        COLUMN_EDNS0_ECS_ADDRESS,
     };
 
     Parse_dns();
@@ -389,6 +468,9 @@ private:
     Int_accessor acc_atype;
     Int_accessor acc_aclass;
     Int_accessor acc_attl;
+    Int_accessor acc_edns0_ecs_family;
+    Int_accessor acc_edns0_ecs_source;
+    Int_accessor acc_edns0_ecs_scope;
     Bool_accessor acc_qr;
     Bool_accessor acc_aa;
     Bool_accessor acc_tc;
@@ -398,10 +480,12 @@ private:
     Bool_accessor acc_ad;
     Bool_accessor acc_do;
     Bool_accessor acc_edns0;
+    Bool_accessor acc_edns0_ecs;
     Text_accessor acc_qname;
     Text_accessor acc_aname;
     Text_accessor acc_src_addr;
     Text_accessor acc_dst_addr;
+    Text_accessor acc_edns0_ecs_address;
 };
 
 } // namespace packetq

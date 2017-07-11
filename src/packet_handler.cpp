@@ -191,6 +191,7 @@ void IP_header::reset()
     dst_port = 0;
     proto = 0;
     ip_ttl = 0;
+    ip_version = 0;
     id = 0;
     length = 0;
 }
@@ -204,7 +205,7 @@ int IP_header::decode(unsigned char* data, int itype, int i_id)
     // ether frame done (ignored mac's)
     // ip
 
-    int ip_version = data[0] >> 4;
+    ip_version = data[0] >> 4;
     proto = 0;
     if (ip_version == 4) {
         if (ethertype == 0)
@@ -429,6 +430,7 @@ void IP_header_to_table::add_packet_columns(Packet_handler& packet_handler)
     packet_handler.add_packet_column("dst_addr", "", Coltype::_text, COLUMN_DST_ADDR);
     packet_handler.add_packet_column("protocol", "", Coltype::_int, COLUMN_PROTOCOL);
     packet_handler.add_packet_column("ip_ttl", "", Coltype::_int, COLUMN_IP_TTL);
+    packet_handler.add_packet_column("ip_version", "", Coltype::_int, COLUMN_IP_VERSION);
     packet_handler.add_packet_column("fragments", "", Coltype::_int, COLUMN_FRAGMENTS);
 }
 
@@ -439,6 +441,7 @@ void IP_header_to_table::on_table_created(Table* table, const std::vector<int>& 
     acc_ether_type = table->get_accessor<int_column>("ether_type");
     acc_protocol = table->get_accessor<int_column>("protocol");
     acc_ip_ttl = table->get_accessor<int_column>("ip_ttl");
+    acc_ip_version = table->get_accessor<int_column>("ip_version");
     acc_src_port = table->get_accessor<int_column>("src_port");
     acc_dst_port = table->get_accessor<int_column>("dst_port");
     acc_s = table->get_accessor<int_column>("s");
@@ -476,6 +479,10 @@ void IP_header_to_table::assign(Row* row, IP_header* head, const std::vector<int
 
         case COLUMN_IP_TTL:
             acc_ip_ttl.value(row) = head->ip_ttl;
+            break;
+
+        case COLUMN_IP_VERSION:
+            acc_ip_version.value(row) = head->ip_version;
             break;
 
         case COLUMN_SRC_PORT:
