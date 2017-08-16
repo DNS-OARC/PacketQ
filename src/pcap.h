@@ -37,15 +37,15 @@ public:
 
     Pcap_file(FILE* fp, bool take_over_fp = false)
     {
-        m_fp_owned = take_over_fp;
-        m_fp = fp;
-        m_reverse_order = false;
-        m_packetbuffer = 0;
+        m_fp_owned         = take_over_fp;
+        m_fp               = fp;
+        m_reverse_order    = false;
+        m_packetbuffer     = 0;
         m_packetbuffer_len = 0;
-        m_eof = false;
-        m_snapshot_length = 0;
-        m_link_layer_type = 0;
-        m_gzipped = false;
+        m_eof              = false;
+        m_snapshot_length  = 0;
+        m_link_layer_type  = 0;
+        m_gzipped          = false;
     }
     ~Pcap_file()
     {
@@ -87,7 +87,7 @@ public:
         }
 
         unsigned char* bufp = get_pbuffer(count + 400);
-        int r = get_bytes(bufp, count);
+        int            r    = get_bytes(bufp, count);
 
         if (r == count)
             return bufp;
@@ -126,7 +126,7 @@ public:
         if (buf.m_buffer_len == buf.m_buffer_pos) {
             buf.m_buffer_len = (int)fread(buf.m_buffer, 1, buf.m_nextread, m_fp);
             buf.m_buffer_pos = 0;
-            buf.m_nextread = sizeof(buf.m_buffer);
+            buf.m_nextread   = sizeof(buf.m_buffer);
         }
         if (m_gzipped) {
             if (m_zip.m_error || buf.m_buffer_len == buf.m_buffer_pos) {
@@ -139,7 +139,7 @@ public:
     }
     void set_gzipped()
     {
-        m_gzipped = true;
+        m_gzipped                 = true;
         m_filebuffer.m_buffer_pos = 0;
     }
     int flip16(unsigned short i)
@@ -173,30 +173,30 @@ public:
                 m_packetbuffer = 0;
             }
             m_packetbuffer_len = len + 4096;
-            m_packetbuffer = new unsigned char[m_packetbuffer_len];
+            m_packetbuffer     = new unsigned char[m_packetbuffer_len];
             if (!m_packetbuffer)
                 m_packetbuffer_len = 0;
         }
         return m_packetbuffer;
     }
     bool get_eof() { return m_eof; }
-    int get_link_layer_type() { return m_link_layer_type; }
+    int  get_link_layer_type() { return m_link_layer_type; }
 
 private:
-    int m_snapshot_length;
-    int m_link_layer_type;
-    bool m_reverse_order;
-    bool m_eof;
-    bool m_gzipped;
+    int   m_snapshot_length;
+    int   m_link_layer_type;
+    bool  m_reverse_order;
+    bool  m_eof;
+    bool  m_gzipped;
     FILE* m_fp;
-    bool m_fp_owned;
+    bool  m_fp_owned;
 
     unsigned char* m_packetbuffer;
-    int m_packetbuffer_len;
+    int            m_packetbuffer_len;
 
     Buffer m_filebuffer;
     Buffer m_zipbuffer;
-    Zip m_zip;
+    Zip    m_zip;
 };
 
 } // namespace packetq

@@ -70,11 +70,11 @@ bool Pcap_file::get_header()
 
 unsigned char* Pcap_file::get_packet(int& len, int& s, int& us)
 {
-    s = 0;
-    us = 0;
+    s   = 0;
+    us  = 0;
     len = 0;
-    s = get_int32();
-    us = get_int32();
+    s   = get_int32();
+    us  = get_int32();
     len = get_int32();
 
     // skip past reallen

@@ -47,21 +47,21 @@ namespace Coltype {
     };
 };
 
-typedef bool bool_column;
-static const int bool_size = sizeof(bool_column);
+typedef bool     bool_column;
+static const int bool_size  = sizeof(bool_column);
 static const int bool_align = ((sizeof(bool_column) / sizeof(void*)) + 1) * sizeof(void*);
 
-typedef int int_column;
-static const int int_size = sizeof(int_column);
+typedef int      int_column;
+static const int int_size  = sizeof(int_column);
 static const int int_align = ((sizeof(int_column) / sizeof(void*)) + 1) * sizeof(void*);
 
-typedef double float_column;
-static const int float_size = sizeof(float_column);
+typedef double   float_column;
+static const int float_size  = sizeof(float_column);
 static const int float_align = ((sizeof(float_column) / sizeof(void*)) + 1) * sizeof(void*);
 
 typedef RefCountString* text_column;
-static const int text_size = sizeof(text_column);
-static const int text_align = ((sizeof(text_column) / sizeof(void*)) + 1) * sizeof(void*);
+static const int        text_size  = sizeof(text_column);
+static const int        text_align = ((sizeof(text_column) / sizeof(void*)) + 1) * sizeof(void*);
 
 inline bool_column convert_column_to_bool(float_column v) { return v; }
 inline bool_column convert_column_to_bool(int_column v) { return v; }
@@ -89,27 +89,27 @@ inline float_column convert_column_to_float(text_column v)
 
 inline text_column convert_column_to_text(float_column v)
 {
-    const int bufsize = 50;
-    RefCountString* str = RefCountString::allocate(bufsize);
+    const int       bufsize = 50;
+    RefCountString* str     = RefCountString::allocate(bufsize);
     snprintf(str->data, bufsize, "%g", v);
     return str;
 }
 inline text_column convert_column_to_text(int_column v)
 {
-    const int bufsize = (sizeof(int_column) * 8 + 1) / 3 + 1;
-    RefCountString* str = RefCountString::allocate(bufsize);
+    const int       bufsize = (sizeof(int_column) * 8 + 1) / 3 + 1;
+    RefCountString* str     = RefCountString::allocate(bufsize);
     snprintf(str->data, bufsize, "%d", v);
     return str;
 }
 inline text_column convert_column_to_text(bool_column v)
 {
-    const int bufsize = 1 + 1;
-    RefCountString* str = RefCountString::allocate(bufsize);
+    const int       bufsize = 1 + 1;
+    RefCountString* str     = RefCountString::allocate(bufsize);
     if (v)
         str->data[0] = '1';
     else
         str->data[1] = '0';
-    str->data[1] = '\0';
+    str->data[1]     = '\0';
     return str;
 }
 inline text_column convert_column_to_text(text_column v)
@@ -126,31 +126,31 @@ class Variant {
 public:
     Variant()
     {
-        m_type = Coltype::_int;
+        m_type      = Coltype::_int;
         m_val.m_int = 0;
     }
 
     Variant(bool_column val)
     {
-        m_type = Coltype::_bool;
+        m_type       = Coltype::_bool;
         m_val.m_bool = val;
     }
 
     Variant(int_column val)
     {
-        m_type = Coltype::_int;
+        m_type      = Coltype::_int;
         m_val.m_int = val;
     }
 
     Variant(float_column val)
     {
-        m_type = Coltype::_float;
+        m_type        = Coltype::_float;
         m_val.m_float = val;
     }
 
     Variant(text_column val)
     {
-        m_type = Coltype::_text;
+        m_type       = Coltype::_text;
         m_val.m_text = val;
         m_val.m_text->inc_refcount();
     }
@@ -158,7 +158,7 @@ public:
     Variant(const Variant& other)
     {
         m_type = other.m_type;
-        m_val = other.m_val;
+        m_val  = other.m_val;
         if (m_type == Coltype::_text)
             m_val.m_text->inc_refcount();
     }
@@ -168,7 +168,7 @@ public:
     {
         // would be cleaner to use default constructor, but alas
         // constructor delegation requires GCC >= 4.7
-        m_type = Coltype::_int;
+        m_type      = Coltype::_int;
         m_val.m_int = 0;
 
         swap(*this, other);
@@ -272,8 +272,8 @@ public:
             return 0;
         }
         case (Coltype::_text): {
-            RefCountString* s = rhs.get_text();
-            auto res = strcmp(m_val.m_text->data, s->data);
+            RefCountString* s   = rhs.get_text();
+            auto            res = strcmp(m_val.m_text->data, s->data);
             s->dec_refcount();
             return res;
         }
@@ -309,10 +309,10 @@ public:
 
 private:
     union VariantUnion {
-        bool_column m_bool;
-        int_column m_int;
+        bool_column  m_bool;
+        int_column   m_int;
         float_column m_float;
-        text_column m_text;
+        text_column  m_text;
     };
 
     VariantUnion m_val;

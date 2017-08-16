@@ -37,7 +37,7 @@ public:
     };
     PacketQ()
     {
-        m_limit = 0;
+        m_limit  = 0;
         m_output = json;
     }
     void set_limit(int limit)
@@ -49,10 +49,10 @@ public:
         m_output = opt;
     }
     OutputOpts get_output() { return m_output; }
-    int get_limit() { return m_limit; }
+    int        get_limit() { return m_limit; }
 
 private:
-    int m_limit;
+    int        m_limit;
     OutputOpts m_output;
 };
 

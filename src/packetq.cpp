@@ -103,13 +103,13 @@ static void usage(char* argv0, bool longversion)
 #define PACKAGE_STRING "packetq"
 struct option {
     char* s;
-    int args;
-    int b;
-    char c;
+    int   args;
+    int   b;
+    char  c;
 };
 
 char* optarg = 0;
-int optind = 1;
+int   optind = 1;
 
 int getopt_long(int argc, char* argv[], const char* str, option* opt, int* option_index)
 {
@@ -150,10 +150,10 @@ using namespace packetq;
 int main(int argc, char* argv[])
 {
     signal(SIGPIPE, sigproc);
-    int port = 0;
-    int limit = 0;
-    int max_conn = 7;
-    bool daemon = false;
+    int  port     = 0;
+    int  limit    = 0;
+    int  max_conn = 7;
+    bool daemon   = false;
 
     init_packet_handlers(); // set up tables
 
@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
     int qcount = 0;
 
     while (1) {
-        int option_index;
+        int           option_index;
         struct option long_options[] = {
             { "select", 1, 0, 's' },
             { "limit", 1, 0, 'l' },

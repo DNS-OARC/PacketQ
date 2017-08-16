@@ -61,11 +61,11 @@ private:
 
     IP_header_to_table m_ip_helper;
 
-    Int_accessor acc_type;
-    Int_accessor acc_code;
-    Int_accessor acc_echo_identifier;
-    Int_accessor acc_echo_sequence;
-    Int_accessor acc_du_protocol;
+    Int_accessor  acc_type;
+    Int_accessor  acc_code;
+    Int_accessor  acc_echo_identifier;
+    Int_accessor  acc_echo_sequence;
+    Int_accessor  acc_du_protocol;
     Text_accessor acc_du_src_addr;
     Text_accessor acc_du_dst_addr;
     Text_accessor acc_desc;

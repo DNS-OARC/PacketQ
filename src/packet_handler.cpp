@@ -33,8 +33,8 @@
 
 namespace packetq {
 
-Payload g_payload;
-Output g_output;
+Payload  g_payload;
+Output   g_output;
 Str_conv converter;
 
 class Fragments {
@@ -58,14 +58,14 @@ public:
     Fragments(const Fragments& f)
     {
         //        printf( "copy Fragments\n" );
-        m_first = f.m_first;
+        m_first    = f.m_first;
         m_complete = f.m_complete;
-        m_frags = f.m_frags;
+        m_frags    = f.m_frags;
     }
     Fragments()
     {
         m_complete = 0;
-        m_frags = 0;
+        m_frags    = 0;
     }
     ~Fragments()
     {
@@ -80,10 +80,10 @@ public:
         m_frags++;
         if (head.fragments == 0)
             m_complete = head.offset + len;
-        bool complete = add_range(head.offset, head.offset + len);
+        bool complete  = add_range(head.offset, head.offset + len);
         memcpy((void*)&m_buffer[head.offset], data, len);
         if (complete) {
-            m_complete = head.offset + len;
+            m_complete        = head.offset + len;
             m_first.fragments = m_frags;
             return true;
         }
@@ -97,15 +97,15 @@ public:
         bool merged = true;
         // this is algorithmically horrid (hope there wont be tonnes of fragments)
         while (merged) {
-            merged = false;
-            std::list<Range>::iterator it = m_ranges.begin();
+            merged                          = false;
+            std::list<Range>::iterator it   = m_ranges.begin();
             std::list<Range>::iterator last = it;
             if (last == m_ranges.end())
                 break;
             it++;
             for (; it != m_ranges.end(); it++) {
                 if (last->endp1 == it->begin) {
-                    merged = true;
+                    merged      = true;
                     last->endp1 = it->endp1;
                     m_ranges.erase(it);
                     break;
@@ -118,10 +118,10 @@ public:
     }
 
     std::list<Range> m_ranges;
-    int m_complete;
-    int m_frags;
-    IP_header m_first;
-    unsigned char m_buffer[0x10000];
+    int              m_complete;
+    int              m_frags;
+    IP_header        m_first;
+    unsigned char    m_buffer[0x10000];
 };
 
 class Ident {
@@ -152,8 +152,8 @@ public:
     }
     in6addr_t m_dst_ip;
     in6addr_t m_src_ip;
-    int m_ident;
-    int m_protocol;
+    int       m_ident;
+    int       m_protocol;
 };
 
 class FragmentHandler {
@@ -161,10 +161,10 @@ public:
     void add_fragment(IP_header& head, unsigned char* data, int len, Packet& p)
     {
         Ident i;
-        i.m_src_ip = head.src_ip;
-        i.m_dst_ip = head.dst_ip;
-        i.m_protocol = head.proto;
-        i.m_ident = head.ident;
+        i.m_src_ip      = head.src_ip;
+        i.m_dst_ip      = head.dst_ip;
+        i.m_protocol    = head.proto;
+        i.m_ident       = head.ident;
         Fragments& frag = m_fragments[i];
         if (frag.add(head, data, len)) {
             p.m_ip_header = frag.m_first;
@@ -181,44 +181,47 @@ void IP_header::reset()
 {
     memset(&src_ip, 0, sizeof(in6addr_t));
     memset(&dst_ip, 0, sizeof(in6addr_t));
-    fragments = 0;
-    offset = 0;
-    ident = 0;
-    s = 0;
-    us = 0;
-    ethertype = 0;
-    src_port = 0;
-    dst_port = 0;
-    proto = 0;
-    ip_ttl = 0;
+    fragments  = 0;
+    offset     = 0;
+    ident      = 0;
+    s          = 0;
+    us         = 0;
+    ethertype  = 0;
+    src_port   = 0;
+    dst_port   = 0;
+    proto      = 0;
+    ip_ttl     = 0;
     ip_version = 0;
-    id = 0;
-    length = 0;
+    id         = 0;
+    length     = 0;
 }
 
 int IP_header::decode(unsigned char* data, int itype, int i_id)
 {
     reset();
     ethertype = itype;
-    id = i_id;
-    int len = 0;
+    id        = i_id;
+    int len   = 0;
     // ether frame done (ignored mac's)
     // ip
 
     ip_version = data[0] >> 4;
-    proto = 0;
+    proto      = 0;
     if (ip_version == 4) {
         if (ethertype == 0)
             ethertype = 0x800;
+
         int header_len = (data[0] & 0xf) * 4;
-        proto = data[9];
-        ip_ttl = data[8];
+        proto          = data[9];
+        ip_ttl         = data[8];
+
         src_ip.__in6_u.__u6_addr32[3] = get_int(&data[12]);
         dst_ip.__in6_u.__u6_addr32[3] = get_int(&data[16]);
+
         int totallen = get_short(&data[2]);
-        length = totallen - header_len;
-        int flags = get_short(&data[6]);
-        offset = (flags & 0x1fff) << 3;
+        length       = totallen - header_len;
+        int flags    = get_short(&data[6]);
+        offset       = (flags & 0x1fff) << 3;
         flags >>= 13;
         if (flags & 1)
             fragments = 1;
@@ -227,8 +230,10 @@ int IP_header::decode(unsigned char* data, int itype, int i_id)
     } else if (ip_version == 6) {
         if (ethertype == 0)
             ethertype = 0x86DD;
-        proto = data[6];
+
+        proto  = data[6];
         ip_ttl = data[7];
+
         src_ip.__in6_u.__u6_addr32[3] = get_int(&data[8]);
         src_ip.__in6_u.__u6_addr32[2] = get_int(&data[12]);
         src_ip.__in6_u.__u6_addr32[1] = get_int(&data[16]);
@@ -245,10 +250,10 @@ int IP_header::decode(unsigned char* data, int itype, int i_id)
         // process next headers - NOTE: there are 6 not 4
         while (proto == 0 || proto == 43 || proto == 44 || proto == 60) {
             if (proto == 44) {
-                offset = get_short(&data[2]) & 0xfff8;
+                offset    = get_short(&data[2]) & 0xfff8;
                 fragments = get_short(&data[2]) & 1;
             }
-            proto = data[0];
+            proto       = data[0];
             int hdr_len = data[1] + 8;
             data += hdr_len;
             len += hdr_len;
@@ -280,7 +285,7 @@ Packet::ParseResult Packet::parse(Packet_handler* handler, const std::vector<int
 bool Packet::parse_ethernet()
 {
     unsigned char* data = m_data;
-    int len = m_len;
+    int            len  = m_len;
     if (len < 14 + 5 * 4)
         return false; // check for etherframe size + ipv4 header
 
@@ -303,8 +308,8 @@ bool Packet::parse_ip(unsigned char* data, int len, int ethertype)
     if (len < 5 * 4)
         return false; // check for etherframe size + ipv4 header
 
-    int consumed = m_ip_header.decode(data, ethertype, m_id);
-    m_ip_header.s = m_s;
+    int consumed   = m_ip_header.decode(data, ethertype, m_id);
+    m_ip_header.s  = m_s;
     m_ip_header.us = m_us;
     data += consumed;
     len -= consumed;
@@ -332,9 +337,9 @@ bool Packet::parse_transport(unsigned char* data, int len)
         int dataoffs = 4 * (data[12] >> 4);
 
         unsigned char bits = data[13];
-        char syn = (bits >> 1) & 1;
-        char fin = (bits >> 0) & 1;
-        char rst = (bits >> 2) & 1;
+        char          syn  = (bits >> 1) & 1;
+        char          fin  = (bits >> 0) & 1;
+        char          rst  = (bits >> 2) & 1;
 
         // get the assembled TCP packet and remove the individual segments.
         data += dataoffs;
@@ -345,8 +350,8 @@ bool Packet::parse_transport(unsigned char* data, int len)
         }
 
         unsigned int rest = len;
-        data = assemble_tcp(g_payload, &m_ip_header.src_ip, &m_ip_header.dst_ip, m_ip_header.src_port, m_ip_header.dst_port, &rest, seq, data, rest, syn, fin, rst, ack);
-        len = rest;
+        data              = assemble_tcp(g_payload, &m_ip_header.src_ip, &m_ip_header.dst_ip, m_ip_header.src_port, m_ip_header.dst_port, &rest, seq, data, rest, syn, fin, rst, ack);
+        len               = rest;
     } else if (m_ip_header.proto == IPPROTO_UDP) {
         if (len < 4)
             return false;
@@ -365,7 +370,7 @@ bool Packet::parse_transport(unsigned char* data, int len)
 
     if (data) {
         m_data = data;
-        m_len = len;
+        m_len  = len;
         return true;
     }
 
@@ -388,10 +393,10 @@ Table* Packet_handler::create_table(const std::vector<int>& columns)
 void Packet_handler::add_packet_column(const char* name, const char* description, Coltype::Type type, int id)
 {
     Packet_column c;
-    c.name = name;
+    c.name        = name;
     c.description = description;
-    c.id = id;
-    c.type = type;
+    c.id          = id;
+    c.type        = type;
     packet_columns.push_back(c);
 }
 
@@ -436,18 +441,18 @@ void IP_header_to_table::add_packet_columns(Packet_handler& packet_handler)
 
 void IP_header_to_table::on_table_created(Table* table, const std::vector<int>& columns)
 {
-    acc_src_addr = table->get_accessor<text_column>("src_addr");
-    acc_dst_addr = table->get_accessor<text_column>("dst_addr");
+    acc_src_addr   = table->get_accessor<text_column>("src_addr");
+    acc_dst_addr   = table->get_accessor<text_column>("dst_addr");
     acc_ether_type = table->get_accessor<int_column>("ether_type");
-    acc_protocol = table->get_accessor<int_column>("protocol");
-    acc_ip_ttl = table->get_accessor<int_column>("ip_ttl");
+    acc_protocol   = table->get_accessor<int_column>("protocol");
+    acc_ip_ttl     = table->get_accessor<int_column>("ip_ttl");
     acc_ip_version = table->get_accessor<int_column>("ip_version");
-    acc_src_port = table->get_accessor<int_column>("src_port");
-    acc_dst_port = table->get_accessor<int_column>("dst_port");
-    acc_s = table->get_accessor<int_column>("s");
-    acc_us = table->get_accessor<int_column>("us");
-    acc_id = table->get_accessor<int_column>("id");
-    acc_fragments = table->get_accessor<int_column>("fragments");
+    acc_src_port   = table->get_accessor<int_column>("src_port");
+    acc_dst_port   = table->get_accessor<int_column>("dst_port");
+    acc_s          = table->get_accessor<int_column>("s");
+    acc_us         = table->get_accessor<int_column>("us");
+    acc_id         = table->get_accessor<int_column>("id");
+    acc_fragments  = table->get_accessor<int_column>("fragments");
 }
 
 void IP_header_to_table::assign(Row* row, IP_header* head, const std::vector<int>& columns)
