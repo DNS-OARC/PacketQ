@@ -42,12 +42,12 @@ public:
     }
     /// constructor taking source and destination adresses
     Stream_id(in6addr_t& src_ip,
-        in6addr_t& dst_ip,
-        unsigned short src_port,
-        unsigned short dst_port)
+        in6addr_t&       dst_ip,
+        unsigned short   src_port,
+        unsigned short   dst_port)
     {
-        m_src_ip = src_ip;
-        m_dst_ip = dst_ip;
+        m_src_ip   = src_ip;
+        m_dst_ip   = dst_ip;
         m_src_port = src_port;
         m_dst_port = dst_port;
     }
@@ -59,7 +59,7 @@ public:
     }
 
 private:
-    in6addr_t m_src_ip, m_dst_ip;
+    in6addr_t      m_src_ip, m_dst_ip;
     unsigned short m_src_port, m_dst_port;
 };
 
@@ -73,7 +73,7 @@ public:
     Data_segment(unsigned char* data, unsigned int len)
     {
         m_datasize = len;
-        m_data = new unsigned char[len];
+        m_data     = new unsigned char[len];
         for (unsigned int i = 0; i < len; i++) {
             m_data[i] = data[i];
         }
@@ -82,7 +82,7 @@ public:
     Data_segment(const Data_segment& other)
     {
         m_datasize = other.m_datasize;
-        m_data = new unsigned char[m_datasize];
+        m_data     = new unsigned char[m_datasize];
         for (unsigned int i = 0; i < m_datasize; i++) {
             m_data[i] = other.m_data[i];
         }
@@ -111,10 +111,10 @@ public:
     /// Constructor
     Stream()
     {
-        m_ser = g_count++;
+        m_ser     = g_count++;
         m_content = false;
-        m_nseq = false;
-        m_seq = 0;
+        m_nseq    = false;
+        m_seq     = 0;
     }
     /// add a datasegment to the stream
     /** If the segment has the expected sequence number
@@ -143,7 +143,7 @@ public:
     void erase()
     {
         m_content = false;
-        m_nseq = false;
+        m_nseq    = false;
         m_segments.clear();
     }
     /// return the streams data size
@@ -188,10 +188,10 @@ public:
     }
 
 private:
-    unsigned int m_seq;
-    int m_ser;
-    bool m_content;
-    bool m_nseq;
+    unsigned int            m_seq;
+    int                     m_ser;
+    bool                    m_content;
+    bool                    m_nseq;
     std::list<Data_segment> m_segments;
 
     static unsigned char m_buffer[0x10000];
@@ -207,23 +207,23 @@ std::map<Stream_id, Stream> g_tcp_streams;
  */
 unsigned char*
 assemble_tcp(
-    Payload& payload,
-    in6addr_t* src_ip,
-    in6addr_t* dst_ip,
+    Payload&       payload,
+    in6addr_t*     src_ip,
+    in6addr_t*     dst_ip,
     unsigned short src_port,
     unsigned short dst_port,
-    unsigned int* rest,
-    unsigned int seq,
+    unsigned int*  rest,
+    unsigned int   seq,
     unsigned char* data,
-    int len,
-    char syn,
-    char fin,
-    char rst,
-    char ack)
+    int            len,
+    char           syn,
+    char           fin,
+    char           rst,
+    char           ack)
 {
     Stream_id id(*src_ip, *dst_ip, src_port, dst_port);
-    Stream& str = g_tcp_streams[id];
-    bool data_avail = false;
+    Stream&   str        = g_tcp_streams[id];
+    bool      data_avail = false;
 
     if (!str.has_content()) {
         Data_segment seg(data, len);
@@ -243,16 +243,16 @@ assemble_tcp(
 
     data = 0;
     if (str.has_content()) {
-        int size = str.get_size();
-        unsigned char* buffer = str.get_buffer();
-        int dns_size = (int(buffer[0]) << 8) | buffer[1];
+        int            size     = str.get_size();
+        unsigned char* buffer   = str.get_buffer();
+        int            dns_size = (int(buffer[0]) << 8) | buffer[1];
 
         data_avail = (fin == 1) && (rst == 0);
         if (data_avail || dns_size + 2 == size) {
             *rest = size;
             if (*rest > 0xffff)
                 *rest = 0xffff;
-            data = (unsigned char*)payload.alloc(*rest);
+            data      = (unsigned char*)payload.alloc(*rest);
             memcpy(data, buffer, *rest);
             str.erase();
             g_tcp_streams.erase(id);

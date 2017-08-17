@@ -50,16 +50,16 @@
 
 namespace packetq {
 
-extern int g_allocs;
+extern int       g_allocs;
 static const int max_func_param = 4;
-extern bool verbose;
+extern bool      verbose;
 
 inline void vlog(const char* fmt, ...)
 {
     if (!verbose)
         return;
 
-    char string[1024];
+    char    string[1024];
     va_list ap;
 
     va_start(ap, fmt);
@@ -73,7 +73,7 @@ class Error {
 public:
     Error(const char* fmt, ...)
     {
-        char string[1024];
+        char    string[1024];
         va_list ap;
 
         va_start(ap, fmt);
@@ -129,7 +129,7 @@ private:
     class Item {
     public:
         std::string m_function;
-        int m_key;
+        int         m_key;
         bool operator<(const Item& r) const
         {
             if (m_key < r.m_key)
@@ -155,15 +155,15 @@ public:
     {
         Item i;
         i.m_function = table;
-        i.m_key = key;
-        m_lut[i] = value;
+        i.m_key      = key;
+        m_lut[i]     = value;
     }
 
     RefCountString* get_value(const char* table, int key)
     {
         Item i;
         i.m_function = table;
-        i.m_key = key;
+        i.m_key      = key;
         std::map<Item, std::string>::iterator it = m_lut.find(i);
         if (it != m_lut.end())
             // FIXME: we should store these strings in the first place
@@ -174,7 +174,7 @@ public:
 
 private:
     std::map<std::string, Table*> m_tables;
-    std::map<Item, std::string> m_lut;
+    std::map<Item, std::string>   m_lut;
 };
 
 extern DB g_db;
@@ -245,9 +245,9 @@ private:
             : m_allocator(allocator)
         {
             m_has_space = true;
-            m_used = 0;
-            m_stride = (sizeof(Buffer*) + m_allocator.m_size);
-            m_memory = (char*)calloc(m_stride, m_allocator.m_buffersize);
+            m_used      = 0;
+            m_stride    = (sizeof(Buffer*) + m_allocator.m_size);
+            m_memory    = (char*)calloc(m_stride, m_allocator.m_buffersize);
         }
         ~Buffer()
         {
@@ -262,10 +262,10 @@ private:
                 m_free_list.pop();
             }
             if (!obj && m_used < m_allocator.m_buffersize) {
-                char* ptr = &m_memory[m_stride * m_used++];
-                Buffer** b = (Buffer**)ptr;
-                *b = this;
-                obj = (T*)(&b[1]);
+                char*    ptr = &m_memory[m_stride * m_used++];
+                Buffer** b   = (Buffer**)ptr;
+                *b           = this;
+                obj          = (T*)(&b[1]);
             }
             m_has_space = true;
             if (!obj)
@@ -279,15 +279,15 @@ private:
             m_free_list.push(item);
         }
 
-        bool m_has_space;
-        int m_stride;
+        bool           m_has_space;
+        int            m_stride;
         std::stack<T*> m_free_list;
-        Allocator& m_allocator;
-        int m_used;
-        char* m_memory;
+        Allocator&     m_allocator;
+        int            m_used;
+        char*          m_memory;
     };
 
-    Buffer* m_curr_buffer;
+    Buffer*            m_curr_buffer;
     std::list<Buffer*> m_buffers;
 
     int m_buffersize;
@@ -303,21 +303,21 @@ public:
     // called at startup by DB
     static void init_defs()
     {
-        m_coldefs[Coltype::_bool].m_size = bool_size;
-        m_coldefs[Coltype::_bool].m_align = bool_align;
-        m_coldefs[Coltype::_int].m_size = int_size;
-        m_coldefs[Coltype::_int].m_align = int_align;
-        m_coldefs[Coltype::_float].m_size = float_size;
+        m_coldefs[Coltype::_bool].m_size   = bool_size;
+        m_coldefs[Coltype::_bool].m_align  = bool_align;
+        m_coldefs[Coltype::_int].m_size    = int_size;
+        m_coldefs[Coltype::_int].m_align   = int_align;
+        m_coldefs[Coltype::_float].m_size  = float_size;
         m_coldefs[Coltype::_float].m_align = float_align;
-        m_coldefs[Coltype::_text].m_size = text_size;
-        m_coldefs[Coltype::_text].m_align = text_align;
+        m_coldefs[Coltype::_text].m_size   = text_size;
+        m_coldefs[Coltype::_text].m_align  = text_align;
     }
-    std::string m_name;
+    std::string   m_name;
     Coltype::Type m_type;
-    Coldef& m_def;
-    bool m_hidden;
-    int m_id; // numeric id used by packet parsers for speed
-    int m_offset;
+    Coldef&       m_def;
+    bool          m_hidden;
+    int           m_id; // numeric id used by packet parsers for speed
+    int           m_offset;
 };
 
 // for accessing a field in a row
@@ -334,17 +334,17 @@ public:
     int m_offset;
 };
 
-typedef Accessor<bool_column> Bool_accessor;
-typedef Accessor<int_column> Int_accessor;
+typedef Accessor<bool_column>  Bool_accessor;
+typedef Accessor<int_column>   Int_accessor;
 typedef Accessor<float_column> Float_accessor;
-typedef Accessor<text_column> Text_accessor;
+typedef Accessor<text_column>  Text_accessor;
 
 // for writing a variant to a field in a row
 class GenericAccessor {
 public:
     void set(Row* row, const Variant& v);
 
-    int m_offset;
+    int           m_offset;
     Coltype::Type m_type;
 };
 
@@ -355,9 +355,9 @@ public:
         , m_dsize(0)
     {
         m_row_allocator = 0;
-        m_name = name ? name : "result";
-        m_qstring = query ? query : "";
-        m_curpos = 0;
+        m_name          = name ? name : "result";
+        m_qstring       = query ? query : "";
+        m_curpos        = 0;
     }
     ~Table()
     {
@@ -422,14 +422,14 @@ public:
     void limit(int limit, int offset = 0);
 
     std::vector<Column*> m_cols;
-    std::list<Row*> m_rows;
-    int m_curpos;
-    std::string m_name;
-    std::string m_qstring;
-    Allocator<Row>* m_row_allocator;
-    int m_rsize;
-    int m_dsize;
-    std::vector<int> m_text_column_offsets;
+    std::list<Row*>      m_rows;
+    int                  m_curpos;
+    std::string          m_name;
+    std::string          m_qstring;
+    Allocator<Row>*      m_row_allocator;
+    int                  m_rsize;
+    int                  m_dsize;
+    std::vector<int>     m_text_column_offsets;
 };
 
 #define ROW_DUMMY_SIZE 4
@@ -504,30 +504,43 @@ inline void GenericAccessor::set(Row* row, const Variant& v)
 class Token {
 public:
     enum Type {
-        _invalid = 0,
-        _label = 1,
-        _number = 2,
-        _op = 3,
-        _uop = 4,
-        _string = 5,
-        _column = 6,
-        _paren = 7,
-        _function = 8,
+        _invalid   = 0,
+        _label     = 1,
+        _number    = 2,
+        _op        = 3,
+        _uop       = 4,
+        _string    = 5,
+        _column    = 6,
+        _paren     = 7,
+        _function  = 8,
         _semicolon = 9,
-        _end = 10
+        _end       = 10
     };
 
     Token(const Type type, const char* token)
     {
-        m_type = type;
+        m_type  = type;
         m_token = token;
     }
-    const char* get_token() const { return m_token.c_str(); }
-    void set_token(const char* istr) { m_token = istr; }
-    const Type get_type() const { return m_type; }
-    void set_type(const Type type) { m_type = type; }
+    const char* get_token() const
+    {
+        return m_token.c_str();
+    }
+    void set_token(const char* istr)
+    {
+        m_token = istr;
+    }
+    const Type get_type() const
+    {
+        return m_type;
+    }
+    void set_type(const Type type)
+    {
+        m_type = type;
+    }
+
 private:
-    Type m_type;
+    Type        m_type;
     std::string m_token;
 };
 
@@ -536,9 +549,9 @@ public:
     static int is_binary(const char* str)
     {
         const char* bin_ops[] = { "||", "*", "/", "%", "+", "-", "<<", ">>", "&", "|", "<", "<=", ">", ">=", "=", "==", "!=", "<>", "is", "is not", "in", "like", "not like", "or", "and" };
-        int pre_ops[] = { 8, 7, 7, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1 };
-        int len = sizeof(bin_ops) / sizeof(const char*);
-        int idx = len - 1;
+        int         pre_ops[] = { 8, 7, 7, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1 };
+        int         len       = sizeof(bin_ops) / sizeof(const char*);
+        int         idx       = len - 1;
         while (idx >= 0) {
             if (cmpi(std::string(str), bin_ops[idx])) {
                 return pre_ops[idx];
@@ -551,13 +564,14 @@ public:
     OP(const OP& op)
         : Token(op.get_type(), op.get_token())
     {
-        for (int i = 0; i < max_param(); i++)
+        for (int i = 0; i < max_param(); i++) {
             m_param[i] = op.m_param[i];
-        m_left = op.m_left;
-        m_right = op.m_right;
-        m_row_index = op.m_row_index;
-        m_t = op.m_t;
-        m_name = op.m_name;
+        }
+        m_left                   = op.m_left;
+        m_right                  = op.m_right;
+        m_row_index              = op.m_row_index;
+        m_t                      = op.m_t;
+        m_name                   = op.m_name;
         m_has_aggregate_function = op.m_has_aggregate_function;
 
         precedence();
@@ -565,12 +579,13 @@ public:
     OP(const Token& tok)
         : Token(tok.get_type(), tok.get_token())
     {
-        for (int i = 0; i < max_param(); i++)
+        for (int i = 0; i < max_param(); i++) {
             m_param[i] = 0;
-        m_left = m_right = 0;
-        m_row_index = -1;
-        m_t = Coltype::_int;
-        m_name = "";
+        }
+        m_left = m_right         = 0;
+        m_row_index              = -1;
+        m_t                      = Coltype::_int;
+        m_name                   = "";
         m_has_aggregate_function = false;
 
         precedence();
@@ -591,8 +606,9 @@ public:
     }
     void clear_ptr()
     {
-        for (int i = 0; i < max_param(); i++)
+        for (int i = 0; i < max_param(); i++) {
             m_param[i] = 0;
+        }
         m_left = m_right = 0;
     }
     void precedence()
@@ -635,9 +651,9 @@ public:
     template <typename T>
     T add_intermediate_column(Table* table, std::string name_suffix, Coltype::Type type)
     {
-        std::string name = std::string(get_name()) + name_suffix;
-        Column* column = table->add_column(name.c_str(), type, -1, Column::HIDDEN);
-        T res;
+        std::string name   = std::string(get_name()) + name_suffix;
+        Column*     column = table->add_column(name.c_str(), type, -1, Column::HIDDEN);
+        T           res;
         res.m_offset = column->m_offset;
         return res;
     }
@@ -647,14 +663,14 @@ public:
     virtual void combine_aggregate(Row* base_row, Row* other_row);
     OP* compile(const std::vector<Table*>& tables,
         const std::vector<int>& search_order, Query& q);
-    int m_row_index;
-    std::string m_name;
-    int m_precedence;
-    OP* m_param[max_func_param];
-    OP* m_left;
-    OP* m_right;
+    int           m_row_index;
+    std::string   m_name;
+    int           m_precedence;
+    OP*           m_param[max_func_param];
+    OP*           m_left;
+    OP*           m_right;
     Coltype::Type m_t;
-    bool m_has_aggregate_function;
+    bool          m_has_aggregate_function;
 };
 
 ////////////////// column accessors
@@ -786,7 +802,7 @@ public:
         m_param[0]->evaluate(rows, str);
         m_param[1]->evaluate(rows, num);
 
-        int_column n = num.get_int();
+        int_column           n = num.get_int();
         RefCountStringHandle lookup(str.get_text());
         RefCountStringHandle r(g_db.get_value((*lookup)->data, n));
 
@@ -810,12 +826,15 @@ public:
         RefCountStringHandle src(str.get_text());
 
         int l = strlen((*src)->data);
-        RefCountStringHandle dest(RefCountString::allocate(l + 1));
         int p = 0;
+
+        RefCountStringHandle dest(RefCountString::allocate(l + 1));
+
         while ((*src)->data[p]) {
             char c = (*src)->data[p];
-            if (c >= 'A' && c <= 'Z')
+            if (c >= 'A' && c <= 'Z') {
                 c = c - 'A' + 'a';
+            }
             (*dest)->data[p] = c;
             p++;
         }
@@ -833,7 +852,7 @@ public:
     }
     void evaluate(Row** rows, Variant& v)
     {
-        char sep = '.';
+        char    sep = '.';
         Variant str, num;
         m_param[0]->evaluate(rows, str);
         m_param[1]->evaluate(rows, num);
@@ -842,21 +861,21 @@ public:
             Variant vsep;
             m_param[2]->evaluate(rows, vsep);
             RefCountStringHandle sep_text(vsep.get_text());
-            const char* s = (*sep_text)->data;
+            const char*          s = (*sep_text)->data;
             if (s)
                 sep = s[0];
         }
 
-        int n = num.get_int();
+        int                  n = num.get_int();
         RefCountStringHandle src(str.get_text());
-        const char* s = (*src)->data;
-        int l = strlen(s);
+        const char*          s = (*src)->data;
+        int                  l = strlen(s);
         if (!l) {
             RefCountStringHandle res(RefCountString::construct(""));
             v = *res;
             return;
         }
-        int p = l - 1;
+        int p     = l - 1;
         int found = 0, end = l, start = 0;
         if (n == 0)
             end = p + 1;
@@ -881,7 +900,7 @@ public:
         p = 0;
         while (start < end)
             buf[p++] = s[start++];
-        buf[p] = 0;
+        buf[p]       = 0;
 
         RefCountStringHandle res(RefCountString::construct(buf));
         v = *res;
@@ -938,7 +957,7 @@ public:
         : OP(op)
     {
         m_has_aggregate_function = true;
-        acc_min = add_intermediate_column<Int_accessor>(dest_table, ".min", Coltype::_int);
+        acc_min                  = add_intermediate_column<Int_accessor>(dest_table, ".min", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row** rows)
     {
@@ -966,7 +985,7 @@ public:
         : OP(op)
     {
         m_has_aggregate_function = true;
-        acc_min = add_intermediate_column<Float_accessor>(dest_table, ".min", Coltype::_float);
+        acc_min                  = add_intermediate_column<Float_accessor>(dest_table, ".min", Coltype::_float);
     }
     virtual void evaluate_aggregate_operands(Row** rows)
     {
@@ -994,7 +1013,7 @@ public:
         : OP(op)
     {
         m_has_aggregate_function = true;
-        acc_max = add_intermediate_column<Int_accessor>(dest_table, ".max", Coltype::_int);
+        acc_max                  = add_intermediate_column<Int_accessor>(dest_table, ".max", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row** rows)
     {
@@ -1022,7 +1041,7 @@ public:
         : OP(op)
     {
         m_has_aggregate_function = true;
-        acc_max = add_intermediate_column<Float_accessor>(dest_table, ".max", Coltype::_float);
+        acc_max                  = add_intermediate_column<Float_accessor>(dest_table, ".max", Coltype::_float);
     }
     virtual void evaluate_aggregate_operands(Row** rows)
     {
@@ -1050,9 +1069,9 @@ public:
         : OP(op)
     {
         m_has_aggregate_function = true;
-        acc_sum = add_intermediate_column<Float_accessor>(dest_table, ".sum", Coltype::_float);
-        acc_sum_sq = add_intermediate_column<Float_accessor>(dest_table, ".sumsquared", Coltype::_float);
-        acc_count = add_intermediate_column<Int_accessor>(dest_table, ".count", Coltype::_int);
+        acc_sum                  = add_intermediate_column<Float_accessor>(dest_table, ".sum", Coltype::_float);
+        acc_sum_sq               = add_intermediate_column<Float_accessor>(dest_table, ".sumsquared", Coltype::_float);
+        acc_count                = add_intermediate_column<Int_accessor>(dest_table, ".count", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row** rows)
     {
@@ -1060,30 +1079,31 @@ public:
         m_param[0]->evaluate(rows, p);
         float_column val = p.get_float();
 
-        acc_sum.value(rows[m_row_index]) = val;
+        acc_sum.value(rows[m_row_index])    = val;
         acc_sum_sq.value(rows[m_row_index]) = val * val;
-        acc_count.value(rows[m_row_index]) = 1;
+        acc_count.value(rows[m_row_index])  = 1;
     }
     virtual void combine_aggregate(Row* base_row, Row* next_row)
     {
-        acc_sum.value(base_row) = acc_sum.value(base_row) + acc_sum.value(next_row);
+        acc_sum.value(base_row)    = acc_sum.value(base_row) + acc_sum.value(next_row);
         acc_sum_sq.value(base_row) = acc_sum_sq.value(base_row) + acc_sum_sq.value(next_row);
-        acc_count.value(base_row) = acc_count.value(base_row) + acc_count.value(next_row);
+        acc_count.value(base_row)  = acc_count.value(base_row) + acc_count.value(next_row);
     }
     void evaluate(Row** rows, Variant& v)
     {
         Row* row = rows[m_row_index];
-        int c = acc_count.value(row);
-        if (c == 0)
+        int  c   = acc_count.value(row);
+        if (c == 0) {
             c = 1;
-        double mean = acc_sum.value(row) / c;
+        }
+        double mean     = acc_sum.value(row) / c;
         double variance = acc_sum_sq.value(row) / c - mean * mean;
 
         v = sqrt(variance);
     }
 
     Float_accessor acc_sum, acc_sum_sq;
-    Int_accessor acc_count;
+    Int_accessor   acc_count;
 };
 
 class Avg_func : public OP {
@@ -1092,19 +1112,19 @@ public:
         : OP(op)
     {
         m_has_aggregate_function = true;
-        acc_sum = add_intermediate_column<Float_accessor>(dest_table, ".sum", Coltype::_float);
-        acc_count = add_intermediate_column<Int_accessor>(dest_table, ".count", Coltype::_int);
+        acc_sum                  = add_intermediate_column<Float_accessor>(dest_table, ".sum", Coltype::_float);
+        acc_count                = add_intermediate_column<Int_accessor>(dest_table, ".count", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row** rows)
     {
         Variant p;
         m_param[0]->evaluate(rows, p);
-        acc_sum.value(rows[m_row_index]) = p.get_float();
+        acc_sum.value(rows[m_row_index])   = p.get_float();
         acc_count.value(rows[m_row_index]) = 1;
     }
     virtual void combine_aggregate(Row* base_row, Row* next_row)
     {
-        acc_sum.value(base_row) = acc_sum.value(base_row) + acc_sum.value(next_row);
+        acc_sum.value(base_row)   = acc_sum.value(base_row) + acc_sum.value(next_row);
         acc_count.value(base_row) = acc_count.value(base_row) + acc_count.value(next_row);
     }
     void evaluate(Row** rows, Variant& v)
@@ -1113,7 +1133,7 @@ public:
     }
 
     Float_accessor acc_sum;
-    Int_accessor acc_count;
+    Int_accessor   acc_count;
 };
 
 class Sum_func_int : public OP {
@@ -1122,7 +1142,7 @@ public:
         : OP(op)
     {
         m_has_aggregate_function = true;
-        acc_sum = add_intermediate_column<Int_accessor>(dest_table, ".sum", Coltype::_int);
+        acc_sum                  = add_intermediate_column<Int_accessor>(dest_table, ".sum", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row** rows)
     {
@@ -1148,7 +1168,7 @@ public:
         : OP(op)
     {
         m_has_aggregate_function = true;
-        acc_sum = add_intermediate_column<Float_accessor>(dest_table, ".sum", Coltype::_float);
+        acc_sum                  = add_intermediate_column<Float_accessor>(dest_table, ".sum", Coltype::_float);
     }
     virtual void evaluate_aggregate_operands(Row** rows)
     {
@@ -1174,7 +1194,7 @@ public:
         : OP(op)
     {
         m_has_aggregate_function = true;
-        acc_count = add_intermediate_column<Int_accessor>(dest_table, ".count", Coltype::_int);
+        acc_count                = add_intermediate_column<Int_accessor>(dest_table, ".count", Coltype::_int);
     }
     virtual void evaluate_aggregate_operands(Row** rows)
     {
@@ -1494,6 +1514,7 @@ public:
         m_left->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         RefCountStringHandle lhandle(lhs.get_text()), rhandle(rhs.get_text());
+
         const char* lhs_str = (*lhandle)->data;
         const char* rhs_str = (*rhandle)->data;
 
@@ -1510,16 +1531,16 @@ public:
 class Bin_op_like : public OP {
 private:
     regex_t m_re;
-    char m_re_str[RE_LEN];
-    bool m_compiled;
-    int m_err;
+    char    m_re_str[RE_LEN];
+    bool    m_compiled;
+    int     m_err;
 
 public:
     Bin_op_like(const OP& op)
         : OP(op)
         , m_re()
     {
-        m_err = 0;
+        m_err      = 0;
         m_compiled = false;
     }
     void regex_from_like(const char* s, char* r, int l)
@@ -1538,13 +1559,13 @@ public:
                     }
                 } else if (*s == '.') {
                     *r++ = '\\';
-                    *r = '.';
+                    *r   = '.';
                 } else if (*s == '*') {
                     *r++ = '\\';
-                    *r = '*';
+                    *r   = '*';
                 } else if (*s == '%') {
                     *r++ = '.';
-                    *r = '*';
+                    *r   = '*';
                 } else if (*s == '_') {
                     *r = '.';
                 } else {
@@ -1555,7 +1576,7 @@ public:
                 //		    printf("r: %s\n\n", start);
             }
             *r++ = '$';
-            *r = '\0';
+            *r   = '\0';
         }
         //	    printf("r: %s\n\n", start);
         //	    printf("Done\n\n");
@@ -1566,8 +1587,8 @@ public:
         m_left->evaluate(rows, lhs);
         m_right->evaluate(rows, rhs);
         RefCountStringHandle lhandle(lhs.get_text()), rhandle(rhs.get_text());
-        const char* lstr = (*lhandle)->data;
-        const char* rstr = (*rhandle)->data;
+        const char*          lstr = (*lhandle)->data;
+        const char*          rstr = (*rhandle)->data;
         if (!m_compiled) {
             m_compiled = true; // Set this before we try; no need to try again if we fail
             regex_from_like(rstr, m_re_str, RE_LEN);
@@ -1679,10 +1700,10 @@ public:
     public:
         OP_dir(OP* op, bool asc)
         {
-            m_op = op;
+            m_op  = op;
             m_asc = asc;
         }
-        OP* m_op;
+        OP*  m_op;
         bool m_asc;
     };
     bool exist()
@@ -1701,13 +1722,13 @@ public:
     Query(const char* name, const char* query)
     {
         m_sample = 0;
-        m_where = 0;
+        m_where  = 0;
         m_having = 0;
-        m_from = 0;
-        m_limit = -1;
+        m_from   = 0;
+        m_limit  = -1;
         m_offset = 0;
         m_result = new Table(name, query);
-        m_sql = query;
+        m_sql    = query;
     }
 
     ~Query()
@@ -1728,16 +1749,16 @@ public:
     void execute(Reader& reader);
 
     std::vector<OP*> m_select;
-    OP* m_where;
-    OP* m_having;
-    Ordering_terms m_order_by;
-    Ordering_terms m_group_by;
+    OP*              m_where;
+    OP*              m_having;
+    Ordering_terms   m_order_by;
+    Ordering_terms   m_group_by;
 
     int m_limit;
     int m_offset;
     int m_sample;
 
-    std::string m_from_name;
+    std::string      m_from_name;
     std::vector<int> m_used_from_column_ids;
 
     Table* m_from;
@@ -1763,7 +1784,7 @@ namespace std {
 
 // support for hashing std::vector<packetq::Variant>
 template <>
-struct hash<std::vector<packetq::Variant> > {
+struct hash<std::vector<packetq::Variant>> {
     size_t operator()(const std::vector<packetq::Variant>& seq) const
     {
         // combination procedure from boost::hash_combine

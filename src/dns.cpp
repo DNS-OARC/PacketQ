@@ -35,8 +35,9 @@ char visible_char_map[256];
 
 void fill_in_visible_char_map()
 {
-    for (int i = 0; i < 256; ++i)
+    for (int i = 0; i < 256; ++i) {
         visible_char_map[i] = isgraph(i) ? i : '$';
+    }
 }
 
 Parse_dns::Parse_dns()
@@ -187,41 +188,41 @@ void Parse_dns::on_table_created(Table* table, const std::vector<int>& columns)
 {
     m_ip_helper.on_table_created(table, columns);
 
-    acc_msg_id = table->get_accessor<int_column>("msg_id");
-    acc_msg_size = table->get_accessor<int_column>("msg_size");
-    acc_opcode = table->get_accessor<int_column>("opcode");
-    acc_rcode = table->get_accessor<int_column>("rcode");
+    acc_msg_id         = table->get_accessor<int_column>("msg_id");
+    acc_msg_size       = table->get_accessor<int_column>("msg_size");
+    acc_opcode         = table->get_accessor<int_column>("opcode");
+    acc_rcode          = table->get_accessor<int_column>("rcode");
     acc_extended_rcode = table->get_accessor<int_column>("extended_rcode");
-    acc_edns_version = table->get_accessor<int_column>("edns_version");
-    acc_z = table->get_accessor<int_column>("z");
-    acc_udp_size = table->get_accessor<int_column>("udp_size");
-    acc_qd_count = table->get_accessor<int_column>("qd_count");
-    acc_an_count = table->get_accessor<int_column>("an_count");
-    acc_ns_count = table->get_accessor<int_column>("ns_count");
-    acc_ar_count = table->get_accessor<int_column>("ar_count");
-    acc_qtype = table->get_accessor<int_column>("qtype");
-    acc_qclass = table->get_accessor<int_column>("qclass");
-    acc_atype = table->get_accessor<int_column>("atype");
-    acc_aclass = table->get_accessor<int_column>("aclass");
-    acc_attl = table->get_accessor<int_column>("attl");
+    acc_edns_version   = table->get_accessor<int_column>("edns_version");
+    acc_z              = table->get_accessor<int_column>("z");
+    acc_udp_size       = table->get_accessor<int_column>("udp_size");
+    acc_qd_count       = table->get_accessor<int_column>("qd_count");
+    acc_an_count       = table->get_accessor<int_column>("an_count");
+    acc_ns_count       = table->get_accessor<int_column>("ns_count");
+    acc_ar_count       = table->get_accessor<int_column>("ar_count");
+    acc_qtype          = table->get_accessor<int_column>("qtype");
+    acc_qclass         = table->get_accessor<int_column>("qclass");
+    acc_atype          = table->get_accessor<int_column>("atype");
+    acc_aclass         = table->get_accessor<int_column>("aclass");
+    acc_attl           = table->get_accessor<int_column>("attl");
 
-    acc_qr = table->get_accessor<bool_column>("qr");
-    acc_aa = table->get_accessor<bool_column>("aa");
-    acc_tc = table->get_accessor<bool_column>("tc");
-    acc_rd = table->get_accessor<bool_column>("rd");
-    acc_cd = table->get_accessor<bool_column>("cd");
-    acc_ra = table->get_accessor<bool_column>("ra");
-    acc_ad = table->get_accessor<bool_column>("ad");
-    acc_do = table->get_accessor<bool_column>("do");
+    acc_qr    = table->get_accessor<bool_column>("qr");
+    acc_aa    = table->get_accessor<bool_column>("aa");
+    acc_tc    = table->get_accessor<bool_column>("tc");
+    acc_rd    = table->get_accessor<bool_column>("rd");
+    acc_cd    = table->get_accessor<bool_column>("cd");
+    acc_ra    = table->get_accessor<bool_column>("ra");
+    acc_ad    = table->get_accessor<bool_column>("ad");
+    acc_do    = table->get_accessor<bool_column>("do");
     acc_edns0 = table->get_accessor<bool_column>("edns0");
 
     acc_qname = table->get_accessor<text_column>("qname");
     acc_aname = table->get_accessor<text_column>("aname");
 
-    acc_edns0_ecs = table->get_accessor<bool_column>("edns0_ecs");
-    acc_edns0_ecs_family = table->get_accessor<int_column>("edns0_ecs_family");
-    acc_edns0_ecs_source = table->get_accessor<int_column>("edns0_ecs_source");
-    acc_edns0_ecs_scope = table->get_accessor<int_column>("edns0_ecs_scope");
+    acc_edns0_ecs         = table->get_accessor<bool_column>("edns0_ecs");
+    acc_edns0_ecs_family  = table->get_accessor<int_column>("edns0_ecs_family");
+    acc_edns0_ecs_source  = table->get_accessor<int_column>("edns0_ecs_source");
+    acc_edns0_ecs_scope   = table->get_accessor<int_column>("edns0_ecs_scope");
     acc_edns0_ecs_address = table->get_accessor<text_column>("edns0_ecs_address");
 }
 
@@ -233,8 +234,8 @@ Packet::ParseResult Parse_dns::parse(Packet& packet, const std::vector<int>& col
     if (!sample)
         return Packet::NOT_SAMPLED;
 
-    unsigned char* ddata = packet.m_data;
-    int dlength = packet.m_len;
+    unsigned char* ddata   = packet.m_data;
+    int            dlength = packet.m_len;
 
     if (packet.m_ip_header.proto == IPPROTO_TCP) {
         int dns_size = (int(ddata[0]) << 8) | ddata[1];
@@ -246,8 +247,8 @@ Packet::ParseResult Parse_dns::parse(Packet& packet, const std::vector<int>& col
 
     DNSMessage message(ddata, dlength, packet.m_ip_header);
 
-    DNSMessage::Header& header = message.m_header;
-    IP_header& ip_header = message.m_ip_header;
+    DNSMessage::Header& header    = message.m_header;
+    IP_header&          ip_header = message.m_ip_header;
 
     if (message.m_error != 0)
         return Packet::ERROR;

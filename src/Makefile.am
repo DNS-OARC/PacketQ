@@ -22,6 +22,7 @@ MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
 SUBDIRS = test
 
 AM_CXXFLAGS = -I$(srcdir) \
+    -I$(srcdir)/Murmur \
     -I$(top_srcdir) \
     -std=c++0x \
     -Wall -Wno-parentheses -Wno-switch -Wno-sign-compare -Wno-char-subscripts
@@ -33,9 +34,6 @@ packetq_SOURCES = dns.cpp dns.h icmp.cpp icmp.h output.h packet_handler.cpp \
     reader.h refcountstring.h segzip.h server.cpp server.h sql.cpp sql.h \
     tcp.cpp tcp.h variant.h
 
-dist_packetq_SOURCES = MurmurHash3.cpp MurmurHash3.h
+dist_packetq_SOURCES = Murmur/MurmurHash3.cpp Murmur/MurmurHash3.h
 
 EXTRA_DIST = regression-test.sh
-
-fmt:
-	( cd $(srcdir) && clang-format-3.8 -style="{BasedOnStyle: webkit, IndentWidth: 4}" -i $(packetq_SOURCES) )
