@@ -116,6 +116,14 @@ public:
         char qname[0x2000];
         int  qtype;
         int  qclass;
+
+        Question()
+        {
+            qname[0] = 0;
+            qtype    = 0;
+            qclass   = 0;
+        }
+
         int parse(DNSMessage& m, int offs)
         {
             offs  = m.parse_dname(qname, sizeof(qname), offs);
@@ -135,6 +143,16 @@ public:
         unsigned int ttl;
         int          rdlength;
         int          doffs;
+
+        RR()
+        {
+            name[0]  = 0;
+            type     = 0;
+            rr_class = 0;
+            ttl      = 0;
+            rdlength = 0;
+            doffs    = 0;
+        }
 
         int parse(DNSMessage& m, int offs)
         {
