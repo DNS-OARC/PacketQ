@@ -35,9 +35,9 @@ namespace packetq {
 
 struct in6_addr {
     union {
-        unsigned char __u6_addr8[16];
+        unsigned char  __u6_addr8[16];
         unsigned short __u6_addr16[8];
-        unsigned int __u6_addr32[4];
+        unsigned int   __u6_addr32[4];
     } __in6_u; /* 128-bit IP6 address */
 };
 
@@ -49,19 +49,19 @@ class Payload;
     when 'fin' has been recieved
  */
 unsigned char* assemble_tcp(
-    Payload& payload,
-    in6addr_t* src_ip,
-    in6addr_t* dst_ip,
+    Payload&       payload,
+    in6addr_t*     src_ip,
+    in6addr_t*     dst_ip,
     unsigned short src_port,
     unsigned short dst_port,
-    unsigned int* rest,
-    unsigned int seq,
+    unsigned int*  rest,
+    unsigned int   seq,
     unsigned char* data,
-    int len,
-    char syn,
-    char fin,
-    char rst,
-    char ack);
+    int            len,
+    char           syn,
+    char           fin,
+    char           rst,
+    char           ack);
 
 } // namespace packetq
 

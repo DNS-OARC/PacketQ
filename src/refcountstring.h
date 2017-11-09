@@ -32,7 +32,7 @@
 // reference handling is possible.
 struct RefCountString {
     // data
-    int count;
+    int  count;
     char data[sizeof(int)]; // this is a dummy, actual array will be larger
 
     // implementation
@@ -57,14 +57,14 @@ struct RefCountString {
             throw std::bad_alloc();
 
         RefCountString* new_str = static_cast<RefCountString*>(chunk);
-        new_str->count = 1;
+        new_str->count          = 1;
         return new_str;
     }
 
     static RefCountString* construct(const char* c_string)
     {
-        std::size_t length = std::strlen(c_string);
-        RefCountString* str = RefCountString::allocate(length + 1);
+        std::size_t     length = std::strlen(c_string);
+        RefCountString* str    = RefCountString::allocate(length + 1);
         std::memcpy(str->data, c_string, length + 1);
         return str;
     }
@@ -73,7 +73,7 @@ struct RefCountString {
     {
         int length = to - from;
         if (length < 0)
-            length = 0;
+            length          = 0;
         RefCountString* str = RefCountString::allocate(length + 1);
         std::memcpy(str->data, data + from, length);
         str->data[length - 1 + 1] = '\0';

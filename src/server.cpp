@@ -73,8 +73,9 @@ namespace httpd {
         SocketPool()
         {
             m_free = 0;
-            for (int i = 0; i < FD_SETSIZE; i++)
+            for (int i = 0; i < FD_SETSIZE; i++) {
                 m_sockets[i] = 0;
+            }
             m_socket_count = 0;
         }
         int add(Socket* s)
@@ -97,13 +98,13 @@ namespace httpd {
             m_socket_count--;
         }
 
-        int get_sockets() { return m_socket_count; }
+        int  get_sockets() { return m_socket_count; }
         void select();
 
-        fd_set m_readset;
-        fd_set m_writeset;
-        int m_free;
-        int m_socket_count;
+        fd_set  m_readset;
+        fd_set  m_writeset;
+        int     m_free;
+        int     m_socket_count;
         Socket* m_sockets[FD_SETSIZE];
     };
 
@@ -133,8 +134,8 @@ namespace httpd {
                 delete[] m_buf;
             }
             unsigned char* m_buf;
-            int m_len;
-            int m_pos;
+            int            m_len;
+            int            m_pos;
         };
         Stream()
         {
@@ -155,11 +156,12 @@ namespace httpd {
             int p = 0;
             while (p < maxlen && m_len > 0) {
                 Buffer& buf = m_stream.front();
-                int l = maxlen - p;
+                int     l   = maxlen - p;
                 if (l > buf.m_len - buf.m_pos)
                     l = buf.m_len - buf.m_pos;
-                for (int i = 0; i < l; i++)
+                for (int i = 0; i < l; i++) {
                     data[p++] = buf.m_buf[buf.m_pos++];
+                }
                 m_len -= l;
                 if (l == 0) {
                     m_stream.pop_front();
@@ -174,14 +176,14 @@ namespace httpd {
         int get()
         {
             unsigned char c = '@';
-            int r = read(&c, 1);
+            int           r = read(&c, 1);
             if (r == 0)
                 return -1;
             return c;
         }
 
     private:
-        int m_len;
+        int                       m_len;
         std::list<Stream::Buffer> m_stream;
     };
 
@@ -202,13 +204,13 @@ namespace httpd {
                 exit(-1);
             }
 
-            m_bytes_written = 0;
-            m_bytes_read = 0;
-            m_serv = serv;
-            m_socket = s;
-            m_sidx = g_pool.add(this);
+            m_bytes_written    = 0;
+            m_bytes_read       = 0;
+            m_serv             = serv;
+            m_socket           = s;
+            m_sidx             = g_pool.add(this);
             m_close_when_empty = false;
-            m_file = 0;
+            m_file             = 0;
         }
         virtual ~Socket()
         {
@@ -223,7 +225,7 @@ namespace httpd {
             if (!read) {
                 on_write();
                 unsigned char ptr[4096];
-                int len;
+                int           len;
 
                 while (len = m_write.read(ptr, sizeof(ptr))) {
                     int res = write(m_socket, ptr, len);
@@ -265,7 +267,7 @@ namespace httpd {
         void set_delete()
         {
             m_close_when_empty = true;
-            m_want_write = false;
+            m_want_write       = false;
         }
         virtual void on_write()
         {
@@ -276,7 +278,7 @@ namespace httpd {
         int read_sock()
         {
             unsigned char buf[2000];
-            int len = 0;
+            int           len = 0;
             if ((len = recv(m_socket, buf, sizeof(buf) - 1, 0)) > 0) {
                 m_bytes_read += len;
                 buf[len] = 0;
@@ -301,11 +303,11 @@ namespace httpd {
             m_want_write = set;
         }
 
-        int m_bytes_written;
-        int m_bytes_read;
-        int m_socket;
-        int m_file;
-        int m_sidx;
+        int  m_bytes_written;
+        int  m_bytes_read;
+        int  m_socket;
+        int  m_file;
+        int  m_sidx;
         bool m_serv;
         bool m_want_write;
         bool m_close_when_empty;
@@ -332,7 +334,7 @@ namespace httpd {
             }
         }
         timeval timeout;
-        timeout.tv_sec = 30;
+        timeout.tv_sec  = 30;
         timeout.tv_usec = 0;
 
         int sel = ::select(max + 1, &m_readset, &m_writeset, 0, &timeout);
@@ -394,11 +396,11 @@ namespace httpd {
 
         int establish(unsigned short portnum)
         {
-            int s, res;
+            int         s, res;
             sockaddr_in sa;
             memset(&sa, 0, sizeof(struct sockaddr_in));
 
-            sa.sin_family = AF_INET;
+            sa.sin_family      = AF_INET;
             sa.sin_addr.s_addr = htonl(INADDR_ANY);
 
             sa.sin_port = htons(portnum);
@@ -494,11 +496,11 @@ namespace httpd {
                 return;
             }
             char cnt[100];
-            int n = m_counts[key];
+            int  n        = m_counts[key];
             m_counts[key] = n + 1;
 
             snprintf(cnt, sizeof(cnt) - 1, "%d", n);
-            cnt[99] = 0;
+            cnt[99]          = 0;
             std::string keyn = key;
             keyn += cnt;
             m_params[keyn] = val;
@@ -507,8 +509,8 @@ namespace httpd {
         std::string decode(std::string str)
         {
             std::string dst;
-            int percent_state = 0;
-            int code = 0;
+            int         percent_state = 0;
+            int         code          = 0;
             for (int i = 0; i < str.length(); i++) {
                 char c = str.c_str()[i];
                 if (percent_state) {
@@ -519,7 +521,7 @@ namespace httpd {
                         n = c - 'a' + 10;
                     if (c >= 'A' && c <= 'F')
                         n = c - 'A' + 10;
-                    code = (code << 4) | n;
+                    code  = (code << 4) | n;
                     percent_state--;
                     if (!percent_state) {
                         dst += char(code);
@@ -547,7 +549,7 @@ namespace httpd {
         std::string m_full;
         std::string m_path;
         std::map<std::string, std::string> m_params;
-        std::map<std::string, int> m_counts;
+        std::map<std::string, int>         m_counts;
     };
 
     class Page {
@@ -633,7 +635,7 @@ namespace httpd {
                 if (fp) {
                     printf(header, mimetype);
                     char buffer[8192];
-                    int len;
+                    int  len;
                     while ((len = fread(buffer, 1, 200, fp)) > 0) {
                         fwrite(buffer, 1, len, stdout);
                     }
@@ -671,7 +673,7 @@ namespace httpd {
 
         void resolve()
         {
-            const char* ip = m_url.get_param("ip");
+            const char* ip   = m_url.get_param("ip");
             const char* name = m_url.get_param("name");
 
             if (ip) {
@@ -682,7 +684,7 @@ namespace httpd {
 
                 struct addrinfo* result;
                 struct addrinfo* res;
-                int error;
+                int              error;
 
                 error = getaddrinfo(ip, NULL, NULL, &result);
                 if (error == 0) {
@@ -709,17 +711,17 @@ namespace httpd {
 
                 struct addrinfo* result;
                 struct addrinfo* res;
-                int error;
+                int              error;
 
-                error = getaddrinfo(name, NULL, NULL, &result);
-                char empty[] = "", line[] = ",\n";
+                error         = getaddrinfo(name, NULL, NULL, &result);
+                char  empty[] = "", line[] = ",\n";
                 char* sep = empty;
                 if (error == 0) {
                     for (res = result; res != NULL; res = res->ai_next) {
                         void* ptr = &((struct sockaddr_in*)res->ai_addr)->sin_addr;
                         if (res->ai_family == AF_INET6)
                             ptr = &((struct sockaddr_in6*)res->ai_addr)->sin6_addr;
-                        tmp[0] = 0;
+                        tmp[0]  = 0;
                         inet_ntop(res->ai_family, ptr, tmp, sizeof(tmp));
                         printf("%s\"%s\"", sep, tmp);
                         sep = line;
@@ -751,13 +753,13 @@ namespace httpd {
 
             printf("[\n");
             struct dirent* d;
-            struct stat statbuf;
+            struct stat    statbuf;
 
             char comma = ' ';
 
             while ((d = readdir(dir)) != 0) {
                 std::string subject = join_path(directory, d->d_name);
-                int fd = open(subject.c_str(), O_RDONLY);
+                int         fd      = open(subject.c_str(), O_RDONLY);
 
                 if (fd < 0)
                     continue;
@@ -772,14 +774,14 @@ namespace httpd {
                         comma = ',';
                     }
                 } else {
-                    bool found = false;
-                    FILE* fp = fdopen(fd, "rb");
+                    bool  found = false;
+                    FILE* fp    = fdopen(fd, "rb");
                     if (fp) {
                         Pcap_file pfile(fp);
                         if (pfile.get_header()) {
                             unsigned char* data = 0;
-                            int s = 0, us, len;
-                            data = pfile.get_packet(len, s, us);
+                            int            s    = 0, us, len;
+                            data                = pfile.get_packet(len, s, us);
                             if (data) {
                                 printf("  %c{\n     \"data\" : \"%s\",\n     \"attr\" : { \"id\" : \"%s\", \"size\": %d, \"time\": %d,\"type\": \"pcap\" },\n    \"children\" : []  }\n",
                                     comma, d->d_name, join_path(m_url.get_path(), d->d_name).substr(5).c_str(), int(statbuf.st_size), s);
@@ -855,15 +857,15 @@ namespace httpd {
             , m_http_version(0)
             , m_emptyline(0)
         {
-            m_state = get_post;
-            m_nextc = -1;
-            m_cr = false;
-            m_line = "";
-            m_url = "";
-            m_child_fd = 0;
-            m_child_pid = 0;
-            m_child_read = 0;
-            m_body_cnt = -1;
+            m_state       = get_post;
+            m_nextc       = -1;
+            m_cr          = false;
+            m_line        = "";
+            m_url         = "";
+            m_child_fd    = 0;
+            m_child_pid   = 0;
+            m_child_read  = 0;
+            m_body_cnt    = -1;
             m_content_len = 0;
         }
         ~Http_socket()
@@ -879,7 +881,7 @@ namespace httpd {
         }
         inline void print(const char* fmt, ...)
         {
-            char string[4096];
+            char    string[4096];
             va_list ap;
 
             va_start(ap, fmt);
@@ -898,7 +900,7 @@ namespace httpd {
         }
         int getc()
         {
-            int c = peek();
+            int c   = peek();
             m_nextc = -1;
             return c;
         }
@@ -926,7 +928,7 @@ namespace httpd {
                     m_cr = false;
                 } else {
                     bool cr = m_cr;
-                    m_cr = false;
+                    m_cr    = false;
                     if (c == 10 && cr) {
                         continue;
                     }
@@ -948,8 +950,8 @@ namespace httpd {
             set_want_write(false);
             if (m_state == wait_child) {
                 unsigned char buffer[4096];
-                int status;
-                bool done = true;
+                int           status;
+                bool          done = true;
                 if (0 == waitpid(m_child_pid, &status, WNOHANG)) {
                     done = false;
                 }
@@ -967,8 +969,8 @@ namespace httpd {
 
                     size_t res;
                     pollfd pfd;
-                    pfd.fd = m_child_fd;
-                    pfd.events = POLLIN;
+                    pfd.fd      = m_child_fd;
+                    pfd.events  = POLLIN;
                     pfd.revents = 0;
                     if (1 == poll(&pfd, 1, 0) && (pfd.revents & POLLIN != 0)) {
                         if ((res = read(m_child_fd, buffer, (int)sizeof(buffer))) > 0) {
@@ -983,7 +985,7 @@ namespace httpd {
                     if (m_child_fd) {
                         close(m_child_fd);
                         m_child_fd = 0;
-                        m_file = 0;
+                        m_file     = 0;
                     }
                     set_delete();
                 } else {
@@ -1005,7 +1007,7 @@ namespace httpd {
                     } else {
                         return;
                     }
-                    m_url = m_line.substr(4, p - 4);
+                    m_url   = m_line.substr(4, p - 4);
                     m_state = header;
                 } else if (m_line.find("POST ") != -1) {
                     if ((p = m_line.find(" HTTP/1.1")) != -1) {
@@ -1015,18 +1017,18 @@ namespace httpd {
                     } else {
                         return;
                     }
-                    m_url = m_line.substr(5, p - 5);
+                    m_url   = m_line.substr(5, p - 5);
                     m_state = header;
                 }
             } break;
             case (header):
                 if (m_line.length() == 0) {
                     m_body_cnt = 0;
-                    m_state = body;
+                    m_state    = body;
                 } else {
-                    int colon = m_line.find(": ");
-                    std::string key = m_line.substr(0, colon);
-                    std::string val = m_line.substr(colon + 2);
+                    int         colon = m_line.find(": ");
+                    std::string key   = m_line.substr(0, colon);
+                    std::string val   = m_line.substr(colon + 2);
                     if (key == "Content-Length") {
                         if (val.length() > 0)
                             m_content_len = atoi(val.c_str());
@@ -1081,24 +1083,24 @@ namespace httpd {
             } else {
                 close(fd[1]);
                 m_child_fd = fd[0];
-                m_file = m_child_fd;
-                m_state = wait_child;
+                m_file     = m_child_fd;
+                m_state    = wait_child;
             }
             set_want_write();
         }
         State m_state;
-        bool m_cr;
-        int m_body_cnt;
-        int m_content_len;
-        int m_nextc;
-        int m_child_pid;
-        int m_child_fd;
+        bool  m_cr;
+        int   m_body_cnt;
+        int   m_content_len;
+        int   m_nextc;
+        int   m_child_pid;
+        int   m_child_fd;
 
         int m_child_read;
 
         int m_http_version; // 0 = HTTP/1.0 1 = HTTP/1.1
 
-        int m_emptyline;
+        int         m_emptyline;
         std::string m_line;
         std::string m_url;
         std::string m_body;
@@ -1111,7 +1113,7 @@ using namespace httpd;
 void start_server(int port, bool fork_me, const std::string& pcaproot, const std::string& webroot, int max_conn)
 {
     pid_t pid, sid;
-    bool fg = !fork_me;
+    bool  fg = !fork_me;
 
     printf("listening on port %d\n", port);
 

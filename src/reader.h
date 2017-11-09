@@ -39,9 +39,9 @@ public:
     Reader(std::vector<std::string> filenames, int max_packets)
         : packets_read(0)
     {
-        this->filenames = filenames;
+        this->filenames         = filenames;
         this->currently_reading = filenames.end();
-        this->max_packets = max_packets;
+        this->max_packets       = max_packets;
     }
 
     void seek_to_start();
@@ -52,8 +52,8 @@ public:
 private:
     std::vector<std::string>::iterator currently_reading;
 
-    std::vector<std::string> filenames;
-    int max_packets, packets_read;
+    std::vector<std::string>   filenames;
+    int                        max_packets, packets_read;
     std::unique_ptr<Pcap_file> pcap;
 };
 

@@ -54,9 +54,9 @@ Column* Table::add_column(const char* name, const char* type, int id, bool hidde
 
 Column* Table::add_column(const char* name, Coltype::Type type, int id, bool hidden)
 {
-    Column* col = new Column(name, type, id, hidden);
+    Column* col   = new Column(name, type, id, hidden);
     col->m_offset = Table::align(m_curpos, col->m_def.m_align);
-    m_curpos = col->m_offset + col->m_def.m_size;
+    m_curpos      = col->m_offset + col->m_def.m_size;
     if (type == Coltype::_text)
         m_text_column_offsets.push_back(col->m_offset);
     m_cols.push_back(col);
@@ -72,8 +72,8 @@ void Table::delete_row(Row* row)
 Row* Table::create_row()
 {
     if (!m_row_allocator) {
-        m_rsize = sizeof(Row) - ROW_DUMMY_SIZE; // exclude the dummy
-        m_dsize = m_curpos;
+        m_rsize         = sizeof(Row) - ROW_DUMMY_SIZE; // exclude the dummy
+        m_dsize         = m_curpos;
         m_row_allocator = new Allocator<Row>(m_rsize + m_dsize, 10000);
     }
 
@@ -92,7 +92,7 @@ int g_comp = 0;
 void Ordering_terms::compile(const std::vector<Table*>& tables, const std::vector<int>& search_order, Query& q)
 {
     for (std::vector<Ordering_terms::OP_dir>::iterator it = m_terms.begin(); it != m_terms.end(); it++) {
-        OP* op = it->m_op;
+        OP* op   = it->m_op;
         it->m_op = op->compile(tables, search_order, q);
     }
 }
@@ -159,7 +159,7 @@ public:
         return 0;
     }
     Ordering_terms& m_order;
-    Variant m_a, m_b;
+    Variant         m_a, m_b;
 };
 
 struct Stki {
@@ -170,7 +170,7 @@ struct Stki {
 
 struct Spkt {
     Variant cache;
-    int row;
+    int     row;
 };
 
 class Per_sort {
@@ -184,11 +184,11 @@ public:
         }
 
         Tlink* get_eq() { return m_eq; }
-        void reset()
+        void   reset()
         {
             m_next = 0;
-            row = 0;
-            m_eq = 0;
+            row    = 0;
+            m_eq   = 0;
         }
         void add_eq(Tlink* o)
         {
@@ -196,32 +196,32 @@ public:
                 // add single
                 if (!m_eq) {
                     // as first
-                    m_eq = o;
+                    m_eq         = o;
                     o->m_eq_last = o;
                     return;
                 }
                 // to list
                 m_eq->m_eq_last->m_eq = o;
-                m_eq->m_eq_last = o;
+                m_eq->m_eq_last       = o;
                 return;
             } else {
                 // add list
                 if (!m_eq) {
                     // as first
-                    m_eq = o;
+                    m_eq         = o;
                     o->m_eq_last = o->m_eq->m_eq_last;
                     return;
                 }
                 // to list
                 m_eq->m_eq_last->m_eq = o;
-                m_eq->m_eq_last = o->m_eq->m_eq_last;
+                m_eq->m_eq_last       = o->m_eq->m_eq_last;
             }
         }
         union {
             Tlink* m_next;
             Tlink* m_eq_last;
         };
-        Row* row;
+        Row*    row;
         Variant cache;
 
     private:
@@ -231,11 +231,11 @@ public:
     public:
         void reset()
         {
-            m_size = 0;
+            m_size  = 0;
             m_fl[0] = 0;
             m_fl[1] = 0;
         }
-        int m_size;
+        int    m_size;
         Tlink* m_fl[2];
     };
     Per_sort(Table& table, Ordering_terms& order)
@@ -243,8 +243,8 @@ public:
         , m_table(table)
     {
         m_escalate_sort = order.m_terms.size() > 1;
-        m_asc = order.m_terms.begin()->m_asc ? 1 : -1;
-        m_op = order.m_terms.begin()->m_op;
+        m_asc           = order.m_terms.begin()->m_asc ? 1 : -1;
+        m_op            = order.m_terms.begin()->m_op;
         memset(m_groups, 0, sizeof(m_groups));
         m_current.reset();
     }
@@ -252,11 +252,11 @@ public:
     {
         if (list.m_fl[0] == 0) {
             list.m_fl[0] = list.m_fl[1] = t;
-            list.m_size = 1;
+            list.m_size                 = 1;
             return true;
         }
         list.m_fl[1]->m_next = t;
-        list.m_fl[1] = t;
+        list.m_fl[1]         = t;
         list.m_size++;
         return true;
     }
@@ -264,7 +264,7 @@ public:
     {
         if (list.m_fl[0] == 0) {
             list.m_fl[0] = list.m_fl[1] = t;
-            list.m_size = 1;
+            list.m_size                 = 1;
             return true;
         }
         int cmp0 = cmp(t, list.m_fl[0]);
@@ -273,7 +273,7 @@ public:
             return true;
         }
         if (cmp0 < 0) {
-            t->m_next = list.m_fl[0];
+            t->m_next    = list.m_fl[0];
             list.m_fl[0] = t;
             list.m_size++;
             return true;
@@ -285,7 +285,7 @@ public:
         }
         if (cmp1 > 0) {
             list.m_fl[1]->m_next = t;
-            list.m_fl[1] = t;
+            list.m_fl[1]         = t;
             list.m_size++;
             return true;
         }
@@ -309,7 +309,7 @@ public:
     inline void insert_list(List& l)
     {
         unsigned int size = l.m_size;
-        int offs = 0;
+        int          offs = 0;
         size >>= 1;
         while (size != 0) {
             offs++;
@@ -338,34 +338,34 @@ public:
         while (a && b) {
             int c = cmp(a, b);
             if (c == 0) {
-                Tlink* a2 = a;
-                Tlink* b2 = b;
-                a = a->m_next;
-                b = b->m_next;
+                Tlink* a2  = a;
+                Tlink* b2  = b;
+                a          = a->m_next;
+                b          = b->m_next;
                 a2->m_next = 0;
                 b2->m_next = 0;
                 a2->add_eq(b2);
                 add_to_list(r, a2);
                 size--;
             } else if (c < 0) {
-                Tlink* a2 = a;
-                a = a->m_next;
+                Tlink* a2  = a;
+                a          = a->m_next;
                 a2->m_next = 0;
                 add_to_list(r, a2);
             } else {
-                Tlink* b2 = b;
-                b = b->m_next;
+                Tlink* b2  = b;
+                b          = b->m_next;
                 b2->m_next = 0;
                 add_to_list(r, b2);
             }
         }
         if (a) {
             r.m_fl[1]->m_next = a;
-            r.m_fl[1] = l1.m_fl[1];
+            r.m_fl[1]         = l1.m_fl[1];
         }
         if (b) {
             r.m_fl[1]->m_next = b;
-            r.m_fl[1] = l2.m_fl[1];
+            r.m_fl[1]         = l2.m_fl[1];
         }
 
         l1.reset();
@@ -379,8 +379,8 @@ public:
         int table_size = (int)m_table.m_rows.size();
         if (table_size <= 1)
             return;
-        std::list<Row*>::iterator it = m_table.m_rows.begin();
-        Tlink* links = new Tlink[table_size];
+        std::list<Row*>::iterator it    = m_table.m_rows.begin();
+        Tlink*                    links = new Tlink[table_size];
 
         int i;
         for (i = 0; i < table_size; i++) {
@@ -404,8 +404,8 @@ public:
             }
         }
         Tlink* p = result.m_fl[0];
-        it = m_table.m_rows.begin();
-        int cnt = 0;
+        it       = m_table.m_rows.begin();
+        int cnt  = 0;
         while (p) {
             *it++ = p->row;
             cnt++;
@@ -413,7 +413,7 @@ public:
             while (e) {
                 cnt++;
                 *it++ = e->row;
-                e = e->get_eq();
+                e     = e->get_eq();
             }
             p = p->m_next;
         };
@@ -427,13 +427,13 @@ public:
         delete[] links;
     }
 
-    OP* m_op;
+    OP*    m_op;
     Sorter m_sorter;
-    bool m_escalate_sort;
-    int m_asc;
+    bool   m_escalate_sort;
+    int    m_asc;
     Table& m_table;
-    List m_groups[32];
-    List m_current;
+    List   m_groups[32];
+    List   m_current;
 };
 
 void Table::per_sort(Ordering_terms& order)
@@ -450,8 +450,8 @@ void Table::merge_sort(Ordering_terms& order)
     Sorter sorter(order);
 
     bool escalate_sort = order.m_terms.size() > 1;
-    int asc = order.m_terms.begin()->m_asc ? 1 : -1;
-    OP* op = order.m_terms.begin()->m_op;
+    int  asc           = order.m_terms.begin()->m_asc ? 1 : -1;
+    OP*  op            = order.m_terms.begin()->m_op;
 
     int table_size = (int)m_rows.size();
     if (table_size <= 1)
@@ -459,32 +459,32 @@ void Table::merge_sort(Ordering_terms& order)
     Row** row_ptrs = new Row*[table_size];
     Spkt* spktpool = new Spkt[table_size * 2];
     Spkt* rows[2];
-    rows[0] = spktpool;
-    rows[1] = &spktpool[table_size];
+    rows[0]                      = spktpool;
+    rows[1]                      = &spktpool[table_size];
     std::list<Row*>::iterator it = m_rows.begin();
 
-    int i = 0;
+    int   i = 0;
     Spkt* r = rows[0];
     for (i = 0; i < table_size; i += 2) {
 
         row_ptrs[i] = *it++;
-        r[i].row = i;
+        r[i].row    = i;
         // &row works under the assumption that m_op has been compiled with
         // this table only so row index is 0
         op->evaluate(&row_ptrs[r[i].row], r[i].cache);
         if (i + 1 < table_size) {
             row_ptrs[i + 1] = *it++;
-            r[i + 1].row = i + 1;
+            r[i + 1].row    = i + 1;
             op->evaluate(&row_ptrs[r[i + 1].row], r[i + 1].cache);
         }
     }
     int swap = 0;
 
-    Stki stack[64];
-    Stki* sp = stack;
-    sp->s = 0;
-    sp->l = 2;
-    sp->b = 1;
+    Stki  stack[64];
+    Stki* sp   = stack;
+    sp->s      = 0;
+    sp->l      = 2;
+    sp->b      = 1;
     rows[1][0] = rows[0][1];
     rows[1][1] = rows[0][0];
 
@@ -496,21 +496,21 @@ void Table::merge_sort(Ordering_terms& order)
         if (sp > stack && sp->l == sp[-1].l) {
             // two equal size -> merge
 
-            len = sp->l <<= 1;
+            len   = sp->l <<= 1;
             start = sp[-1].s;
-            swap = sp[-1].b;
+            swap  = sp[-1].b;
             sp--;
             sp--;
         } else {
             start = npos;
             npos += 2;
             swap = 0;
-            len = 2;
+            len  = 2;
         }
 
-        int cnt = start + len > table_size ? table_size - start : len;
-        Spkt* s = rows[swap];
-        Spkt* d = rows[1 - swap];
+        int   cnt = start + len > table_size ? table_size - start : len;
+        Spkt* s   = rows[swap];
+        Spkt* d   = rows[1 - swap];
         if (cnt > 0) {
             int p1 = start;
             int p2 = start + (len >> 1);
@@ -559,8 +559,8 @@ void Table::merge_sort(Ordering_terms& order)
 
 void Table::limit(int limit, int offset)
 {
-    int count = 0;
-    std::list<Row*>::iterator e = m_rows.end();
+    int                       count = 0;
+    std::list<Row*>::iterator e     = m_rows.end();
     for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
         if (e != m_rows.end()) {
             delete_row(*e);
@@ -584,10 +584,10 @@ void printrep(int n, char c)
     if (n >= 3000)
         return;
     char buf[3000];
-    int i;
-    for (i = 0; i < n; i++)
+    int  i;
+    for (i     = 0; i < n; i++)
         buf[i] = c;
-    buf[i] = 0;
+    buf[i]     = 0;
     printf("%s", buf);
 }
 
@@ -653,7 +653,7 @@ void Table::xml()
             int offset = c->m_offset;
 
             static const int bufsize = 100;
-            char buf[bufsize];
+            char             buf[bufsize];
 
             g_output.add_string("<td>");
             switch (c->m_type) {
@@ -748,8 +748,8 @@ void Table::json(bool trailing_comma)
         else
             g_output.add_string("\n      [");
         outer_comma = true;
-        bool comma = false;
-        Row* r = *it;
+        bool comma  = false;
+        Row* r      = *it;
 
         for (int i = 0; i < cols; i++) {
             Column* c = m_cols[i];
@@ -762,9 +762,9 @@ void Table::json(bool trailing_comma)
 
             comma = true;
 
-            int offset = c->m_offset;
+            int              offset  = c->m_offset;
             static const int bufsize = 100;
-            char buf[bufsize];
+            char             buf[bufsize];
 
             switch (c->m_type) {
             case Coltype::_bool:
@@ -797,8 +797,8 @@ void Table::json(bool trailing_comma)
 
 std::string qoute_string(const std::string& s)
 {
-    std::string r = "\"";
-    int len = s.length();
+    std::string r   = "\"";
+    int         len = s.length();
     for (int i = 0; i < len; i++) {
         if (s[i] == '"' || s[i] == '\\') {
             r += '\\';
@@ -811,13 +811,13 @@ std::string qoute_string(const std::string& s)
 
 void Table::csv(bool format)
 {
-    int cols = (int)m_cols.size();
+    int              cols = (int)m_cols.size();
     std::vector<int> col_len(cols);
 
-    for (int i = 0; i < cols; i++)
+    for (int i     = 0; i < cols; i++)
         col_len[i] = 0;
-    int max = 0;
-    char* tmp = 0;
+    int   max      = 0;
+    char* tmp      = 0;
     if (format) {
         for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
             Row* r = *it;
@@ -830,9 +830,9 @@ void Table::csv(bool format)
 
                 int len = 0;
 
-                int offset = c->m_offset;
+                int              offset  = c->m_offset;
                 static const int bufsize = 100;
-                char buf[bufsize];
+                char             buf[bufsize];
 
                 switch (c->m_type) {
                 case Coltype::_bool:
@@ -872,7 +872,7 @@ void Table::csv(bool format)
         tmp = new char[max + 1];
         for (int i = 0; i < max; i++)
             tmp[i] = 32;
-        tmp[max] = 0;
+        tmp[max]   = 0;
     }
 
     for (int i = 0; i < cols; i++) {
@@ -896,9 +896,9 @@ void Table::csv(bool format)
             if (c->m_hidden)
                 continue;
 
-            int offset = c->m_offset;
+            int              offset  = c->m_offset;
             static const int bufsize = 100;
-            char buf[bufsize];
+            char             buf[bufsize];
 
             std::string out;
 
@@ -934,8 +934,8 @@ void Table::csv(bool format)
 
 void Table::dump()
 {
-    int cols = (int)m_cols.size();
-    int width = 25;
+    int  cols  = (int)m_cols.size();
+    int  width = 25;
     char fmti[40];
     snprintf(fmti, sizeof(fmti) - 1, "%%%dd |", width);
     fmti[39] = 0;
@@ -964,8 +964,8 @@ void Table::dump()
         Row* r = *it;
 
         for (int i = 0; i < cols; i++) {
-            Column* c = m_cols[i];
-            int offset = c->m_offset;
+            Column* c      = m_cols[i];
+            int     offset = c->m_offset;
 
             switch (c->m_type) {
             case Coltype::_bool:
@@ -994,7 +994,7 @@ private:
     Token::Type m_last;
 
 public:
-    std::list<Token> m_tokens;
+    std::list<Token>                   m_tokens;
     typedef std::list<Token>::iterator Lit;
 
     Parser()
@@ -1019,7 +1019,7 @@ public:
     bool analyze(Query& q)
     {
         std::list<Token>::iterator it = m_tokens.begin();
-        bool ok = true;
+        bool                       ok = true;
         while (ok) {
             ok = false;
             if (get_sample_stmt(q, it))
@@ -1047,7 +1047,7 @@ public:
 
         it++;
         q.m_sample = sample;
-        i_iter = it;
+        i_iter     = it;
         return true;
     }
 
@@ -1082,7 +1082,7 @@ public:
 
     OP* get_result_column(std::list<Token>::iterator& it)
     {
-        OP* res = 0;
+        OP* res  = 0;
         Lit save = it;
         if (is(it, Token::_op, "*")) {
             it++;
@@ -1126,7 +1126,7 @@ public:
         if (!is(it, Token::_label, "select"))
             return false;
         it++;
-        bool again = true;
+        bool again   = true;
         bool success = true;
         while (again) {
             OP* op;
@@ -1302,10 +1302,10 @@ public:
     {
         std::stack<OP*> operator_stack;
         std::stack<OP*> operand_stack;
-        bool success = true;
-        bool expect_expr = true;
+        bool            success     = true;
+        bool            expect_expr = true;
         while (success) {
-            success = false;
+            success  = false;
             Lit save = it;
             Lit next = it;
             next++;
@@ -1315,7 +1315,7 @@ public:
                 OP* op = new OP(*it);
                 it++;
                 operand_stack.push(op);
-                success = true;
+                success     = true;
                 expect_expr = false;
                 continue;
             }
@@ -1328,7 +1328,7 @@ public:
                     throw Error("Got unary '%s' but could not parse following expression", op->get_token());
 
                 operand_stack.push(op);
-                success = true;
+                success     = true;
                 expect_expr = false;
                 continue;
             }
@@ -1356,7 +1356,7 @@ public:
                     throw Error("Expected ) after %s", func->get_token());
                 it++;
                 expect_expr = false;
-                success = true;
+                success     = true;
                 continue;
             }
             // match [[databasename .] table-name . ] column name
@@ -1384,7 +1384,7 @@ public:
                         it++;
                         operand_stack.push(op);
                         expect_expr = false;
-                        success = true;
+                        success     = true;
                         continue;
                     }
                     throw Error("Error in expression no )");
@@ -1410,10 +1410,10 @@ public:
                     operator_stack.pop();
                     if (operand_stack.size() >= 2) {
 
-                        OP* stk1 = operand_stack.top();
+                        OP* stk1          = operand_stack.top();
                         stack_op->m_right = stk1;
                         operand_stack.pop();
-                        OP* stk2 = operand_stack.top();
+                        OP* stk2         = operand_stack.top();
                         stack_op->m_left = stk2;
                         operand_stack.pop();
                         operand_stack.push(stack_op);
@@ -1422,7 +1422,7 @@ public:
 
                 operator_stack.push(bop);
                 it++;
-                success = true;
+                success     = true;
                 expect_expr = true;
                 continue;
             }
@@ -1432,10 +1432,10 @@ public:
             operator_stack.pop();
             if (bop) {
                 if (operand_stack.size() >= 2) {
-                    OP* stk = operand_stack.top();
+                    OP* stk      = operand_stack.top();
                     bop->m_right = stk;
                     operand_stack.pop();
-                    OP* stk2 = operand_stack.top();
+                    OP* stk2    = operand_stack.top();
                     bop->m_left = stk2;
                     operand_stack.pop();
                     operand_stack.push(bop);
@@ -1500,11 +1500,11 @@ public:
 
     bool lex(const char* i_str)
     {
-        const char* p = i_str;
-        State state = _white;
-        const char* strstart = 0;
-        bool is_escaped = false;
-        std::string str = "";
+        const char* p          = i_str;
+        State       state      = _white;
+        const char* strstart   = 0;
+        bool        is_escaped = false;
+        std::string str        = "";
 
         while (true) {
             switch (state) {
@@ -1544,13 +1544,13 @@ public:
                 if ((!is_escaped) && is_quote(*p)) {
                     if (!strstart) {
                         strstart = p;
-                        str = "";
+                        str      = "";
                     } else {
                         m_parser.push(Token::_string, str.c_str());
 
-                        str = "";
-                        strstart = 0;
-                        state = _unknown;
+                        str        = "";
+                        strstart   = 0;
+                        state      = _unknown;
                         is_escaped = false;
                     }
                     p++;
@@ -1583,11 +1583,11 @@ public:
                     if (!strstart)
                         throw Error("Numeric problem");
                     std::string label = strstart;
-                    label = label.substr(0, p - strstart);
+                    label             = label.substr(0, p - strstart);
                     m_parser.push(Token::_number, label.c_str());
 
                     strstart = 0;
-                    state = _unknown;
+                    state    = _unknown;
                 }
             } break;
             case (_label): {
@@ -1597,7 +1597,7 @@ public:
                     p++;
                 } else {
                     std::string label = strstart;
-                    label = label.substr(0, p - strstart);
+                    label             = label.substr(0, p - strstart);
 
                     Token::Type type = Token::_label;
                     if (cmpi(label, "is"))
@@ -1622,7 +1622,7 @@ public:
                     m_parser.push(type, label.c_str());
 
                     strstart = 0;
-                    state = _unknown;
+                    state    = _unknown;
                 }
 
             } break;
@@ -1635,7 +1635,7 @@ public:
             } break;
             case (_op): {
                 std::string s;
-                s = *p;
+                s      = *p;
                 char n = p[1];
                 switch (*p) {
                 case ('|'):
@@ -1765,7 +1765,7 @@ public:
 void Query::parse()
 {
     Parser p;
-    Lexer l(p);
+    Lexer  l(p);
     l.lex(m_sql.c_str());
     //		p.dump();
     if (!p.analyze(*this))
@@ -1775,14 +1775,14 @@ void Query::parse()
 // return column and index in tables, or 0 for column if column isn't found
 std::pair<Column*, int> lookup_column_in_tables(const std::vector<Table*>& tables,
     const std::vector<int>& search_order,
-    const char* name)
+    const char*             name)
 {
     if (strcmp(name, "*") == 0)
         return std::pair<Column*, int>((Column*)0, 0);
 
     for (auto i = search_order.begin(); i != search_order.end(); ++i) {
-        Table* table = tables[*i];
-        int col_index = table->get_col_index(name);
+        Table* table     = tables[*i];
+        int    col_index = table->get_col_index(name);
         if (col_index >= 0)
             return std::pair<Column*, int>(table->m_cols[col_index], *i);
     }
@@ -1817,9 +1817,9 @@ OP* OP::compile(const std::vector<Table*>& tables, const std::vector<int>& searc
     m_row_index = tables.size() - 1;
 
     if (get_type() == _column) {
-        auto lookup = lookup_column_in_tables(tables, search_order, get_token());
+        auto    lookup = lookup_column_in_tables(tables, search_order, get_token());
         Column* column = lookup.first;
-        m_row_index = lookup.second;
+        m_row_index    = lookup.second;
 
         if (!column)
             throw Error("Column '%s' not found", get_token());
@@ -1843,8 +1843,8 @@ OP* OP::compile(const std::vector<Table*>& tables, const std::vector<int>& searc
             break;
         }
     } else if (get_type() == _number) {
-        const char* p = get_token();
-        bool integer = true;
+        const char* p       = get_token();
+        bool        integer = true;
         while (*p != 0) {
             if (*p < '0' || *p > '9')
                 integer = false;
@@ -1868,7 +1868,7 @@ OP* OP::compile(const std::vector<Table*>& tables, const std::vector<int>& searc
             m_t = m_param[1]->m_t;
             if (m_param[2]->m_t > m_t)
                 m_t = m_param[2]->m_t;
-            ret = new If_func(*this);
+            ret     = new If_func(*this);
         } else if (cmpi(get_token(), "name") && m_param[1]) {
             m_t = Coltype::_text;
             ret = new Name_func(*this);
@@ -2227,7 +2227,7 @@ bool Query::has_aggregate_functions()
 void Query::execute(Reader& reader)
 {
     std::vector<Table*> tables;
-    std::vector<int> search_results_last, search_results_first, search_results_only;
+    std::vector<int>    search_results_last, search_results_first, search_results_only;
 
     // set up tables
     process_from();
@@ -2244,17 +2244,17 @@ void Query::execute(Reader& reader)
     search_results_only.push_back(tables.size() - 1);
 
     std::vector<Row*> row_ptrs(tables.size());
-    Row** rows = &row_ptrs[0];
+    Row**             rows = &row_ptrs[0];
 
     std::vector<GenericAccessor> result_accessors_vector;
 
     // compile
     for (auto i = m_select.begin(); i != m_select.end(); ++i) {
-        *i = (*i)->compile(tables, search_results_last, *this);
-        Column* col = m_result->add_column((*i)->get_name(), (*i)->ret_type());
+        *i                  = (*i)->compile(tables, search_results_last, *this);
+        Column*         col = m_result->add_column((*i)->get_name(), (*i)->ret_type());
         GenericAccessor a;
         a.m_offset = col->m_offset;
-        a.m_type = col->m_type;
+        a.m_type   = col->m_type;
         result_accessors_vector.push_back(a);
     }
 
@@ -2277,17 +2277,17 @@ void Query::execute(Reader& reader)
         std::vector<OP*> column_ops = find_unique_column_ops(ops);
 
         for (auto i = column_ops.begin(); i != column_ops.end(); ++i) {
-            const char* name = (*i)->get_token();
-            auto lookup = lookup_column_in_tables(tables, search_results_first, name);
+            const char* name   = (*i)->get_token();
+            auto        lookup = lookup_column_in_tables(tables, search_results_first, name);
             if (lookup.first and lookup.second < int(tables.size()) - 1) {
                 // found, but not in result table
                 OP* copying_op = new OP(**i);
-                copying_op = copying_op->compile(tables, search_results_last, *this);
+                copying_op     = copying_op->compile(tables, search_results_last, *this);
                 m_select.push_back(copying_op);
-                Column* col = m_result->add_column(copying_op->get_name(), copying_op->ret_type(), -1, Column::HIDDEN);
+                Column*         col = m_result->add_column(copying_op->get_name(), copying_op->ret_type(), -1, Column::HIDDEN);
                 GenericAccessor a;
                 a.m_offset = col->m_offset;
-                a.m_type = col->m_type;
+                a.m_type   = col->m_type;
                 result_accessors_vector.push_back(a);
             }
         }
@@ -2295,21 +2295,21 @@ void Query::execute(Reader& reader)
         // we only provide access to result table for "order by"; in order
         // to make the sort thing work correctly the result table currently
         // has to be at index 0
-        std::vector<Table*> tables_result_only = { m_result };
-        std::vector<int> tables_result_only_search = { 0 };
+        std::vector<Table*> tables_result_only        = { m_result };
+        std::vector<int>    tables_result_only_search = { 0 };
         m_order_by.compile(tables_result_only, tables_result_only_search, *this);
     }
 
     // execute
-    GenericAccessor* result_accessors = &result_accessors_vector[0];
-    bool aggregate_functions = has_aggregate_functions();
+    GenericAccessor* result_accessors    = &result_accessors_vector[0];
+    bool             aggregate_functions = has_aggregate_functions();
 
-    int count = 0;
+    int  count   = 0;
     bool limiter = !m_order_by.exist() && !m_group_by.exist() && !aggregate_functions && m_limit >= 0;
 
     if (m_from) {
-        bool first_row = true;
-        Packet_handler* handler = get_packet_handler(m_from_name);
+        bool            first_row = true;
+        Packet_handler* handler   = get_packet_handler(m_from_name);
 
         reader.seek_to_start();
 
@@ -2330,12 +2330,12 @@ void Query::execute(Reader& reader)
 
                 process_select(rows, rows[dest_i], result_accessors);
                 if (process_where(rows)) {
-                    auto key = process_group_by_key(m_group_by, rows);
+                    auto  key   = process_group_by_key(m_group_by, rows);
                     Row*& entry = groups[key];
                     if (entry) {
                         combine_aggregates_in_select(entry, rows[dest_i]);
                     } else {
-                        entry = rows[dest_i];
+                        entry        = rows[dest_i];
                         rows[dest_i] = 0;
                     }
                 }
@@ -2389,7 +2389,7 @@ void Query::execute(Reader& reader)
         m_from->delete_row(rows[src_i]);
     } else {
         const int dest_i = tables.size() - 1;
-        rows[dest_i] = m_result->create_row();
+        rows[dest_i]     = m_result->create_row();
         process_select(rows, rows[dest_i], result_accessors);
         if (process_where(rows))
             m_result->add_row(rows[dest_i]);
@@ -2421,7 +2421,7 @@ bool DB::query(const char* q)
 Table* DB::get_table(const char* i_name)
 {
     std::string name = lower(i_name);
-    Table* t = 0;
+    Table*      t    = 0;
     std::map<std::string, Table*>::iterator it = m_tables.find(name);
     if (it != m_tables.end())
         t = it->second;
@@ -2431,7 +2431,7 @@ Table* DB::get_table(const char* i_name)
 Table* DB::create_or_use_table(const char* i_name)
 {
     std::string name = lower(i_name);
-    Table* t = get_table(name.c_str());
+    Table*      t    = get_table(name.c_str());
     if (!t)
         t = create_table(name.c_str());
 
@@ -2439,8 +2439,8 @@ Table* DB::create_or_use_table(const char* i_name)
 }
 Table* DB::create_table(const char* i_name)
 {
-    std::string name = lower(i_name);
-    Table* t = new Table(name.c_str());
+    std::string name                    = lower(i_name);
+    Table*      t                       = new Table(name.c_str());
     m_tables[std::string(name.c_str())] = t;
 
     return t;
@@ -2460,9 +2460,9 @@ void Trim_func::evaluate(Row** rows, Variant& v)
     Variant str;
     m_param[0]->evaluate(rows, str);
     RefCountStringHandle str_handle(str.get_text());
-    const char* s = (*str_handle)->data;
+    const char*          s = (*str_handle)->data;
 
-    const char* t;
+    const char*          t;
     RefCountStringHandle trim_handle;
     if (m_param[1]) {
         Variant trim;
@@ -2478,7 +2478,7 @@ void Trim_func::evaluate(Row** rows, Variant& v)
         return;
     }
 
-    int slen = strlen(s);
+    int slen  = strlen(s);
     int start = 0, end = slen;
 
     // left trim

@@ -1,5 +1,5 @@
 Name:           packetq
-Version:        1.4.0
+Version:        1.4.1
 Release:        1%{?dist}
 Summary:        A tool that provides a basic SQL-frontend to PCAP-files
 Group:          Productivity/Networking/DNS/Utilities
@@ -54,6 +54,15 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Nov 09 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 1.4.1-1
+- Release 1.4.1
+  * Fixed an issue with the in-memory representation of DNS records which
+    was not initialized correctly and could cause the reuse of old data,
+    especially if the record was incomplete (such as FormErr).
+  * Commits:
+    6a790e6 Fix #61: Make sure variables are initialized
+    ed37b88 Update Murmur location
+    5afb576 Update code format and move Murmur into it's own dir
 * Tue Jul 11 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 1.4.0-1
 - Release 1.4.0
   * This release adds new fields for IP version and EDNS0 Client Subnet along

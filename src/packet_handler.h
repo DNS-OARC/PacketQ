@@ -66,7 +66,7 @@ RefCountString* v6_addr2str(in6addr_t& addr);
 class Payload {
 public:
     char m_p[0x10000];
-    int m_size;
+    int  m_size;
     Payload()
     {
         m_size = sizeof(m_p);
@@ -102,21 +102,21 @@ public:
 
     void reset();
     int decode(unsigned char* data, int ether_type, int id);
-    unsigned int s;
-    unsigned int us;
+    unsigned int   s;
+    unsigned int   us;
     unsigned short ethertype;
-    in6addr_t src_ip;
-    in6addr_t dst_ip;
+    in6addr_t      src_ip;
+    in6addr_t      dst_ip;
     unsigned short src_port;
     unsigned short dst_port;
     unsigned short proto;
     unsigned short ip_ttl;
     unsigned short ip_version;
-    unsigned int id;
-    unsigned int length;
-    unsigned int fragments;
-    unsigned int ident;
-    unsigned int offset;
+    unsigned int   id;
+    unsigned int   length;
+    unsigned int   fragments;
+    unsigned int   ident;
+    unsigned int   offset;
 };
 
 class Packet_handler;
@@ -143,16 +143,16 @@ public:
     void assign(Row* row, IP_header* head, const std::vector<int>& columns);
 
 private:
-    Int_accessor acc_id;
-    Int_accessor acc_s;
-    Int_accessor acc_us;
-    Int_accessor acc_ether_type;
-    Int_accessor acc_protocol;
-    Int_accessor acc_ip_ttl;
-    Int_accessor acc_ip_version;
-    Int_accessor acc_src_port;
-    Int_accessor acc_dst_port;
-    Int_accessor acc_fragments;
+    Int_accessor  acc_id;
+    Int_accessor  acc_s;
+    Int_accessor  acc_us;
+    Int_accessor  acc_ether_type;
+    Int_accessor  acc_protocol;
+    Int_accessor  acc_ip_ttl;
+    Int_accessor  acc_ip_version;
+    Int_accessor  acc_src_port;
+    Int_accessor  acc_dst_port;
+    Int_accessor  acc_fragments;
     Text_accessor acc_src_addr;
     Text_accessor acc_dst_addr;
 };
@@ -167,11 +167,11 @@ public:
 
     Packet(unsigned char* data, int len, int s, int us, int id, int link_layer_type)
     {
-        m_s = s;
-        m_us = us;
-        m_data = data;
-        m_len = len;
-        m_id = id;
+        m_s               = s;
+        m_us              = us;
+        m_data            = data;
+        m_len             = len;
+        m_id              = id;
         m_link_layer_type = link_layer_type;
     }
 
@@ -180,19 +180,19 @@ public:
     bool parse_ip(unsigned char* data, int len, int ether_type);
     bool parse_transport(unsigned char* data, int len);
 
-    IP_header m_ip_header;
+    IP_header      m_ip_header;
     unsigned char* m_data;
-    int m_len;
-    int m_s;
-    int m_us;
-    int m_id;
-    int m_link_layer_type;
+    int            m_len;
+    int            m_s;
+    int            m_us;
+    int            m_id;
+    int            m_link_layer_type;
 };
 
 struct Packet_column {
-    const char* name;
-    const char* description;
-    int id;
+    const char*   name;
+    const char*   description;
+    int           id;
     Coltype::Type type;
 };
 
@@ -212,14 +212,14 @@ public:
     virtual void on_table_created(Table* table, const std::vector<int>& columns) = 0;
     virtual Packet::ParseResult parse(Packet& packet, const std::vector<int>& columns, Row& destination_row, bool sample) = 0;
 
-    const char* table_name;
+    const char*                table_name;
     std::vector<Packet_column> packet_columns;
 
     void add_packet_column(const char* name, const char* description, Coltype::Type type, int id);
 };
 
-void init_packet_handlers();
-void destroy_packet_handlers();
+void            init_packet_handlers();
+void            destroy_packet_handlers();
 Packet_handler* get_packet_handler(std::string table_name);
 
 } // namespace packetq

@@ -30,8 +30,8 @@ namespace packetq {
 class Output {
     char m_buffer[0x10000];
     char m_diglut[0x100][4];
-    int m_len;
-    int m_tot;
+    int  m_len;
+    int  m_tot;
 
 public:
     Output()
@@ -74,7 +74,7 @@ public:
         while (c = *p++) {
             if (c == '\\') {
                 m_buffer[m_len++] = '\\';
-                c = '\\';
+                c                 = '\\';
             }
             if (c == '"') {
                 m_buffer[m_len++] = '\\';
@@ -166,17 +166,17 @@ public:
         m_buffer[m_len++] = '"';
 
         unsigned short digs[8];
-        unsigned char* p = addr;
-        int longest_run = 0;
-        int longest_p = 9;
-        int cur_run = 0;
+        unsigned char* p           = addr;
+        int            longest_run = 0;
+        int            longest_p   = 9;
+        int            cur_run     = 0;
         for (int i = 0; i < 8; i++) {
             digs[i] = ((unsigned short)(p[0]) << 8) | (unsigned short)(p[1]);
             if (digs[i] == 0) {
                 cur_run++;
                 if ((cur_run > 1) && (cur_run > longest_run)) {
                     longest_run = cur_run;
-                    longest_p = i + 1 - cur_run;
+                    longest_p   = i + 1 - cur_run;
                 }
             } else
                 cur_run = 0;
@@ -189,7 +189,7 @@ public:
                 if (i == longest_p) {
                     if (i == 0)
                         m_buffer[m_len++] = ':';
-                    m_buffer[m_len++] = ':';
+                    m_buffer[m_len++]     = ':';
                 }
             } else {
                 add_hex_ushort(digs[i]);
@@ -243,9 +243,9 @@ public:
             char* cd = d;
             while (i > 0) {
                 unsigned int n = i;
-                i = i / 100;
-                n = n - (i * 100);
-                *cd++ = n;
+                i              = i / 100;
+                n              = n - (i * 100);
+                *cd++          = n;
             }
             if (cd != d) {
                 char t = *--cd;
@@ -298,8 +298,8 @@ private:
 class Str_conv {
     char m_buffer[0x10000];
     char m_diglut[0x100][4];
-    int m_len;
-    int m_tot;
+    int  m_len;
+    int  m_tot;
 
 public:
     Str_conv()
@@ -319,22 +319,22 @@ public:
         m_buffer[m_len] = 0;
         return m_buffer;
     }
-    int get_len() { return m_len; }
-    void reset() { m_len = 0; }
+    int         get_len() { return m_len; }
+    void        reset() { m_len = 0; }
     inline void add_attr_ipv6(unsigned char* addr)
     {
         unsigned short digs[8];
-        unsigned char* p = &addr[14];
-        int longest_run = 0;
-        int longest_p = 9;
-        int cur_run = 0;
+        unsigned char* p           = &addr[14];
+        int            longest_run = 0;
+        int            longest_p   = 9;
+        int            cur_run     = 0;
         for (int i = 0; i < 8; i++) {
             digs[i] = ((unsigned short)(p[1]) << 8) | (unsigned short)(p[0]);
             if (digs[i] == 0) {
                 cur_run++;
                 if ((cur_run > 1) && (cur_run > longest_run)) {
                     longest_run = cur_run;
-                    longest_p = i + 1 - cur_run;
+                    longest_p   = i + 1 - cur_run;
                 }
             } else
                 cur_run = 0;
@@ -347,7 +347,7 @@ public:
                 if (i == longest_p) {
                     if (i == 0)
                         m_buffer[m_len++] = ':';
-                    m_buffer[m_len++] = ':';
+                    m_buffer[m_len++]     = ':';
                 }
             } else {
                 add_hex_ushort(digs[i]);

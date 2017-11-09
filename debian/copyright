@@ -11,7 +11,7 @@ Files: debian/*
 Copyright: 2017 Jerry Lundström <lundstrom.jerry@gmail.com>
 License: GPLv3
 
-Files: src/MurmurHash3.*
+Files: src/Murmur/MurmurHash3.*
 Copyright: Austin Appleby
 License: Public Domain
 
