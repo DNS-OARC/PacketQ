@@ -1,3 +1,19 @@
+packetq (1.4.1-1~unstable+1) unstable; urgency=low
+
+  * Release 1.4.1
+
+    Fixed an issue with the in-memory representation of DNS records which
+    was not initialized correctly and could cause the reuse of old data,
+    especially if the record was incomplete (such as FormErr).
+
+    Commits:
+
+    6a790e6 Fix #61: Make sure variables are initialized
+    ed37b88 Update Murmur location
+    5afb576 Update code format and move Murmur into it's own dir
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Thu, 09 Nov 2017 07:52:35 +0100
+
 packetq (1.4.0-1~unstable+1) unstable; urgency=low
 
   * Release 1.4.0
