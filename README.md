@@ -33,7 +33,7 @@ environment with Autoconf and Automake.
 
 To install the dependencies under Debian/Ubuntu:
 ```
-apt-get install -y zlib1g-dev
+apt-get install -y zlib1g-dev autoconf
 ```
 
 To install the dependencies under CentOS (with EPEL enabled):
