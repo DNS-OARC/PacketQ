@@ -1,10 +1,13 @@
+dist: xenial
+addons:
+  apt:
+    update: true
+    packages:
+    - zlib1g-dev
 language: cpp
 compiler:
   - clang
   - gcc
-before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -y zlib1g-dev
 install: ./autogen.sh
 script:
   - ./configure
