@@ -12,9 +12,7 @@ BuildRequires:  zlib-devel
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  libtool
-%if 0%{?suse_version} || 0%{?sle_version}
 BuildRequires:  gcc-c++
-%endif
 
 %description
 packetq is a command line tool to run SQL queries directly on PCAP files,
