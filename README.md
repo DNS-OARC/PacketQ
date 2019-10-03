@@ -46,17 +46,21 @@ yum install -y zlib-devel
 ```
 git clone https://github.com/DNS-OARC/PacketQ.git
 cd PacketQ
-sh autogen.sh
-./configure
+./autogen.sh
+./configure [options]
 make
 make install
 ```
 
-## Build from tarball
+## Building from source tarball
+
+The [source tarball from DNS-OARC](https://www.dns-oarc.net/tools/packetq)
+comes prepared with `configure`:
 
 ```
-cd packetq-VERSION...
-./configure
+tar zxvf packetq-version.tar.gz
+cd packetq-version
+./configure [options]
 make
 make install
 ```
