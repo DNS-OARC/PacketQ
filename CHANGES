@@ -1,3 +1,18 @@
+2020-03-02 Jerry Lundström
+
+    Release 1.4.2
+
+    Updated list of DNS resource types and work on CI and packaging.
+
+    Commits:
+    4bdb9e3 Add missing rr types
+    7c529ed README
+    d610061 COPR, spec
+    96763d8 Package
+    5aa5984 Funding
+    377be2d spec
+    a0b5fb7 Travis-CI
+
 2017-11-09 Jerry Lundström
 
     Release 1.4.1

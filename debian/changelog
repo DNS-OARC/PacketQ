@@ -1,3 +1,20 @@
+packetq (1.4.2-1~unstable+1) unstable; urgency=low
+
+  * Release 1.4.2
+
+    Updated list of DNS resource types and work on CI and packaging.
+
+    Commits:
+    4bdb9e3 Add missing rr types
+    7c529ed README
+    d610061 COPR, spec
+    96763d8 Package
+    5aa5984 Funding
+    377be2d spec
+    a0b5fb7 Travis-CI
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Mon, 02 Mar 2020 13:01:38 +0100
+
 packetq (1.4.1-1~unstable+1) unstable; urgency=low
 
   * Release 1.4.1

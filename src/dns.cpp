@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, OARC, Inc.
+ * Copyright (c) 2017-2020, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -143,15 +143,28 @@ void Parse_dns::add_lookup_tables()
     g_db.add_lut("qtype", 49, "DHCID");
     g_db.add_lut("qtype", 50, "NSEC3");
     g_db.add_lut("qtype", 51, "NSEC3PARAM");
+    g_db.add_lut("qtype", 52, "TLSA");
+    g_db.add_lut("qtype", 53, "SMIMEA");
     g_db.add_lut("qtype", 55, "HIP");
     g_db.add_lut("qtype", 56, "NINFO");
     g_db.add_lut("qtype", 57, "RKEY");
     g_db.add_lut("qtype", 58, "TALINK");
+    g_db.add_lut("qtype", 59, "CDS");
+    g_db.add_lut("qtype", 60, "CDNSKEY");
+    g_db.add_lut("qtype", 61, "OPENPGPKEY");
+    g_db.add_lut("qtype", 62, "CSYNC");
+    g_db.add_lut("qtype", 63, "ZONEMD");
     g_db.add_lut("qtype", 99, "SPF");
     g_db.add_lut("qtype", 100, "UINFO");
     g_db.add_lut("qtype", 101, "UID");
     g_db.add_lut("qtype", 102, "GID");
     g_db.add_lut("qtype", 103, "UNSPEC");
+    g_db.add_lut("qtype", 104, "NID");
+    g_db.add_lut("qtype", 105, "L32");
+    g_db.add_lut("qtype", 106, "L64");
+    g_db.add_lut("qtype", 107, "LP");
+    g_db.add_lut("qtype", 108, "EUI48");
+    g_db.add_lut("qtype", 109, "EUI64");
     g_db.add_lut("qtype", 249, "TKEY");
     g_db.add_lut("qtype", 250, "TSIG");
     g_db.add_lut("qtype", 251, "IXFR");
@@ -160,6 +173,10 @@ void Parse_dns::add_lookup_tables()
     g_db.add_lut("qtype", 254, "MAILA");
     g_db.add_lut("qtype", 255, "*");
     g_db.add_lut("qtype", 256, "URI");
+    g_db.add_lut("qtype", 257, "CAA");
+    g_db.add_lut("qtype", 258, "AVC");
+    g_db.add_lut("qtype", 259, "DOA");
+    g_db.add_lut("qtype", 260, "AMTRELAY");
     g_db.add_lut("qtype", 32768, "TA");
     g_db.add_lut("qtype", 32769, "DLV");
 
