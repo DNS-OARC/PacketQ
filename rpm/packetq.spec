@@ -1,5 +1,5 @@
 Name:           packetq
-Version:        1.4.1
+Version:        1.4.2
 Release:        1%{?dist}
 Summary:        A tool that provides a basic SQL-frontend to PCAP-files
 Group:          Productivity/Networking/DNS/Utilities
@@ -54,6 +54,17 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Mar 02 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 1.4.2-1
+- Release 1.4.2
+  * Updated list of DNS resource types and work on CI and packaging.
+  * Commits:
+    4bdb9e3 Add missing rr types
+    7c529ed README
+    d610061 COPR, spec
+    96763d8 Package
+    5aa5984 Funding
+    377be2d spec
+    a0b5fb7 Travis-CI
 * Thu Nov 09 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 1.4.1-1
 - Release 1.4.1
   * Fixed an issue with the in-memory representation of DNS records which
