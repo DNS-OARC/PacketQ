@@ -121,13 +121,6 @@ namespace httpd {
                 m_len = len;
                 m_pos = 0;
             }
-            Buffer(const Buffer& buf)
-            {
-                m_len = buf.m_len;
-                m_buf = new unsigned char[buf.m_len];
-                memcpy(m_buf, buf.m_buf, m_len);
-                m_pos = 0;
-            }
             ~Buffer()
             {
                 m_len = 0;
@@ -988,7 +981,6 @@ namespace httpd {
                         m_file     = 0;
                     }
                     set_delete();
-                } else {
                 }
             }
         }

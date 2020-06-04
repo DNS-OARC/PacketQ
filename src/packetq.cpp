@@ -304,7 +304,7 @@ int main(int argc, char* argv[])
 
     delete g_app;
 
-    void destroy_packet_handlers();
+    destroy_packet_handlers();
 
     return 0;
 }
