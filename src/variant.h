@@ -91,14 +91,14 @@ inline text_column convert_column_to_text(float_column v)
 {
     const int       bufsize = 50;
     RefCountString* str     = RefCountString::allocate(bufsize);
-    snprintf(str->data, bufsize, "%g", v);
+    snprintf(str->data, bufsize, "%g", v); // lgtm[cpp/badly-bounded-write]
     return str;
 }
 inline text_column convert_column_to_text(int_column v)
 {
     const int       bufsize = (sizeof(int_column) * 8 + 1) / 3 + 1;
     RefCountString* str     = RefCountString::allocate(bufsize);
-    snprintf(str->data, bufsize, "%d", v);
+    snprintf(str->data, bufsize, "%d", v); // lgtm[cpp/badly-bounded-write]
     return str;
 }
 inline text_column convert_column_to_text(bool_column v)

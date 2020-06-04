@@ -78,15 +78,6 @@ public:
             m_data[i] = data[i];
         }
     }
-    /// Copy constructor
-    Data_segment(const Data_segment& other)
-    {
-        m_datasize = other.m_datasize;
-        m_data     = new unsigned char[m_datasize];
-        for (unsigned int i = 0; i < m_datasize; i++) {
-            m_data[i] = other.m_data[i];
-        }
-    }
     /// Destructor
     ~Data_segment()
     {

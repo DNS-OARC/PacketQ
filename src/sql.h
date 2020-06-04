@@ -166,7 +166,6 @@ public:
         i.m_key      = key;
         std::map<Item, std::string>::iterator it = m_lut.find(i);
         if (it != m_lut.end())
-            // FIXME: we should store these strings in the first place
             return RefCountString::construct(it->second.c_str());
 
         return 0;
@@ -530,7 +529,7 @@ public:
     {
         m_token = istr;
     }
-    const Type get_type() const
+    Type get_type() const
     {
         return m_type;
     }
@@ -561,7 +560,7 @@ public:
         return 0;
     }
 
-    OP(const OP& op)
+    OP(const OP& op) // lgtm[cpp/rule-of-two]
         : Token(op.get_type(), op.get_token())
     {
         for (int i = 0; i < max_param(); i++) {
@@ -890,13 +889,13 @@ public:
             }
             p--;
         }
-        char buf[256]; // FIXME: arbitrary limitation, would probably be
-        // better to allocate result buffer directly
-        if (found < n || start >= l || end - start > sizeof(buf)) {
+        if (found < n || start >= l) {
             RefCountStringHandle res(RefCountString::construct(""));
             v = *res;
             return;
         }
+        size_t buflen = start < end ? end - start + 1 : 1;
+        char buf[buflen];
         p = 0;
         while (start < end)
             buf[p++] = s[start++];

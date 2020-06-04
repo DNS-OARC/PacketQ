@@ -1156,6 +1156,7 @@ public:
             bool asc = true;
             if (it->get_type() == Token::_label) {
                 if (cmpi(it->get_token(), "asc")) {
+                    // default
                 } else if (cmpi(it->get_token(), "desc")) {
                     asc = false;
                 } else if (cmpi(it->get_token(), "collate")) {
