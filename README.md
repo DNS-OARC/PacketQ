@@ -1,6 +1,6 @@
 # PacketQ
 
-[![Build Status](https://travis-ci.org/DNS-OARC/PacketQ.svg?branch=develop)](https://travis-ci.org/DNS-OARC/PacketQ) [![Coverity Scan Build Status](https://scan.coverity.com/projects/12743/badge.svg)](https://scan.coverity.com/projects/dns-oarc-packetq)
+[![Build Status](https://travis-ci.com/DNS-OARC/PacketQ.svg?branch=develop)](https://travis-ci.com/DNS-OARC/PacketQ) [![Total alerts](https://img.shields.io/lgtm/alerts/g/DNS-OARC/PacketQ.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DNS-OARC/PacketQ/alerts/) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3APacketQ&metric=bugs)](https://sonarcloud.io/dashboard?id=dns-oarc%3APacketQ) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3APacketQ&metric=security_rating)](https://sonarcloud.io/dashboard?id=dns-oarc%3APacketQ)
 
 `packetq` is a command line tool to run SQL queries directly on PCAP files,
 the results can be outputted as JSON (default), formatted/compact CSV and XML.
