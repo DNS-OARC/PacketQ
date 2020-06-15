@@ -47,17 +47,17 @@ otherwise `true_op` is executed.
 ### RSPLIT(string, n [, char])
 
 Splits a string on character `char` (default `.`) and selects the N'th split
-from the right, i.e: `RSPLIT("192.168.0.1",2)` returns 168.
+from the right, i.e: `RSPLIT('192.168.0.1',2)` returns 168.
 
 ### NAME(table, num)
 
 Translate numbers into names table can be `rcode` or `qtype`, i.e:
-`name("rcode",rcode)` returns `NXDomain`.
+`name('rcode',rcode)` returns `NXDomain`.
 
 ### TRIM(string, trim)
 
 Trims of any occurrences of the string `trim` from both end of the string,
-i.e: `trim("se.domains.se", "se")` returns `.domains.`.
+i.e: `trim('se.domains.se', 'se')` returns `.domains.`.
 
 ### LOWER(string)
 

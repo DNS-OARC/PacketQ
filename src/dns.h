@@ -309,8 +309,8 @@ public:
                                 break;
                             }
 
-                            int a, b;
-                            for (a = 0, b = 15; fill && b > -1; fill--, b--) {
+                            int a = 0, b;
+                            for (b = 15; fill && b > -1; fill--, b--) {
                                 if (a < addrlen) {
                                     m_edns0_ecs_addr.__in6_u.__u6_addr8[b] = get_ubyte(offs + 4 + a);
                                     a++;

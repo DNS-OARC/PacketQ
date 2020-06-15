@@ -38,6 +38,11 @@ Output   g_output;
 Str_conv converter;
 
 class Fragments {
+private:
+    Fragments& operator=(const Fragments& other);
+    Fragments(Fragments &&other) noexcept;
+    Fragments const & operator=(Fragments &&other);
+
 public:
     class Range {
     public:

@@ -113,6 +113,10 @@ namespace httpd {
     class Stream {
     public:
         class Buffer {
+        private:
+            Buffer& operator=(const Buffer& other);
+            Buffer const & operator=(Buffer &&other);
+
         public:
             Buffer(const unsigned char* buf, int len)
             {
@@ -120,6 +124,15 @@ namespace httpd {
                 memcpy(m_buf, buf, len);
                 m_len = len;
                 m_pos = 0;
+            }
+            Buffer(Buffer &&other) noexcept
+            {
+                m_buf = other.m_buf;
+                m_len = other.m_len;
+                m_pos = other.m_pos;
+                other.m_buf = 0;
+                other.m_len = 0;
+                other.m_pos = 0;
             }
             ~Buffer()
             {
@@ -181,6 +194,11 @@ namespace httpd {
     };
 
     class Socket {
+    private:
+        Socket& operator=(const Socket& other);
+        Socket(Socket &&other) noexcept;
+        Socket const & operator=(Socket &&other);
+
     public:
         Socket(int s, bool serv)
             : m_want_write(false)
@@ -222,7 +240,11 @@ namespace httpd {
 
                 while (len = m_write.read(ptr, sizeof(ptr))) {
                     int res = write(m_socket, ptr, len);
+#if EAGAIN != EWOULDBLOCK
                     if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+#else
+                    if (res == -1 && (errno == EAGAIN)) {
+#endif
                         m_write.push_front(ptr, len);
                         set_want_write();
                         return;
@@ -434,13 +456,14 @@ namespace httpd {
             : m_full(url)
         {
             int i = 0;
-            for (; i < m_full.length(); i++) {
+            for (; i < m_full.length();) {
                 char c = m_full.c_str()[i];
                 if (c == '?') {
                     i++;
                     break;
                 }
                 m_path += c;
+                i++;
             }
             m_path = decode(m_path);
             if (m_path == "")
@@ -454,21 +477,23 @@ namespace httpd {
             std::string str = params;
             for (int i = 0; i < str.length();) {
                 std::string param = "", value = "";
-                for (; i < str.length(); i++) {
+                for (; i < str.length();) {
                     char c = str.c_str()[i];
                     if (c == '=' || c == '&') {
                         i++;
                         break;
                     }
                     param += c;
+                    i++;
                 }
-                for (; i < str.length(); i++) {
+                for (; i < str.length();) {
                     char c = str.c_str()[i];
                     if (c == '&') {
                         i++;
                         break;
                     }
                     value += c;
+                    i++;
                 }
                 add_param(decode(param), decode(value));
             }
@@ -836,6 +861,11 @@ namespace httpd {
     };
 
     class Http_socket : public Socket {
+    private:
+        Http_socket& operator=(const Http_socket& other);
+        Http_socket(Http_socket &&other) noexcept;
+        Http_socket const & operator=(Http_socket &&other);
+
     public:
         enum State {
             get_post,
@@ -1144,9 +1174,10 @@ void start_server(int port, bool fork_me, const std::string& pcaproot, const std
         }
         usleep(1000);
     }
-    g_server = 0;
-    syslog(LOG_INFO | LOG_USER, "exiting");
-    exit(EXIT_SUCCESS);
+    // loop will never break
+    // g_server = 0;
+    // syslog(LOG_INFO | LOG_USER, "exiting");
+    // exit(EXIT_SUCCESS);
 }
 
 } // namespace packetq
