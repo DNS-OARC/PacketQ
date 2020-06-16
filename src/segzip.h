@@ -44,6 +44,11 @@ public:
 };
 
 class Zip {
+private:
+    Zip& operator=(const Zip& other);
+    Zip(Zip &&other) noexcept;
+    Zip const & operator=(Zip &&other);
+
 public:
     Zip()
         : m_stream()

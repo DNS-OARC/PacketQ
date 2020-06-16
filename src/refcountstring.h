@@ -82,6 +82,11 @@ struct RefCountString {
 };
 
 class RefCountStringHandle {
+private:
+    RefCountStringHandle& operator=(const RefCountStringHandle& other);
+    RefCountStringHandle(RefCountStringHandle &&other) noexcept;
+    RefCountStringHandle const & operator=(RefCountStringHandle &&other);
+
 public:
     RefCountStringHandle()
     {

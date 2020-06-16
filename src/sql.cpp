@@ -1686,11 +1686,10 @@ public:
                 p++;
                 state = _unknown;
             } break;
-            default: {
+            default:
                 printf("Missing impl char %c at %d! in statement %s\n", *p, int(p - i_str), i_str);
                 m_parser.push(Token::_end, "END");
                 return false;
-            } break;
             }
         }
     }

@@ -190,7 +190,6 @@ int main(int argc, char* argv[])
         case 'v':
             fprintf(stdout, "%s\n", PACKAGE_STRING);
             exit(0);
-            break;
         case 's':
             if (qcount < NUM_QUERIES) {
                 queries[qcount++] = optarg;
