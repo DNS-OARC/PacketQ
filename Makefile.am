@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
+ACLOCAL_AMFLAGS = -I m4
+
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in \
     $(srcdir)/src/config.h.in~ \
     $(srcdir)/configure

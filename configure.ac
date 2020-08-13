@@ -26,6 +26,30 @@ AC_CONFIG_HEADER([src/config.h])
 # Checks for programs.
 AC_PROG_CXX
 
+# Check --enable-warn-all
+AC_ARG_ENABLE([warn-all], [AS_HELP_STRING([--enable-warn-all], [Enable all compiler warnings])], [AX_CXXFLAGS_WARN_ALL()])
+
+# Check --with-extra-cxxflags
+AC_ARG_WITH([extra-cxxflags], [AS_HELP_STRING([--with-extra-cxxflags=CXXFLAGS], [Add extra CXXFLAGS])], [
+  AC_MSG_NOTICE([appending extra CXXFLAGS... $withval])
+  AS_VAR_APPEND(CXXFLAGS, [" $withval"])
+])
+
+# Check --with-extra-ldflags
+AC_ARG_WITH([extra-ldflags], [AS_HELP_STRING([--with-extra-ldflags=CXXFLAGS], [Add extra LDFLAGS])], [
+  AC_MSG_NOTICE([appending extra LDFLAGS... $withval])
+  AS_VAR_APPEND(LDFLAGS, [" $withval"])
+])
+
+# Check --enable-gcov
+AC_ARG_ENABLE([gcov], [AS_HELP_STRING([--enable-gcov], [Enable coverage testing])], [
+  coverage_cxxflags="--coverage -g -O0 -fno-inline -fno-inline-small-functions -fno-default-inline"
+  AC_MSG_NOTICE([enabling coverage testing... $coverage_cxxflags])
+  AS_VAR_APPEND(CXXFLAGS, [" $coverage_cxxflags"])
+])
+AM_CONDITIONAL([ENABLE_GCOV], [test "x$enable_gcov" != "xno"])
+AM_EXTRA_RECURSIVE_TARGETS([gcov])
+
 # Checks for libraries.
 AC_CHECK_LIB([z], [deflate])
 AC_CHECK_LIB([socket], socket)

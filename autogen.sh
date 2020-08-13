@@ -19,4 +19,4 @@
 # You should have received a copy of the GNU General Public License
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
-autoreconf --force --install --no-recursive
+autoreconf --force --install --no-recursive --include=m4
