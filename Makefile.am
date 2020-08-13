@@ -19,17 +19,13 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-MAINTAINERCLEANFILES = $(srcdir)/Makefile.in \
-    $(srcdir)/src/config.h.in~ \
-    $(srcdir)/configure
+MAINTAINERCLEANFILES = $(srcdir)/Makefile.in $(srcdir)/src/config.h.in~ \
+  $(srcdir)/configure
 
 SUBDIRS = src
 
 dist_doc_DATA = CHANGES COPYING README.md FAQ.md FIELDS.md FUNCTIONS.md
 
-EXTRA_DIST = collector_sample \
-    html \
-    html_NG \
-    pcap
+EXTRA_DIST = collector_sample html html_NG pcap m4
 
 test: check
