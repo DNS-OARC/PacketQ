@@ -18,6 +18,7 @@
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
+CLEANFILES = *.gcda *.gcno *.gcov
 
 SUBDIRS = test
 
@@ -37,3 +38,10 @@ packetq_SOURCES = dns.cpp dns.h icmp.cpp icmp.h output.h packet_handler.cpp \
 dist_packetq_SOURCES = Murmur/MurmurHash3.cpp Murmur/MurmurHash3.h
 
 EXTRA_DIST = regression-test.sh
+
+if ENABLE_GCOV
+gcov-local:
+	for src in $(packetq_SOURCES) $(dist_packetq_SOURCES); do \
+	  gcov -l -r -s "$(srcdir)" "$$src"; \
+	done
+endif

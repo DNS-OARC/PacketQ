@@ -10,13 +10,13 @@ compiler:
   - gcc
 install: ./autogen.sh
 script:
-  - ./configure
+  - ./configure --enable-warn-all
   - make dist
   - tar zxvf *.tar.gz
   - cd packetq-[0-9]*
   - mkdir build
   - cd build
-  - ../configure
+  - ../configure --enable-warn-all
   - make
   - make test
   - src/packetq -v
