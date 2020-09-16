@@ -154,6 +154,8 @@ void Parse_dns::add_lookup_tables()
     g_db.add_lut("qtype", 61, "OPENPGPKEY");
     g_db.add_lut("qtype", 62, "CSYNC");
     g_db.add_lut("qtype", 63, "ZONEMD");
+    g_db.add_lut("qtype", 64, "SVCB");
+    g_db.add_lut("qtype", 65, "HTTPS");
     g_db.add_lut("qtype", 99, "SPF");
     g_db.add_lut("qtype", 100, "UINFO");
     g_db.add_lut("qtype", 101, "UID");
