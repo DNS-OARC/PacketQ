@@ -26,6 +26,15 @@ A short demo-video of PacketQ's capabilities is available on http://www.youtube.
 * Can convert flags in packet-headers to text on the fly.
 * Can make multiple queries towards the same data in memory.
 
+More information may be found here:
+- https://www.dns-oarc.net/tools/packetq
+
+Issues should be reported here:
+- https://github.com/DNS-OARC/PacketQ/issues
+
+General support and discussion:
+- Mattermost: https://chat.dns-oarc.net/community/channels/oarc-software
+
 ## Dependencies
 
 PacketQ requires a couple of libraries beside a normal C++ compiling
