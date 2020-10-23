@@ -18,13 +18,37 @@
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.61)
-AC_INIT([packetq], [1.4.2], [admin@dns-oarc.net], [packetq], [https://github.com/DNS-OARC/packetq/issues])
+AC_INIT([packetq], [1.4.3], [admin@dns-oarc.net], [packetq], [https://github.com/DNS-OARC/packetq/issues])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/packetq.cpp])
 AC_CONFIG_HEADER([src/config.h])
 
 # Checks for programs.
 AC_PROG_CXX
+
+# Check --enable-warn-all
+AC_ARG_ENABLE([warn-all], [AS_HELP_STRING([--enable-warn-all], [Enable all compiler warnings])], [AX_CXXFLAGS_WARN_ALL()])
+
+# Check --with-extra-cxxflags
+AC_ARG_WITH([extra-cxxflags], [AS_HELP_STRING([--with-extra-cxxflags=CXXFLAGS], [Add extra CXXFLAGS])], [
+  AC_MSG_NOTICE([appending extra CXXFLAGS... $withval])
+  AS_VAR_APPEND(CXXFLAGS, [" $withval"])
+])
+
+# Check --with-extra-ldflags
+AC_ARG_WITH([extra-ldflags], [AS_HELP_STRING([--with-extra-ldflags=LDFLAGS], [Add extra LDFLAGS])], [
+  AC_MSG_NOTICE([appending extra LDFLAGS... $withval])
+  AS_VAR_APPEND(LDFLAGS, [" $withval"])
+])
+
+# Check --enable-gcov
+AC_ARG_ENABLE([gcov], [AS_HELP_STRING([--enable-gcov], [Enable coverage testing])], [
+  coverage_cxxflags="--coverage -g -O0 -fno-inline -fno-inline-small-functions -fno-default-inline"
+  AC_MSG_NOTICE([enabling coverage testing... $coverage_cxxflags])
+  AS_VAR_APPEND(CXXFLAGS, [" $coverage_cxxflags"])
+])
+AM_CONDITIONAL([ENABLE_GCOV], [test "x$enable_gcov" != "xno"])
+AM_EXTRA_RECURSIVE_TARGETS([gcov])
 
 # Checks for libraries.
 AC_CHECK_LIB([z], [deflate])

@@ -17,17 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
-MAINTAINERCLEANFILES = $(srcdir)/Makefile.in \
-    $(srcdir)/src/config.h.in~ \
-    $(srcdir)/configure
+ACLOCAL_AMFLAGS = -I m4
+
+MAINTAINERCLEANFILES = $(srcdir)/Makefile.in $(srcdir)/src/config.h.in~ \
+  $(srcdir)/configure
 
 SUBDIRS = src
 
 dist_doc_DATA = CHANGES COPYING README.md FAQ.md FIELDS.md FUNCTIONS.md
 
-EXTRA_DIST = collector_sample \
-    html \
-    html_NG \
-    pcap
+EXTRA_DIST = collector_sample html html_NG pcap m4
 
 test: check

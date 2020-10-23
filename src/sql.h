@@ -166,7 +166,6 @@ public:
         i.m_key      = key;
         std::map<Item, std::string>::iterator it = m_lut.find(i);
         if (it != m_lut.end())
-            // FIXME: we should store these strings in the first place
             return RefCountString::construct(it->second.c_str());
 
         return 0;
@@ -187,6 +186,11 @@ public:
 
 template <typename T>
 class Allocator {
+private:
+    Allocator& operator=(const Allocator& other);
+    Allocator(Allocator &&other) noexcept;
+    Allocator const & operator=(Allocator &&other);
+
 public:
     Allocator(int size, int buffersize)
         : m_buffersize(buffersize)
@@ -239,6 +243,11 @@ public:
 
 private:
     class Buffer {
+    private:
+        Buffer& operator=(const Buffer& other);
+        Buffer(Buffer &&other) noexcept;
+        Buffer const & operator=(Buffer &&other);
+
     public:
         friend class Allocator;
         Buffer(Allocator& allocator)
@@ -349,6 +358,11 @@ public:
 };
 
 class Table {
+private:
+    Table& operator=(const Table& other);
+    Table(Table &&other) noexcept;
+    Table const & operator=(Table &&other);
+
 public:
     Table(const char* name = 0, const char* query = 0)
         : m_rsize(0)
@@ -530,7 +544,7 @@ public:
     {
         m_token = istr;
     }
-    const Type get_type() const
+    Type get_type() const
     {
         return m_type;
     }
@@ -545,6 +559,11 @@ private:
 };
 
 class OP : public Token {
+private:
+    OP& operator=(const OP& other);
+    OP(OP &&other) noexcept;
+    OP const & operator=(OP &&other);
+
 public:
     static int is_binary(const char* str)
     {
@@ -890,13 +909,13 @@ public:
             }
             p--;
         }
-        char buf[256]; // FIXME: arbitrary limitation, would probably be
-        // better to allocate result buffer directly
-        if (found < n || start >= l || end - start > sizeof(buf)) {
+        if (found < n || start >= l) {
             RefCountStringHandle res(RefCountString::construct(""));
             v = *res;
             return;
         }
+        size_t buflen = start < end ? end - start + 1 : 1;
+        char buf[buflen];
         p = 0;
         while (start < end)
             buf[p++] = s[start++];
@@ -1521,7 +1540,7 @@ public:
         int l = (int)strlen(lhs_str);
         int r = (int)strlen(rhs_str);
 
-        RefCountStringHandle res = RefCountString::allocate(l + r + 1);
+        RefCountStringHandle res(RefCountString::allocate(l + r + 1));
         memcpy((*res)->data, lhs_str, l);
         memcpy((*res)->data + l, rhs_str, r + 1); // copy the zero terminator
 
@@ -1530,6 +1549,10 @@ public:
 };
 class Bin_op_like : public OP {
 private:
+    Bin_op_like& operator=(const Bin_op_like& other);
+    Bin_op_like(Bin_op_like &&other) noexcept;
+    Bin_op_like const & operator=(Bin_op_like &&other);
+
     regex_t m_re;
     char    m_re_str[RE_LEN];
     bool    m_compiled;
@@ -1682,6 +1705,11 @@ public:
 };
 
 class Ordering_terms {
+private:
+    Ordering_terms& operator=(const Ordering_terms& other);
+    Ordering_terms(Ordering_terms &&other) noexcept;
+    Ordering_terms const & operator=(Ordering_terms &&other);
+
 public:
     Ordering_terms()
     {
@@ -1718,6 +1746,11 @@ public:
 class Reader;
 
 class Query {
+private:
+    Query& operator=(const Query& other);
+    Query(Query &&other) noexcept;
+    Query const & operator=(Query &&other);
+
 public:
     Query(const char* name, const char* query)
     {

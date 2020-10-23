@@ -1156,6 +1156,7 @@ public:
             bool asc = true;
             if (it->get_type() == Token::_label) {
                 if (cmpi(it->get_token(), "asc")) {
+                    // default
                 } else if (cmpi(it->get_token(), "desc")) {
                     asc = false;
                 } else if (cmpi(it->get_token(), "collate")) {
@@ -1685,11 +1686,10 @@ public:
                 p++;
                 state = _unknown;
             } break;
-            default: {
+            default:
                 printf("Missing impl char %c at %d! in statement %s\n", *p, int(p - i_str), i_str);
                 m_parser.push(Token::_end, "END");
                 return false;
-            } break;
             }
         }
     }

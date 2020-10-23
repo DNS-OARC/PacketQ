@@ -190,7 +190,6 @@ int main(int argc, char* argv[])
         case 'v':
             fprintf(stdout, "%s\n", PACKAGE_STRING);
             exit(0);
-            break;
         case 's':
             if (qcount < NUM_QUERIES) {
                 queries[qcount++] = optarg;
@@ -304,7 +303,7 @@ int main(int argc, char* argv[])
 
     delete g_app;
 
-    void destroy_packet_handlers();
+    destroy_packet_handlers();
 
     return 0;
 }

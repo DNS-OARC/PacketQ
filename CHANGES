@@ -1,3 +1,20 @@
+2020-10-23 Jerry Lundström
+
+    Release 1.4.3
+
+    This release updates the DNS resource record types list with the new
+    types SVCB and HTTPS. It also fixes a lot of issues reported by code
+    analysis and adds code coverage tests.
+
+    0ddbc42 Info, Travis, configure
+    37a8136 Add SVCB, HTTPS rrtypes
+    6188935 m4
+    c159904 Coverage
+    7907eb4 Documentation, sonar
+    2fe937a Badges
+    90a5e55 LGTM
+    fae992a COPR
+
 2020-03-02 Jerry Lundström
 
     Release 1.4.2

@@ -55,7 +55,15 @@ public:
     /// < comparison operator for the std::map
     bool operator<(const Stream_id& rhs) const
     {
-        return memcmp(this, &rhs, sizeof(Stream_id)) < 0;
+        if (memcmp(&m_src_ip.__in6_u.__u6_addr8, &rhs.m_src_ip.__in6_u.__u6_addr8, sizeof(m_src_ip.__in6_u.__u6_addr8)) < 0)
+            return true;
+        if (memcmp(&m_dst_ip.__in6_u.__u6_addr8, &rhs.m_dst_ip.__in6_u.__u6_addr8, sizeof(m_dst_ip.__in6_u.__u6_addr8)) < 0)
+            return true;
+        if (m_src_port < rhs.m_src_port)
+            return true;
+        if (m_dst_port < rhs.m_dst_port)
+            return true;
+        return false;
     }
 
 private:
@@ -68,18 +76,22 @@ private:
  * Data_segment are inerted into a list in the Stream class
  */
 class Data_segment {
+private:
+    Data_segment& operator=(const Data_segment& other);
+    Data_segment(Data_segment &&other) noexcept;
+    Data_segment const & operator=(Data_segment &&other);
+
 public:
     /// Constructor taking a memory block with packet content
     Data_segment(unsigned char* data, unsigned int len)
     {
         m_datasize = len;
-        m_data     = new unsigned char[len];
-        for (unsigned int i = 0; i < len; i++) {
+        m_data     = new unsigned char[m_datasize];
+        for (unsigned int i = 0; i < m_datasize; i++) {
             m_data[i] = data[i];
         }
     }
-    /// Copy constructor
-    Data_segment(const Data_segment& other)
+    Data_segment(const Data_segment &other)
     {
         m_datasize = other.m_datasize;
         m_data     = new unsigned char[m_datasize];
