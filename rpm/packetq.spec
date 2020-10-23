@@ -1,5 +1,5 @@
 Name:           packetq
-Version:        1.4.2
+Version:        1.4.3
 Release:        1%{?dist}
 Summary:        A tool that provides a basic SQL-frontend to PCAP-files
 Group:          Productivity/Networking/DNS/Utilities
@@ -54,6 +54,20 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Oct 23 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 1.4.3-1
+- Release 1.4.3
+  * This release updates the DNS resource record types list with the new
+    types SVCB and HTTPS. It also fixes a lot of issues reported by code
+    analysis and adds code coverage tests.
+  * Commits:
+    0ddbc42 Info, Travis, configure
+    37a8136 Add SVCB, HTTPS rrtypes
+    6188935 m4
+    c159904 Coverage
+    7907eb4 Documentation, sonar
+    2fe937a Badges
+    90a5e55 LGTM
+    fae992a COPR
 * Mon Mar 02 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 1.4.2-1
 - Release 1.4.2
   * Updated list of DNS resource types and work on CI and packaging.
