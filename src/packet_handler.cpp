@@ -405,9 +405,9 @@ void Packet_handler::add_packet_column(const char* name, const char* description
     packet_columns.push_back(c);
 }
 
-void init_packet_handlers()
+void init_packet_handlers(bool escape_dnsnames)
 {
-    packet_handlers.push_back(new Parse_dns());
+    packet_handlers.push_back(new Parse_dns(escape_dnsnames));
     packet_handlers.push_back(new Parse_icmp());
 }
 

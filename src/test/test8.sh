@@ -1,5 +1,5 @@
-# Copyright (c) 2017-2020, OARC, Inc.
-# Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
+#!/bin/sh -e
+# Copyright (c) 2021, Internet Systems Consortium, Inc.
 # All rights reserved.
 #
 # This file is part of PacketQ.
@@ -17,15 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
-MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
+TESTPCAP="$srcdir/../../pcap/sample-rfc1035escape.pcap.gz"
+../packetq -s "select qname from dns" --json "$TESTPCAP" > test8.out
+../packetq -s "select qname from dns" --json --rfc1035 "$TESTPCAP" >> test8.out
+../packetq -s "select qname from dns" --csv "$TESTPCAP" >> test8.out
+../packetq -s "select qname from dns" --csv --rfc1035 "$TESTPCAP" >> test8.out
 
-CLEANFILES = test*.log test*.trs \
-  test1.out test2.out test3.out test4.out test5.out test6.out test7.out \
-  test8.out
-
-TESTS = test1.sh test2.sh test3.sh test4.sh test5.sh test6.sh test7.sh \
-	test8.sh
-
-EXTRA_DIST = $(TESTS) \
-  test1.gold test2.gold test3.gold test4.gold test5.gold test6.gold \
-  test7.gold sql.txt test8.gold
+diff -uw "$srcdir/test8.gold" test8.out

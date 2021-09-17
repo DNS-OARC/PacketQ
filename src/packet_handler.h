@@ -218,7 +218,7 @@ public:
     void add_packet_column(const char* name, const char* description, Coltype::Type type, int id);
 };
 
-void            init_packet_handlers();
+void            init_packet_handlers(bool escape_dnsnames);
 void            destroy_packet_handlers();
 Packet_handler* get_packet_handler(std::string table_name);
 

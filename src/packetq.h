@@ -37,8 +37,13 @@ public:
     };
     PacketQ()
     {
+        m_escape = false;
         m_limit  = 0;
         m_output = json;
+    }
+    void set_escape(bool escape)
+    {
+        m_escape = escape;
     }
     void set_limit(int limit)
     {
@@ -48,10 +53,12 @@ public:
     {
         m_output = opt;
     }
+    int        get_escape() { return m_escape; }
     OutputOpts get_output() { return m_output; }
     int        get_limit() { return m_limit; }
 
 private:
+    bool       m_escape;
     int        m_limit;
     OutputOpts m_output;
 };
