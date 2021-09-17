@@ -68,6 +68,7 @@ public:
     }
     inline void add_string_esc_json(const char* p)
     {
+        static const char lut[] = "0123456789ABCDEF";
         if (m_len > sizeof(m_buffer) / 2)
             print();
         char c;
@@ -76,8 +77,17 @@ public:
                 m_buffer[m_len++] = '\\';
                 c                 = '\\';
             }
-            if (c == '"') {
+            else if (c == '"') {
                 m_buffer[m_len++] = '\\';
+            }
+            else if (c < 0x20) {
+                m_buffer[m_len++] = '\\';
+                m_buffer[m_len++] = 'u';
+                m_buffer[m_len++] = '0';
+                m_buffer[m_len++] = '0';
+                m_buffer[m_len++] = lut[(c >> 4) & 0xf];
+                m_buffer[m_len++] = lut[c & 0xf];
+                continue;
             }
             m_buffer[m_len++] = c;
         }
