@@ -795,13 +795,13 @@ void Table::json(bool trailing_comma)
     g_output.print();
 }
 
-std::string qoute_string(const std::string& s)
+std::string csv_qoute_string(const std::string& s)
 {
     std::string r   = "\"";
     int         len = s.length();
     for (int i = 0; i < len; i++) {
-        if (s[i] == '"' || s[i] == '\\') {
-            r += '\\';
+        if (s[i] == '"') {
+            r += '"';
         }
         r += s[i];
     }
@@ -847,7 +847,7 @@ void Table::csv(bool format)
                     len = strlen(buf);
                     break;
                 case Coltype::_text:
-                    len = qoute_string(r->access_column<text_column>(offset)->data).length();
+                    len = csv_qoute_string(r->access_column<text_column>(offset)->data).length();
                     break;
                 }
                 len++;
@@ -861,7 +861,7 @@ void Table::csv(bool format)
             if (m_cols[i]->m_hidden)
                 continue;
 
-            int l = qoute_string(m_cols[i]->m_name).length();
+            int l = csv_qoute_string(m_cols[i]->m_name).length();
             l++;
             if (l > col_len[i])
                 col_len[i] = l;
@@ -879,10 +879,10 @@ void Table::csv(bool format)
         if (m_cols[i]->m_hidden)
             continue;
 
-        printf("%s", qoute_string(m_cols[i]->m_name).c_str());
+        printf("%s", csv_qoute_string(m_cols[i]->m_name).c_str());
         if (i < cols - 1)
             if (format)
-                printf("%s,", &tmp[qoute_string(m_cols[i]->m_name).length() + max - col_len[i] + 1]);
+                printf("%s,", &tmp[csv_qoute_string(m_cols[i]->m_name).length() + max - col_len[i] + 1]);
             else
                 printf(",");
     }
@@ -915,7 +915,7 @@ void Table::csv(bool format)
                 out = buf;
                 break;
             case Coltype::_text:
-                out = qoute_string(r->access_column<text_column>(offset)->data);
+                out = csv_qoute_string(r->access_column<text_column>(offset)->data);
                 break;
             }
 
