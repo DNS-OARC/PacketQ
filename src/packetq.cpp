@@ -68,7 +68,7 @@ static void usage(char* argv0, bool longversion)
         "  --json | -j       JSON (default)\n"
         "  --csv | -c        CSV\n"
         "  --table | -t      Text table\n"
-        "  --xml | -x ]      XML\n"
+        "  --xml | -x        XML\n"
         "\n"
         "Web Server:\n"
         "  --daemon | -d     Run web server in daemon mode.\n"
