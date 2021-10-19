@@ -78,8 +78,8 @@ private:
 class Data_segment {
 private:
     Data_segment& operator=(const Data_segment& other);
-    Data_segment(Data_segment &&other) noexcept;
-    Data_segment const & operator=(Data_segment &&other);
+    Data_segment(Data_segment&& other) noexcept;
+    Data_segment const& operator=(Data_segment&& other);
 
 public:
     /// Constructor taking a memory block with packet content
@@ -91,7 +91,7 @@ public:
             m_data[i] = data[i];
         }
     }
-    Data_segment(const Data_segment &other)
+    Data_segment(const Data_segment& other)
     {
         m_datasize = other.m_datasize;
         m_data     = new unsigned char[m_datasize];
@@ -264,7 +264,7 @@ assemble_tcp(
             *rest = size;
             if (*rest > 0xffff)
                 *rest = 0xffff;
-            data      = (unsigned char*)payload.alloc(*rest);
+            data = (unsigned char*)payload.alloc(*rest);
             memcpy(data, buffer, *rest);
             str.erase();
             g_tcp_streams.erase(id);

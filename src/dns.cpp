@@ -47,8 +47,8 @@ void fill_in_visible_char_map_rfc1035()
             || (i >= 'A' && i <= 'Z')
             || (i >= '0' && i <= '9')
             || (i == '-' || i == '_')) {
-        visible_char_map[i] = i;
-        } else {  // espaping needed
+            visible_char_map[i] = i;
+        } else { // espaping needed
             visible_char_map[i] = 0;
         }
     }

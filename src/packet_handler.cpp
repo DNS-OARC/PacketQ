@@ -40,8 +40,8 @@ Str_conv converter;
 class Fragments {
 private:
     Fragments& operator=(const Fragments& other);
-    Fragments(Fragments &&other) noexcept;
-    Fragments const & operator=(Fragments &&other);
+    Fragments(Fragments&& other) noexcept;
+    Fragments const& operator=(Fragments&& other);
 
 public:
     class Range {
@@ -85,7 +85,7 @@ public:
         m_frags++;
         if (head.fragments == 0)
             m_complete = head.offset + len;
-        bool complete  = add_range(head.offset, head.offset + len);
+        bool complete = add_range(head.offset, head.offset + len);
         memcpy((void*)&m_buffer[head.offset], data, len);
         if (complete) {
             m_complete        = head.offset + len;

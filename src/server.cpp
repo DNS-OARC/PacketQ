@@ -114,8 +114,8 @@ namespace httpd {
     public:
         class Buffer {
         private:
-            Buffer& operator=(const Buffer& other);
-            Buffer const & operator=(Buffer &&other);
+            Buffer&       operator=(const Buffer& other);
+            Buffer const& operator=(Buffer&& other);
 
         public:
             Buffer(const unsigned char* buf, int len)
@@ -125,11 +125,11 @@ namespace httpd {
                 m_len = len;
                 m_pos = 0;
             }
-            Buffer(Buffer &&other) noexcept
+            Buffer(Buffer&& other) noexcept
             {
-                m_buf = other.m_buf;
-                m_len = other.m_len;
-                m_pos = other.m_pos;
+                m_buf       = other.m_buf;
+                m_len       = other.m_len;
+                m_pos       = other.m_pos;
                 other.m_buf = 0;
                 other.m_len = 0;
                 other.m_pos = 0;
@@ -196,8 +196,8 @@ namespace httpd {
     class Socket {
     private:
         Socket& operator=(const Socket& other);
-        Socket(Socket &&other) noexcept;
-        Socket const & operator=(Socket &&other);
+        Socket(Socket&& other) noexcept;
+        Socket const& operator=(Socket&& other);
 
     public:
         Socket(int s, bool serv)
@@ -539,7 +539,7 @@ namespace httpd {
                         n = c - 'a' + 10;
                     if (c >= 'A' && c <= 'F')
                         n = c - 'A' + 10;
-                    code  = (code << 4) | n;
+                    code = (code << 4) | n;
                     percent_state--;
                     if (!percent_state) {
                         dst += char(code);
@@ -564,8 +564,8 @@ namespace httpd {
             return m_path;
         }
 
-        std::string m_full;
-        std::string m_path;
+        std::string                        m_full;
+        std::string                        m_path;
         std::map<std::string, std::string> m_params;
         std::map<std::string, int>         m_counts;
     };
@@ -739,7 +739,7 @@ namespace httpd {
                         void* ptr = &((struct sockaddr_in*)res->ai_addr)->sin_addr;
                         if (res->ai_family == AF_INET6)
                             ptr = &((struct sockaddr_in6*)res->ai_addr)->sin6_addr;
-                        tmp[0]  = 0;
+                        tmp[0] = 0;
                         inet_ntop(res->ai_family, ptr, tmp, sizeof(tmp));
                         printf("%s\"%s\"", sep, tmp);
                         sep = line;
@@ -863,8 +863,8 @@ namespace httpd {
     class Http_socket : public Socket {
     private:
         Http_socket& operator=(const Http_socket& other);
-        Http_socket(Http_socket &&other) noexcept;
-        Http_socket const & operator=(Http_socket &&other);
+        Http_socket(Http_socket&& other) noexcept;
+        Http_socket const& operator=(Http_socket&& other);
 
     public:
         enum State {
