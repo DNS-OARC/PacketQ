@@ -130,7 +130,7 @@ private:
     public:
         std::string m_function;
         int         m_key;
-        bool operator<(const Item& r) const
+        bool        operator<(const Item& r) const
         {
             if (m_key < r.m_key)
                 return true;
@@ -151,7 +151,7 @@ public:
     Table* create_table(const char* name);
     Table* create_or_use_table(const char* name);
     Table* get_table(const char* name);
-    void add_lut(const char* table, int key, const char* value)
+    void   add_lut(const char* table, int key, const char* value)
     {
         Item i;
         i.m_function = table;
@@ -162,8 +162,8 @@ public:
     RefCountString* get_value(const char* table, int key)
     {
         Item i;
-        i.m_function = table;
-        i.m_key      = key;
+        i.m_function                             = table;
+        i.m_key                                  = key;
         std::map<Item, std::string>::iterator it = m_lut.find(i);
         if (it != m_lut.end())
             return RefCountString::construct(it->second.c_str());
@@ -188,8 +188,8 @@ template <typename T>
 class Allocator {
 private:
     Allocator& operator=(const Allocator& other);
-    Allocator(Allocator &&other) noexcept;
-    Allocator const & operator=(Allocator &&other);
+    Allocator(Allocator&& other) noexcept;
+    Allocator const& operator=(Allocator&& other);
 
 public:
     Allocator(int size, int buffersize)
@@ -245,8 +245,8 @@ private:
     class Buffer {
     private:
         Buffer& operator=(const Buffer& other);
-        Buffer(Buffer &&other) noexcept;
-        Buffer const & operator=(Buffer &&other);
+        Buffer(Buffer&& other) noexcept;
+        Buffer const& operator=(Buffer&& other);
 
     public:
         friend class Allocator;
@@ -360,8 +360,8 @@ public:
 class Table {
 private:
     Table& operator=(const Table& other);
-    Table(Table &&other) noexcept;
-    Table const & operator=(Table &&other);
+    Table(Table&& other) noexcept;
+    Table const& operator=(Table&& other);
 
 public:
     Table(const char* name = 0, const char* query = 0)
@@ -428,12 +428,12 @@ public:
 
     Column* add_column(const char* name, Coltype::Type type, int id = -1, bool hidden = false);
     Column* add_column(const char* name, const char* type, int id = -1, bool hidden = false);
-    void merge_sort(Ordering_terms& order);
-    void per_sort(Ordering_terms& order);
-    Row* create_row();
-    void delete_row(Row* row);
-    void add_row(Row* row);
-    void limit(int limit, int offset = 0);
+    void    merge_sort(Ordering_terms& order);
+    void    per_sort(Ordering_terms& order);
+    Row*    create_row();
+    void    delete_row(Row* row);
+    void    add_row(Row* row);
+    void    limit(int limit, int offset = 0);
 
     std::vector<Column*> m_cols;
     std::list<Row*>      m_rows;
@@ -561,8 +561,9 @@ private:
 class OP : public Token {
 private:
     OP& operator=(const OP& other);
-    OP(OP &&other) noexcept;
-    OP const & operator=(OP &&other);
+    OP(OP&& other)
+    noexcept;
+    OP const& operator=(OP&& other);
 
 public:
     static int is_binary(const char* str)
@@ -677,11 +678,11 @@ public:
         return res;
     }
 
-    virtual void evaluate(Row** rows, Variant& v) { throw Error("evaluate() called on abstract OP class"); };
-    virtual void evaluate_aggregate_operands(Row** rows);
-    virtual void combine_aggregate(Row* base_row, Row* other_row);
-    OP* compile(const std::vector<Table*>& tables,
-        const std::vector<int>& search_order, Query& q);
+    virtual void  evaluate(Row** rows, Variant& v) { throw Error("evaluate() called on abstract OP class"); };
+    virtual void  evaluate_aggregate_operands(Row** rows);
+    virtual void  combine_aggregate(Row* base_row, Row* other_row);
+    OP*           compile(const std::vector<Table*>& tables,
+                  const std::vector<int>& search_order, Query& q);
     int           m_row_index;
     std::string   m_name;
     int           m_precedence;
@@ -915,11 +916,11 @@ public:
             return;
         }
         size_t buflen = start < end ? end - start + 1 : 1;
-        char buf[buflen];
+        char   buf[buflen];
         p = 0;
         while (start < end)
             buf[p++] = s[start++];
-        buf[p]       = 0;
+        buf[p] = 0;
 
         RefCountStringHandle res(RefCountString::construct(buf));
         v = *res;
@@ -1550,8 +1551,8 @@ public:
 class Bin_op_like : public OP {
 private:
     Bin_op_like& operator=(const Bin_op_like& other);
-    Bin_op_like(Bin_op_like &&other) noexcept;
-    Bin_op_like const & operator=(Bin_op_like &&other);
+    Bin_op_like(Bin_op_like&& other) noexcept;
+    Bin_op_like const& operator=(Bin_op_like&& other);
 
     regex_t m_re;
     char    m_re_str[RE_LEN];
@@ -1707,8 +1708,8 @@ public:
 class Ordering_terms {
 private:
     Ordering_terms& operator=(const Ordering_terms& other);
-    Ordering_terms(Ordering_terms &&other) noexcept;
-    Ordering_terms const & operator=(Ordering_terms &&other);
+    Ordering_terms(Ordering_terms&& other) noexcept;
+    Ordering_terms const& operator=(Ordering_terms&& other);
 
 public:
     Ordering_terms()
@@ -1748,8 +1749,8 @@ class Reader;
 class Query {
 private:
     Query& operator=(const Query& other);
-    Query(Query &&other) noexcept;
-    Query const & operator=(Query &&other);
+    Query(Query&& other) noexcept;
+    Query const& operator=(Query&& other);
 
 public:
     Query(const char* name, const char* query)

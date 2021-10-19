@@ -50,7 +50,7 @@ public:
 
     Parse_icmp();
 
-    virtual void on_table_created(Table* table, const std::vector<int>& columns);
+    virtual void                on_table_created(Table* table, const std::vector<int>& columns);
     virtual Packet::ParseResult parse(Packet& packet, const std::vector<int>& columns, Row& destination_row, bool sample);
 
     void add_packet_columns();

@@ -40,9 +40,27 @@ void fill_in_visible_char_map()
     }
 }
 
-Parse_dns::Parse_dns()
+void fill_in_visible_char_map_rfc1035()
 {
-    fill_in_visible_char_map();
+    for (int i = 0; i < 256; ++i) {
+        if ((i >= 'a' && i <= 'z')
+            || (i >= 'A' && i <= 'Z')
+            || (i >= '0' && i <= '9')
+            || (i == '-' || i == '_')) {
+            visible_char_map[i] = i;
+        } else { // espaping needed
+            visible_char_map[i] = 0;
+        }
+    }
+}
+
+Parse_dns::Parse_dns(bool escape_dnsnames)
+{
+    if (escape_dnsnames) {
+        fill_in_visible_char_map_rfc1035();
+    } else {
+        fill_in_visible_char_map();
+    }
 
     table_name = "dns";
 

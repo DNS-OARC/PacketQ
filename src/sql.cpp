@@ -585,9 +585,9 @@ void printrep(int n, char c)
         return;
     char buf[3000];
     int  i;
-    for (i     = 0; i < n; i++)
+    for (i = 0; i < n; i++)
         buf[i] = c;
-    buf[i]     = 0;
+    buf[i] = 0;
     printf("%s", buf);
 }
 
@@ -814,10 +814,10 @@ void Table::csv(bool format)
     int              cols = (int)m_cols.size();
     std::vector<int> col_len(cols);
 
-    for (int i     = 0; i < cols; i++)
+    for (int i = 0; i < cols; i++)
         col_len[i] = 0;
-    int   max      = 0;
-    char* tmp      = 0;
+    int   max = 0;
+    char* tmp = 0;
     if (format) {
         for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
             Row* r = *it;
@@ -872,7 +872,7 @@ void Table::csv(bool format)
         tmp = new char[max + 1];
         for (int i = 0; i < max; i++)
             tmp[i] = 32;
-        tmp[max]   = 0;
+        tmp[max] = 0;
     }
 
     for (int i = 0; i < cols; i++) {
@@ -1774,8 +1774,8 @@ void Query::parse()
 
 // return column and index in tables, or 0 for column if column isn't found
 std::pair<Column*, int> lookup_column_in_tables(const std::vector<Table*>& tables,
-    const std::vector<int>& search_order,
-    const char*             name)
+    const std::vector<int>&                                                search_order,
+    const char*                                                            name)
 {
     if (strcmp(name, "*") == 0)
         return std::pair<Column*, int>((Column*)0, 0);
@@ -1868,7 +1868,7 @@ OP* OP::compile(const std::vector<Table*>& tables, const std::vector<int>& searc
             m_t = m_param[1]->m_t;
             if (m_param[2]->m_t > m_t)
                 m_t = m_param[2]->m_t;
-            ret     = new If_func(*this);
+            ret = new If_func(*this);
         } else if (cmpi(get_token(), "name") && m_param[1]) {
             m_t = Coltype::_text;
             ret = new Name_func(*this);
@@ -2420,9 +2420,9 @@ bool DB::query(const char* q)
 
 Table* DB::get_table(const char* i_name)
 {
-    std::string name = lower(i_name);
-    Table*      t    = 0;
-    std::map<std::string, Table*>::iterator it = m_tables.find(name);
+    std::string                             name = lower(i_name);
+    Table*                                  t    = 0;
+    std::map<std::string, Table*>::iterator it   = m_tables.find(name);
     if (it != m_tables.end())
         t = it->second;
 

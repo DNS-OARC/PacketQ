@@ -76,11 +76,9 @@ public:
             if (c == '\\') {
                 m_buffer[m_len++] = '\\';
                 c                 = '\\';
-            }
-            else if (c == '"') {
+            } else if (c == '"') {
                 m_buffer[m_len++] = '\\';
-            }
-            else if (c < 0x20) {
+            } else if (c < 0x20) {
                 m_buffer[m_len++] = '\\';
                 m_buffer[m_len++] = 'u';
                 m_buffer[m_len++] = '0';
@@ -199,7 +197,7 @@ public:
                 if (i == longest_p) {
                     if (i == 0)
                         m_buffer[m_len++] = ':';
-                    m_buffer[m_len++]     = ':';
+                    m_buffer[m_len++] = ':';
                 }
             } else {
                 add_hex_ushort(digs[i]);
@@ -357,7 +355,7 @@ public:
                 if (i == longest_p) {
                     if (i == 0)
                         m_buffer[m_len++] = ':';
-                    m_buffer[m_len++]     = ':';
+                    m_buffer[m_len++] = ':';
                 }
             } else {
                 add_hex_ushort(digs[i]);

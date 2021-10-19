@@ -34,8 +34,8 @@ namespace packetq {
 class Pcap_file {
 private:
     Pcap_file& operator=(const Pcap_file& other);
-    Pcap_file(Pcap_file &&other) noexcept;
-    Pcap_file const & operator=(Pcap_file &&other);
+    Pcap_file(Pcap_file&& other) noexcept;
+    Pcap_file const& operator=(Pcap_file&& other);
 
 public:
     static const bool TAKE_OVER_FP = true;

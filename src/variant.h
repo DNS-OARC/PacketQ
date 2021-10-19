@@ -109,7 +109,7 @@ inline text_column convert_column_to_text(bool_column v)
         str->data[0] = '1';
     else
         str->data[1] = '0';
-    str->data[1]     = '\0';
+    str->data[1] = '\0';
     return str;
 }
 inline text_column convert_column_to_text(text_column v)

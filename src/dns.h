@@ -248,7 +248,15 @@ public:
                 p = 0;
 
             while (n-- > 0) {
-                out[p++] = visible_char_map[get_ubyte(offs++)];
+                const unsigned int byte = get_ubyte(offs++);
+                if (visible_char_map[byte]) {
+                    out[p++] = visible_char_map[byte];
+                } else {
+                    out[p++] = '\\';
+                    out[p++] = '0' + byte / 100;
+                    out[p++] = '0' + byte / 10 % 10;
+                    out[p++] = '0' + byte % 10;
+                }
             }
             out[p++] = '.';
             n        = get_ubyte(offs++);
@@ -451,9 +459,9 @@ public:
         COLUMN_EDNS0_ECS_ADDRESS,
     };
 
-    Parse_dns();
+    Parse_dns(bool escape_dnsnames);
 
-    virtual void on_table_created(Table* table, const std::vector<int>& columns);
+    virtual void                on_table_created(Table* table, const std::vector<int>& columns);
     virtual Packet::ParseResult parse(Packet& packet, const std::vector<int>& columns, Row& destination_row, bool sample);
 
     void add_packet_columns();
