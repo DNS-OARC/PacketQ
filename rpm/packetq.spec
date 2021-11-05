@@ -1,5 +1,5 @@
 Name:           packetq
-Version:        1.4.3
+Version:        1.5.0
 Release:        1%{?dist}
 Summary:        A tool that provides a basic SQL-frontend to PCAP-files
 Group:          Productivity/Networking/DNS/Utilities
@@ -54,6 +54,25 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Nov 05 2021 Jerry Lundström <lundstrom.jerry@gmail.com> 1.5.0-1
+- Release 1.5.0
+  * This release fixes issues with CSV and JSON w.r.t. quoted strings. CSV
+    output now conforms to RFC4180 and JSON output conforms to RFC8259.
+    Also added a new option (`--rfc1035`) to output and quote domain names
+    as described in RFC1035.
+  * Other changes:
+    - Update debian control files
+    - Fix typo in `--help` text
+    - Fix OpenBSD clang++ compiler warnings
+    - `Output::add_int()`: Fix potential memory overwrite
+  * Commits:
+    8206e0f OpenBSD clang warnings
+    6c1247f Code format
+    d6c82d4 New option to escape DNS names
+    2bf6f26 Fix typo in --help around --xml parameter
+    9c95d15 Conform to CSV/JSON RFCs
+    feb0596 debhelper
+    be37ad0 Bye Travis
 * Fri Oct 23 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 1.4.3-1
 - Release 1.4.3
   * This release updates the DNS resource record types list with the new

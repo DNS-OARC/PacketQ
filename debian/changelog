@@ -1,3 +1,28 @@
+packetq (1.5.0-1~unstable+1) unstable; urgency=low
+
+  * Release 1.5.0
+
+    This release fixes issues with CSV and JSON w.r.t. quoted strings. CSV
+    output now conforms to RFC4180 and JSON output conforms to RFC8259.
+    Also added a new option (`--rfc1035`) to output and quote domain names
+    as described in RFC1035.
+
+    Other changes:
+    - Update debian control files
+    - Fix typo in `--help` text
+    - Fix OpenBSD clang++ compiler warnings
+    - `Output::add_int()`: Fix potential memory overwrite
+
+    8206e0f OpenBSD clang warnings
+    6c1247f Code format
+    d6c82d4 New option to escape DNS names
+    2bf6f26 Fix typo in --help around --xml parameter
+    9c95d15 Conform to CSV/JSON RFCs
+    feb0596 debhelper
+    be37ad0 Bye Travis
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Fri, 05 Nov 2021 14:02:24 +0100
+
 packetq (1.4.3-1~unstable+1) unstable; urgency=low
 
   * Release 1.4.3
