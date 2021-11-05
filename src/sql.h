@@ -307,7 +307,7 @@ class Column {
 public:
     static const bool HIDDEN = true;
 
-    static Coldef m_coldefs[Coltype::_max];
+    static Coldef m_coldefs[COLTYPE_MAX];
     Column(const char* name, Coltype::Type type, int id, bool hidden);
     // called at startup by DB
     static void init_defs()

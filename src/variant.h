@@ -37,13 +37,13 @@ inline std::size_t hash_bytes(const char* bytes, int len)
 }
 
 // must be defined in this order - see the "if" statement
+#define COLTYPE_MAX 4
 namespace Coltype {
     enum Type {
-        _bool,
-        _int,
-        _float,
-        _text,
-        _max
+        _bool  = 0,
+        _int   = 1,
+        _float = 2,
+        _text  = 3,
     };
 };
 

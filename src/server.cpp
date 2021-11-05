@@ -238,7 +238,7 @@ namespace httpd {
                 unsigned char ptr[4096];
                 int           len;
 
-                while (len = m_write.read(ptr, sizeof(ptr))) {
+                while ((len = m_write.read(ptr, sizeof(ptr)))) {
                     int res = write(m_socket, ptr, len);
 #if EAGAIN != EWOULDBLOCK
                     if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
@@ -995,7 +995,7 @@ namespace httpd {
                     pfd.fd      = m_child_fd;
                     pfd.events  = POLLIN;
                     pfd.revents = 0;
-                    if (1 == poll(&pfd, 1, 0) && (pfd.revents & POLLIN != 0)) {
+                    if (1 == poll(&pfd, 1, 0) && (pfd.revents & POLLIN) != 0) {
                         if ((res = read(m_child_fd, buffer, (int)sizeof(buffer))) > 0) {
                             done = false;
                             m_child_read += res;

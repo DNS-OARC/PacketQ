@@ -880,11 +880,13 @@ void Table::csv(bool format)
             continue;
 
         printf("%s", csv_qoute_string(m_cols[i]->m_name).c_str());
-        if (i < cols - 1)
-            if (format)
+        if (i < cols - 1) {
+            if (format) {
                 printf("%s,", &tmp[csv_qoute_string(m_cols[i]->m_name).length() + max - col_len[i] + 1]);
-            else
+            } else {
                 printf(",");
+            }
+        }
     }
     printf("\n");
     for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
@@ -920,11 +922,13 @@ void Table::csv(bool format)
             }
 
             fputs(out.c_str(), stdout);
-            if (i < cols - 1)
-                if (format)
+            if (i < cols - 1) {
+                if (format) {
                     printf("%s,", &tmp[out.length() + max - col_len[i] + 1]);
-                else
+                } else {
                     printf(",");
+                }
+            }
         }
 
         printf("\n");
@@ -1103,7 +1107,7 @@ public:
             }
         }
         it = save;
-        if (res = get_expr(it, 0)) {
+        if ((res = get_expr(it, 0))) {
             save = it;
 
             if (is(it, Token::_label, "as")) {
@@ -1130,7 +1134,7 @@ public:
         bool success = true;
         while (again) {
             OP* op;
-            if (op = get_result_column(it)) {
+            if ((op = get_result_column(it))) {
                 q.m_select.push_back(op);
             } else {
                 success = false;
@@ -1152,7 +1156,7 @@ public:
     bool get_ordering_terms(Ordering_terms& ordering, std::list<Token>::iterator& it)
     {
         OP* op;
-        while (op = get_expr(it, 0)) {
+        while ((op = get_expr(it, 0))) {
             bool asc = true;
             if (it->get_type() == Token::_label) {
                 if (cmpi(it->get_token(), "asc")) {
@@ -1250,7 +1254,7 @@ public:
             return true;
         it++;
         OP* res = 0;
-        if (res = get_expr(it, 0)) {
+        if ((res = get_expr(it, 0))) {
             q.m_having = res;
             return true;
         }
@@ -1265,7 +1269,7 @@ public:
             return true;
         it++;
         OP* res = 0;
-        if (res = get_expr(it, 0)) {
+        if ((res = get_expr(it, 0))) {
             q.m_where = res;
             return true;
         }
@@ -1380,7 +1384,7 @@ public:
             if (expect_expr && is(it, Token::_paren, "(")) {
                 it++;
                 OP* op = 0;
-                if (op = get_expr(it, rec + 1)) {
+                if ((op = get_expr(it, rec + 1))) {
                     if (is(it, Token::_paren, ")")) {
                         it++;
                         operand_stack.push(op);
@@ -1756,7 +1760,6 @@ public:
         _e,
         _sign,
         _exp,
-        _exit
     };
 
     Num_state num_state;
@@ -2499,6 +2502,6 @@ void Trim_func::evaluate(Row** rows, Variant& v)
 
 DB g_db;
 
-Coldef Column::m_coldefs[Coltype::_max];
+Coldef Column::m_coldefs[COLTYPE_MAX];
 
 } // namespace packetq
