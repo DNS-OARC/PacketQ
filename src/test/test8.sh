@@ -1,6 +1,5 @@
 #!/bin/sh -e
-# Copyright (c) 2017-2021, OARC, Inc.
-# Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
+# Copyright (c) 2021, Internet Systems Consortium, Inc.
 # All rights reserved.
 #
 # This file is part of PacketQ.
@@ -18,10 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
-rm -f test5.out
+TESTPCAP="$srcdir/../../pcap/sample-rfc1035escape.pcap.gz"
+../packetq -s "select qname from dns" --json "$TESTPCAP" > test8.out
+../packetq -s "select qname from dns" --json --rfc1035 "$TESTPCAP" >> test8.out
+../packetq -s "select qname from dns" --csv "$TESTPCAP" >> test8.out
+../packetq -s "select qname from dns" --csv --rfc1035 "$TESTPCAP" >> test8.out
 
-cat "$srcdir/sql.txt" | grep -v '^#' | while read sql; do
-  ../packetq -s "$sql" "$srcdir/../../pcap/sample.pcap.gz" >> test5.out
-done
-
-diff -uw "$srcdir/test5.gold" test5.out
+diff -uw "$srcdir/test8.gold" test8.out

@@ -1,6 +1,6 @@
 # PacketQ
 
-[![Build Status](https://travis-ci.com/DNS-OARC/PacketQ.svg?branch=develop)](https://travis-ci.com/DNS-OARC/PacketQ) [![Total alerts](https://img.shields.io/lgtm/alerts/g/DNS-OARC/PacketQ.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DNS-OARC/PacketQ/alerts/) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3APacketQ&metric=bugs)](https://sonarcloud.io/dashboard?id=dns-oarc%3APacketQ) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3APacketQ&metric=security_rating)](https://sonarcloud.io/dashboard?id=dns-oarc%3APacketQ)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/DNS-OARC/PacketQ.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DNS-OARC/PacketQ/alerts/) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3APacketQ&metric=bugs)](https://sonarcloud.io/dashboard?id=dns-oarc%3APacketQ) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3APacketQ&metric=security_rating)](https://sonarcloud.io/dashboard?id=dns-oarc%3APacketQ)
 
 `packetq` is a command line tool to run SQL queries directly on PCAP files,
 the results can be outputted as JSON (default), formatted/compact CSV and XML.
@@ -103,12 +103,13 @@ packetq -d -p8080 -w html/ -r pcap/
 - Magnus Lundén [@ripoff](https://github.com/ripoff)
 - Roger Murray [@romu42](https://github.com/romu42)
 - Henrik Levkowetz [@levkowetz](https://github.com/levkowetz)
+- Petr Špaček [@pspacek](https://github.com/pspacek)
 
 See also the [full list of contributors](https://github.com/DNS-OARC/PacketQ/graphs/contributors).
 
 ## Copyright
 
-Copyright (c) 2017-2020, OARC, Inc.
+Copyright (c) 2017-2021, OARC, Inc.
 
 Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, OARC, Inc.
+ * Copyright (c) 2017-2021, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -585,9 +585,9 @@ void printrep(int n, char c)
         return;
     char buf[3000];
     int  i;
-    for (i     = 0; i < n; i++)
+    for (i = 0; i < n; i++)
         buf[i] = c;
-    buf[i]     = 0;
+    buf[i] = 0;
     printf("%s", buf);
 }
 
@@ -795,13 +795,13 @@ void Table::json(bool trailing_comma)
     g_output.print();
 }
 
-std::string qoute_string(const std::string& s)
+std::string csv_qoute_string(const std::string& s)
 {
     std::string r   = "\"";
     int         len = s.length();
     for (int i = 0; i < len; i++) {
-        if (s[i] == '"' || s[i] == '\\') {
-            r += '\\';
+        if (s[i] == '"') {
+            r += '"';
         }
         r += s[i];
     }
@@ -814,10 +814,10 @@ void Table::csv(bool format)
     int              cols = (int)m_cols.size();
     std::vector<int> col_len(cols);
 
-    for (int i     = 0; i < cols; i++)
+    for (int i = 0; i < cols; i++)
         col_len[i] = 0;
-    int   max      = 0;
-    char* tmp      = 0;
+    int   max = 0;
+    char* tmp = 0;
     if (format) {
         for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
             Row* r = *it;
@@ -847,7 +847,7 @@ void Table::csv(bool format)
                     len = strlen(buf);
                     break;
                 case Coltype::_text:
-                    len = qoute_string(r->access_column<text_column>(offset)->data).length();
+                    len = csv_qoute_string(r->access_column<text_column>(offset)->data).length();
                     break;
                 }
                 len++;
@@ -861,7 +861,7 @@ void Table::csv(bool format)
             if (m_cols[i]->m_hidden)
                 continue;
 
-            int l = qoute_string(m_cols[i]->m_name).length();
+            int l = csv_qoute_string(m_cols[i]->m_name).length();
             l++;
             if (l > col_len[i])
                 col_len[i] = l;
@@ -872,19 +872,21 @@ void Table::csv(bool format)
         tmp = new char[max + 1];
         for (int i = 0; i < max; i++)
             tmp[i] = 32;
-        tmp[max]   = 0;
+        tmp[max] = 0;
     }
 
     for (int i = 0; i < cols; i++) {
         if (m_cols[i]->m_hidden)
             continue;
 
-        printf("%s", qoute_string(m_cols[i]->m_name).c_str());
-        if (i < cols - 1)
-            if (format)
-                printf("%s,", &tmp[qoute_string(m_cols[i]->m_name).length() + max - col_len[i] + 1]);
-            else
+        printf("%s", csv_qoute_string(m_cols[i]->m_name).c_str());
+        if (i < cols - 1) {
+            if (format) {
+                printf("%s,", &tmp[csv_qoute_string(m_cols[i]->m_name).length() + max - col_len[i] + 1]);
+            } else {
                 printf(",");
+            }
+        }
     }
     printf("\n");
     for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
@@ -915,16 +917,18 @@ void Table::csv(bool format)
                 out = buf;
                 break;
             case Coltype::_text:
-                out = qoute_string(r->access_column<text_column>(offset)->data);
+                out = csv_qoute_string(r->access_column<text_column>(offset)->data);
                 break;
             }
 
             fputs(out.c_str(), stdout);
-            if (i < cols - 1)
-                if (format)
+            if (i < cols - 1) {
+                if (format) {
                     printf("%s,", &tmp[out.length() + max - col_len[i] + 1]);
-                else
+                } else {
                     printf(",");
+                }
+            }
         }
 
         printf("\n");
@@ -1103,7 +1107,7 @@ public:
             }
         }
         it = save;
-        if (res = get_expr(it, 0)) {
+        if ((res = get_expr(it, 0))) {
             save = it;
 
             if (is(it, Token::_label, "as")) {
@@ -1130,7 +1134,7 @@ public:
         bool success = true;
         while (again) {
             OP* op;
-            if (op = get_result_column(it)) {
+            if ((op = get_result_column(it))) {
                 q.m_select.push_back(op);
             } else {
                 success = false;
@@ -1152,7 +1156,7 @@ public:
     bool get_ordering_terms(Ordering_terms& ordering, std::list<Token>::iterator& it)
     {
         OP* op;
-        while (op = get_expr(it, 0)) {
+        while ((op = get_expr(it, 0))) {
             bool asc = true;
             if (it->get_type() == Token::_label) {
                 if (cmpi(it->get_token(), "asc")) {
@@ -1250,7 +1254,7 @@ public:
             return true;
         it++;
         OP* res = 0;
-        if (res = get_expr(it, 0)) {
+        if ((res = get_expr(it, 0))) {
             q.m_having = res;
             return true;
         }
@@ -1265,7 +1269,7 @@ public:
             return true;
         it++;
         OP* res = 0;
-        if (res = get_expr(it, 0)) {
+        if ((res = get_expr(it, 0))) {
             q.m_where = res;
             return true;
         }
@@ -1380,7 +1384,7 @@ public:
             if (expect_expr && is(it, Token::_paren, "(")) {
                 it++;
                 OP* op = 0;
-                if (op = get_expr(it, rec + 1)) {
+                if ((op = get_expr(it, rec + 1))) {
                     if (is(it, Token::_paren, ")")) {
                         it++;
                         operand_stack.push(op);
@@ -1756,7 +1760,6 @@ public:
         _e,
         _sign,
         _exp,
-        _exit
     };
 
     Num_state num_state;
@@ -1774,8 +1777,8 @@ void Query::parse()
 
 // return column and index in tables, or 0 for column if column isn't found
 std::pair<Column*, int> lookup_column_in_tables(const std::vector<Table*>& tables,
-    const std::vector<int>& search_order,
-    const char*             name)
+    const std::vector<int>&                                                search_order,
+    const char*                                                            name)
 {
     if (strcmp(name, "*") == 0)
         return std::pair<Column*, int>((Column*)0, 0);
@@ -1868,7 +1871,7 @@ OP* OP::compile(const std::vector<Table*>& tables, const std::vector<int>& searc
             m_t = m_param[1]->m_t;
             if (m_param[2]->m_t > m_t)
                 m_t = m_param[2]->m_t;
-            ret     = new If_func(*this);
+            ret = new If_func(*this);
         } else if (cmpi(get_token(), "name") && m_param[1]) {
             m_t = Coltype::_text;
             ret = new Name_func(*this);
@@ -2420,9 +2423,9 @@ bool DB::query(const char* q)
 
 Table* DB::get_table(const char* i_name)
 {
-    std::string name = lower(i_name);
-    Table*      t    = 0;
-    std::map<std::string, Table*>::iterator it = m_tables.find(name);
+    std::string                             name = lower(i_name);
+    Table*                                  t    = 0;
+    std::map<std::string, Table*>::iterator it   = m_tables.find(name);
     if (it != m_tables.end())
         t = it->second;
 
@@ -2499,6 +2502,6 @@ void Trim_func::evaluate(Row** rows, Variant& v)
 
 DB g_db;
 
-Coldef Column::m_coldefs[Coltype::_max];
+Coldef Column::m_coldefs[COLTYPE_MAX];
 
 } // namespace packetq

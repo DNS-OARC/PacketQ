@@ -1,0 +1,60 @@
+[
+  {
+    "table_name": "result-0",
+    "query": "select qname from dns",
+    "head": [
+      { "name": "qname","type": "text" }
+    ],
+    "data": [
+      ["test."],
+      ["'."],
+      ["\"."],
+      ["$."],
+      ["\\."],
+      ["$."],
+      ["$."],
+      ["_test.all.54.non-escaped.characters.abcdefghijklmnopqrstuvwxyz.ABCDEFGHIJKLMNOPQRSTUVWXYZ.0123456789.test."],
+      ["dot.embeded.in.a.label.test."]
+    ]
+  }
+]
+[
+  {
+    "table_name": "result-0",
+    "query": "select qname from dns",
+    "head": [
+      { "name": "qname","type": "text" }
+    ],
+    "data": [
+      ["test."],
+      ["\\039."],
+      ["\\034."],
+      ["\\036."],
+      ["\\092."],
+      ["\\000."],
+      ["\\255."],
+      ["_test.all.54.non-escaped.characters.abcdefghijklmnopqrstuvwxyz.ABCDEFGHIJKLMNOPQRSTUVWXYZ.0123456789.test."],
+      ["dot\\046embeded.in.a.label.test."]
+    ]
+  }
+]
+"qname"
+"test."
+"'."
+"""."
+"$."
+"\."
+"$."
+"$."
+"_test.all.54.non-escaped.characters.abcdefghijklmnopqrstuvwxyz.ABCDEFGHIJKLMNOPQRSTUVWXYZ.0123456789.test."
+"dot.embeded.in.a.label.test."
+"qname"
+"test."
+"\039."
+"\034."
+"\036."
+"\092."
+"\000."
+"\255."
+"_test.all.54.non-escaped.characters.abcdefghijklmnopqrstuvwxyz.ABCDEFGHIJKLMNOPQRSTUVWXYZ.0123456789.test."
+"dot\046embeded.in.a.label.test."

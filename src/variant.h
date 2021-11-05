@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, OARC, Inc.
+ * Copyright (c) 2017-2021, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -37,13 +37,13 @@ inline std::size_t hash_bytes(const char* bytes, int len)
 }
 
 // must be defined in this order - see the "if" statement
+#define COLTYPE_MAX 4
 namespace Coltype {
     enum Type {
-        _bool,
-        _int,
-        _float,
-        _text,
-        _max
+        _bool  = 0,
+        _int   = 1,
+        _float = 2,
+        _text  = 3,
     };
 };
 
@@ -109,7 +109,7 @@ inline text_column convert_column_to_text(bool_column v)
         str->data[0] = '1';
     else
         str->data[1] = '0';
-    str->data[1]     = '\0';
+    str->data[1] = '\0';
     return str;
 }
 inline text_column convert_column_to_text(text_column v)

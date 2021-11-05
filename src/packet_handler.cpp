@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, OARC, Inc.
+ * Copyright (c) 2017-2021, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -40,8 +40,8 @@ Str_conv converter;
 class Fragments {
 private:
     Fragments& operator=(const Fragments& other);
-    Fragments(Fragments &&other) noexcept;
-    Fragments const & operator=(Fragments &&other);
+    Fragments(Fragments&& other) noexcept;
+    Fragments const& operator=(Fragments&& other);
 
 public:
     class Range {
@@ -85,7 +85,7 @@ public:
         m_frags++;
         if (head.fragments == 0)
             m_complete = head.offset + len;
-        bool complete  = add_range(head.offset, head.offset + len);
+        bool complete = add_range(head.offset, head.offset + len);
         memcpy((void*)&m_buffer[head.offset], data, len);
         if (complete) {
             m_complete        = head.offset + len;
@@ -405,9 +405,9 @@ void Packet_handler::add_packet_column(const char* name, const char* description
     packet_columns.push_back(c);
 }
 
-void init_packet_handlers()
+void init_packet_handlers(bool escape_dnsnames)
 {
-    packet_handlers.push_back(new Parse_dns());
+    packet_handlers.push_back(new Parse_dns(escape_dnsnames));
     packet_handlers.push_back(new Parse_icmp());
 }
 

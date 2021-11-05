@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, OARC, Inc.
+ * Copyright (c) 2017-2021, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -50,7 +50,7 @@ public:
 
     Parse_icmp();
 
-    virtual void on_table_created(Table* table, const std::vector<int>& columns);
+    virtual void                on_table_created(Table* table, const std::vector<int>& columns);
     virtual Packet::ParseResult parse(Packet& packet, const std::vector<int>& columns, Row& destination_row, bool sample);
 
     void add_packet_columns();

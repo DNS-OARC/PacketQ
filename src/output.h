@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, OARC, Inc.
+ * Copyright (c) 2017-2021, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -68,16 +68,24 @@ public:
     }
     inline void add_string_esc_json(const char* p)
     {
+        static const char lut[] = "0123456789ABCDEF";
         if (m_len > sizeof(m_buffer) / 2)
             print();
         char c;
-        while (c = *p++) {
+        while ((c = *p++)) {
             if (c == '\\') {
                 m_buffer[m_len++] = '\\';
                 c                 = '\\';
-            }
-            if (c == '"') {
+            } else if (c == '"') {
                 m_buffer[m_len++] = '\\';
+            } else if (c < 0x20) {
+                m_buffer[m_len++] = '\\';
+                m_buffer[m_len++] = 'u';
+                m_buffer[m_len++] = '0';
+                m_buffer[m_len++] = '0';
+                m_buffer[m_len++] = lut[(c >> 4) & 0xf];
+                m_buffer[m_len++] = lut[c & 0xf];
+                continue;
             }
             m_buffer[m_len++] = c;
         }
@@ -93,7 +101,7 @@ public:
         if (c == 0)
             return;
         p--;
-        while (c = *p++) {
+        while ((c = *p++)) {
             if (c == '>') {
                 m_buffer[m_len++] = '&';
                 add_string("gt");
@@ -129,7 +137,7 @@ public:
     {
         check();
         char c;
-        while (c = *p++) {
+        while ((c = *p++)) {
             m_buffer[m_len++] = c;
         }
     }
@@ -189,7 +197,7 @@ public:
                 if (i == longest_p) {
                     if (i == 0)
                         m_buffer[m_len++] = ':';
-                    m_buffer[m_len++]     = ':';
+                    m_buffer[m_len++] = ':';
                 }
             } else {
                 add_hex_ushort(digs[i]);
@@ -238,21 +246,21 @@ public:
         if (i < 256) {
             add_string_q(m_diglut[i & 255]);
         } else {
-            char d[5];
+            unsigned char d[64];
 
-            char* cd = d;
-            while (i > 0) {
+            unsigned char* cd = d;
+            while (i > 0 && cd < (&d[0] + sizeof(d))) {
                 unsigned int n = i;
                 i              = i / 100;
                 n              = n - (i * 100);
                 *cd++          = n;
             }
             if (cd != d) {
-                char t = *--cd;
+                unsigned char t = *--cd;
                 add_string_q(m_diglut[t]);
             }
             while (cd != d) {
-                char t = *--cd;
+                unsigned char t = *--cd;
                 if (t >= 10)
                     add_string_q(m_diglut[t]);
                 else {
@@ -289,7 +297,7 @@ private:
     inline void add_string_q(const char* p)
     {
         char c;
-        while (c = *p++) {
+        while ((c = *p++)) {
             m_buffer[m_len++] = c;
         }
     }
@@ -347,7 +355,7 @@ public:
                 if (i == longest_p) {
                     if (i == 0)
                         m_buffer[m_len++] = ':';
-                    m_buffer[m_len++]     = ':';
+                    m_buffer[m_len++] = ':';
                 }
             } else {
                 add_hex_ushort(digs[i]);
@@ -360,7 +368,7 @@ public:
     inline void add_string_q(const char* p)
     {
         char c;
-        while (c = *p++) {
+        while ((c = *p++)) {
             m_buffer[m_len++] = c;
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, OARC, Inc.
+ * Copyright (c) 2017-2021, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -100,8 +100,8 @@ public:
         memset(&dst_ip, 0, sizeof(dst_ip));
     }
 
-    void reset();
-    int decode(unsigned char* data, int ether_type, int id);
+    void           reset();
+    int            decode(unsigned char* data, int ether_type, int id);
     unsigned int   s;
     unsigned int   us;
     unsigned short ethertype;
@@ -176,9 +176,9 @@ public:
     }
 
     ParseResult parse(Packet_handler* handler, const std::vector<int>& columns, Row& destination_row, bool sample);
-    bool parse_ethernet();
-    bool parse_ip(unsigned char* data, int len, int ether_type);
-    bool parse_transport(unsigned char* data, int len);
+    bool        parse_ethernet();
+    bool        parse_ip(unsigned char* data, int len, int ether_type);
+    bool        parse_transport(unsigned char* data, int len);
 
     IP_header      m_ip_header;
     unsigned char* m_data;
@@ -209,7 +209,7 @@ public:
     Table* create_table(const std::vector<int>& columns);
 
     // for actual packet handlers to fill in
-    virtual void on_table_created(Table* table, const std::vector<int>& columns) = 0;
+    virtual void                on_table_created(Table* table, const std::vector<int>& columns)                           = 0;
     virtual Packet::ParseResult parse(Packet& packet, const std::vector<int>& columns, Row& destination_row, bool sample) = 0;
 
     const char*                table_name;
@@ -218,7 +218,7 @@ public:
     void add_packet_column(const char* name, const char* description, Coltype::Type type, int id);
 };
 
-void            init_packet_handlers();
+void            init_packet_handlers(bool escape_dnsnames);
 void            destroy_packet_handlers();
 Packet_handler* get_packet_handler(std::string table_name);
 

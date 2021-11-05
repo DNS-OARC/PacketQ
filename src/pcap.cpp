@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, OARC, Inc.
+ * Copyright (c) 2017-2021, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -49,11 +49,11 @@ bool Pcap_file::get_header()
         return false;
     }
     // check for 0 timezone offset and accuracy
-    if (!get_int32() == 0) {
+    if (!(get_int32() == 0)) {
         printf("timezone offset != 0");
         return false;
     }
-    if (!get_int32() == 0) {
+    if (!(get_int32() == 0)) {
         printf("timezone offset != 0");
         return false;
     }

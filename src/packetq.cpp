@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, OARC, Inc.
+ * Copyright (c) 2017-2021, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -68,7 +68,10 @@ static void usage(char* argv0, bool longversion)
         "  --json | -j       JSON (default)\n"
         "  --csv | -c        CSV\n"
         "  --table | -t      Text table\n"
-        "  --xml | -x ]      XML\n"
+        "  --xml | -x        XML\n"
+        "  --rfc1035         Output DNS names escaped using RFC1035 format:\n"
+        "                    All characters outsize [a-zA-Z0-9_-] are escaped\n"
+        "                    like \\012. (Octet value in decimal.)\n"
         "\n"
         "Web Server:\n"
         "  --daemon | -d     Run web server in daemon mode.\n"
@@ -155,11 +158,40 @@ int main(int argc, char* argv[])
     int  max_conn = 7;
     bool daemon   = false;
 
-    init_packet_handlers(); // set up tables
-
     std::string webroot = "", pcaproot = "";
     std::string queries[NUM_QUERIES] = {
-        "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
     };
     int qcount = 0;
 
@@ -177,6 +209,7 @@ int main(int argc, char* argv[])
             { "json", 0, 0, 'j' },
             { "table", 0, 0, 't' },
             { "xml", 0, 0, 'x' },
+            { "rfc1035", 0, 0, 10000 },
             { "help", 0, 0, 'h' },
             { "version", 0, 0, 'v' },
             { NULL, 0, 0, 0 }
@@ -229,6 +262,9 @@ int main(int argc, char* argv[])
         case 'p':
             port = atoi(optarg);
             break;
+        case 10000: // rfc1035
+            g_app->set_escape(true);
+            break;
         default:
             fprintf(stderr, "Unknown option: %c\n", c);
             usage(argv[0], false);
@@ -238,6 +274,7 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
+    init_packet_handlers(g_app->get_escape()); // set up tables
     g_app->set_limit(limit);
     if (port > 0) {
         start_server(port, daemon, pcaproot, webroot, max_conn);

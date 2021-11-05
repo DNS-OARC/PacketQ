@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, OARC, Inc.
+ * Copyright (c) 2017-2021, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -73,7 +73,7 @@ struct RefCountString {
     {
         int length = to - from;
         if (length < 0)
-            length          = 0;
+            length = 0;
         RefCountString* str = RefCountString::allocate(length + 1);
         std::memcpy(str->data, data + from, length);
         str->data[length - 1 + 1] = '\0';
@@ -84,8 +84,8 @@ struct RefCountString {
 class RefCountStringHandle {
 private:
     RefCountStringHandle& operator=(const RefCountStringHandle& other);
-    RefCountStringHandle(RefCountStringHandle &&other) noexcept;
-    RefCountStringHandle const & operator=(RefCountStringHandle &&other);
+    RefCountStringHandle(RefCountStringHandle&& other) noexcept;
+    RefCountStringHandle const& operator=(RefCountStringHandle&& other);
 
 public:
     RefCountStringHandle()

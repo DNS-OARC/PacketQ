@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, OARC, Inc.
+ * Copyright (c) 2017-2021, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -34,8 +34,8 @@ namespace packetq {
 class Pcap_file {
 private:
     Pcap_file& operator=(const Pcap_file& other);
-    Pcap_file(Pcap_file &&other) noexcept;
-    Pcap_file const & operator=(Pcap_file &&other);
+    Pcap_file(Pcap_file&& other) noexcept;
+    Pcap_file const& operator=(Pcap_file&& other);
 
 public:
     static const bool TAKE_OVER_FP = true;

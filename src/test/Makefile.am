@@ -1,4 +1,4 @@
-# Copyright (c) 2017-2020, OARC, Inc.
+# Copyright (c) 2017-2021, OARC, Inc.
 # Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
 # All rights reserved.
 #
@@ -20,10 +20,12 @@
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
 
 CLEANFILES = test*.log test*.trs \
-  test1.out test2.out test3.out test4.out test5.out test6.out test7.out
+  test1.out test2.out test3.out test4.out test5.out test6.out test7.out \
+  test8.out
 
-TESTS = test1.sh test2.sh test3.sh test4.sh test5.sh test6.sh test7.sh
+TESTS = test1.sh test2.sh test3.sh test4.sh test5.sh test6.sh test7.sh \
+	test8.sh
 
 EXTRA_DIST = $(TESTS) \
   test1.gold test2.gold test3.gold test4.gold test5.gold test6.gold \
-  test7.gold sql.txt
+  test7.gold sql.txt test8.gold
