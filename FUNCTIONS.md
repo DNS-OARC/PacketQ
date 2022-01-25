@@ -42,6 +42,10 @@ Converts double precision number to integer.
 Evaluates `condition` and executes `false_op` if the result is 0 (false)
 otherwise `true_op` is executed.
 
+### NETMASK (address[, v4_mask_length[, v6_mask_length]])
+
+Masks the specified address using the v4 and v6 mask lengths specified in number of bits.  Defaults to 24 for IPv4 and 48 for IPv6 (/24 and /48 respectively)
+
 ## String operations
 
 ### RSPLIT(string, n [, char])
