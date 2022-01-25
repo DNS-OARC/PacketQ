@@ -28,8 +28,12 @@
 #ifndef ETHERTYPE_IPV6
 #define ETHERTYPE_IPV6 0x86dd
 #endif
+#ifndef IPPROTO_TCP
 #define IPPROTO_TCP 6
+#endif
+#ifndef IPPROTO_UDP
 #define IPPROTO_UDP 17
+#endif
 
 namespace packetq {
 

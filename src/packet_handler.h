@@ -33,7 +33,9 @@
 #include "sql.h"
 #include "tcp.h"
 
+#ifndef IPPROTO_ICMP
 #define IPPROTO_ICMP 1
+#endif
 
 namespace packetq {
 
