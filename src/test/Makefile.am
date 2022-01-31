@@ -28,4 +28,5 @@ TESTS = test1.sh test2.sh test3.sh test4.sh test5.sh test6.sh test7.sh \
 
 EXTRA_DIST = $(TESTS) \
   test1.gold test2.gold test3.gold test4.gold test5.gold test6.gold \
-  test7.gold sql.txt test8.gold
+  test7.gold sql.txt test8.gold \
+  dns.pcap dns6.pcap

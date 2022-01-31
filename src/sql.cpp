@@ -1881,6 +1881,9 @@ OP* OP::compile(const std::vector<Table*>& tables, const std::vector<int>& searc
         } else if (cmpi(get_token(), "rsplit") && m_param[1]) {
             m_t = Coltype::_text;
             ret = new Rsplit_func(*this);
+        } else if (cmpi(get_token(), "netmask")) {
+            m_t = Coltype::_text;
+            ret = new Netmask_func(*this);
         } else if (cmpi(get_token(), "count")) {
             m_t = Coltype::_int;
             ret = new Count_func(*this, dest_table);
