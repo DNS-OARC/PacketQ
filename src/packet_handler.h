@@ -33,10 +33,6 @@
 #include "sql.h"
 #include "tcp.h"
 
-#ifndef IPPROTO_ICMP
-#define IPPROTO_ICMP 1
-#endif
-
 namespace packetq {
 
 class Table;
@@ -179,6 +175,7 @@ public:
 
     ParseResult parse(Packet_handler* handler, const std::vector<int>& columns, Row& destination_row, bool sample);
     bool        parse_ethernet();
+    bool        parse_sll();
     bool        parse_ip(unsigned char* data, int len, int ether_type);
     bool        parse_transport(unsigned char* data, int len);
 

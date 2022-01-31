@@ -31,8 +31,6 @@
 #include "packet_handler.h"
 #include "tcp.h"
 
-#define IPPROTO_ICMP 1
-
 namespace packetq {
 
 extern char visible_char_map[256];

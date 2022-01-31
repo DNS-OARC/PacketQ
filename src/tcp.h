@@ -23,29 +23,19 @@
 #define __packetq_tcp_h
 
 #include <stdio.h>
-
-// Hack for Linux which does not include this in ethernet.h/ethertypes.h
-#ifndef ETHERTYPE_IPV6
-#define ETHERTYPE_IPV6 0x86dd
-#endif
-#ifndef IPPROTO_TCP
-#define IPPROTO_TCP 6
-#endif
-#ifndef IPPROTO_UDP
-#define IPPROTO_UDP 17
-#endif
+#include <stdint.h>
 
 namespace packetq {
 
-struct in6_addr {
+struct _in6_addr {
     union {
-        unsigned char  __u6_addr8[16];
-        unsigned short __u6_addr16[8];
-        unsigned int   __u6_addr32[4];
+        uint8_t  __u6_addr8[16];
+        uint16_t __u6_addr16[8];
+        uint32_t __u6_addr32[4];
     } __in6_u; /* 128-bit IP6 address */
 };
 
-typedef struct in6_addr in6addr_t;
+typedef struct _in6_addr in6addr_t;
 
 class Payload;
 

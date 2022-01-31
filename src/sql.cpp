@@ -20,7 +20,6 @@
  */
 
 #include "sql.h"
-#include <arpa/inet.h>
 #include "output.h"
 #include "packet_handler.h"
 #include "packetq.h"
@@ -38,79 +37,6 @@ namespace packetq {
 bool verbose = false;
 
 int g_allocs = 0;
-
-class Netmask_func : public OP {
-public:
-    Netmask_func (const OP& op) : OP(op) {}
-    void evaluate (Row **rows, Variant& v) {
-        Variant orig_ip;
-        struct in_addr a4;
-        struct in6_addr a6;
-        int ret = 0, isv4 = 1;
-
-        m_param[0]->evaluate (rows, orig_ip);
-        if (!valid_masks) set_masks (rows);
-
-        RefCountStringHandle src(orig_ip.get_text());
-        RefCountStringHandle dest(RefCountString::allocate(INET6_ADDRSTRLEN));
-
-        ret = inet_pton (AF_INET, (*src)->data, (void *)&a4);
-        if (ret == 0) {
-            isv4 = 0;
-            ret = inet_pton (AF_INET6, (*src)->data, (void *)&a6);
-        }
-        if (ret != 1) {
-            // Operation on non-IP address text
-            RefCountStringHandle empty(RefCountString::construct(""));
-            v = *empty;
-            return;
-        }
-        if (isv4) {
-            uint32_t *_x = (uint32_t *)&a4;
-            *_x = *_x & v4_mask;
-            (void) inet_ntop (AF_INET, (void *)&a4, (*dest)->data, INET6_ADDRSTRLEN);
-        } else {
-            uint32_t *_x = (uint32_t *)&a6;
-            for (int i=0; i < 4; i++)
-                _x[i] = _x[i] & v6_mask[i];
-            (void) inet_ntop (AF_INET6, (void *)&a6, (*dest)->data, INET6_ADDRSTRLEN);
-        }
-        v = *dest;
-        return;
-    }
-private :
-    void set_masks (Row **rows) {
-        int v4size = 24;
-        int v6size = 48;
-        if (m_param[1] != NULL) {
-                Variant v4cidr;
-                m_param[1]->evaluate(rows, v4cidr);
-                v4size = v4cidr.get_int();
-                if (m_param[2] != NULL) {
-                    Variant v6cidr;
-                    m_param[2]->evaluate(rows, v6cidr);
-                    v6size = v6cidr.get_int();
-                }
-            }
-        if (v4size > 0)
-            v4_mask = htonl ((int32_t) 0x80000000 >> (v4size - 1));
-        if (v6size > 0) {
-            for (int i = 0; i < 4; i++) {
-                    if (v6size >= 32)
-                        v6_mask[i] = 0xffffffff;
-                    else
-                        v6_mask[i] = htonl ((int32_t)0x80000000 >> (v6size - 1));
-                    v6size -= 32;
-                    if (v6size <= 0) break;
-                }
-        }
-        valid_masks = true;
-        return;
-    }
-    uint32_t v4_mask = 0;
-    uint32_t v6_mask[4] = {0,0,0,0};
-    bool valid_masks = false;
-};
 
 Column* Table::add_column(const char* name, const char* type, int id, bool hidden)
 {
