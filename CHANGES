@@ -1,3 +1,21 @@
+2022-03-10 Jerry Lundström
+
+    Release 1.6.0
+
+    This release adds a new SQL function for masking addresses and adds
+    support for Pcap's LINUX_SLL link layer.
+
+    The new `netmask()` function (added by Ken Renard @kdrenard) is used
+    as follows: `NETMASK(address [, v4_mask_length [, v6_mask_length]])`
+
+    Other fixes:
+    - `packet_handler`: Clean up header parsing, size checks etc
+    - Remove own defines of ether/proto types and don't overlap `struct in6_addr`
+
+    ae211e6 LINUX_SLL, netmask(), ether types
+    d847c97 Adding Netmask description to FUNCTIONS.md
+    4be804d Adding Netmask function.  Usage "netmask (<address_field>[, <IPv4-mask-length>[, <IPv6-mask-length>]])"
+
 2021-11-05 Jerry Lundström
 
     Release 1.5.0

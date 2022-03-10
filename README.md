@@ -104,12 +104,13 @@ packetq -d -p8080 -w html/ -r pcap/
 - Roger Murray [@romu42](https://github.com/romu42)
 - Henrik Levkowetz [@levkowetz](https://github.com/levkowetz)
 - Petr Špaček [@pspacek](https://github.com/pspacek)
+- Ken Renard [@kdrenard](https://github.com/kdrenard)
 
 See also the [full list of contributors](https://github.com/DNS-OARC/PacketQ/graphs/contributors).
 
 ## Copyright
 
-Copyright (c) 2017-2021, OARC, Inc.
+Copyright (c) 2017-2022, OARC, Inc.
 
 Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
 

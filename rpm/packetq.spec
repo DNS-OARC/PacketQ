@@ -1,5 +1,5 @@
 Name:           packetq
-Version:        1.5.0
+Version:        1.6.0
 Release:        1%{?dist}
 Summary:        A tool that provides a basic SQL-frontend to PCAP-files
 Group:          Productivity/Networking/DNS/Utilities
@@ -54,6 +54,19 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Mar 10 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 1.6.0-1
+- Release 1.6.0
+  * This release adds a new SQL function for masking addresses and adds
+    support for Pcap's LINUX_SLL link layer.
+  * The new `netmask()` function (added by Ken Renard @kdrenard) is used
+    as follows: `NETMASK(address [, v4_mask_length [, v6_mask_length]])`
+  * Other fixes:
+    - `packet_handler`: Clean up header parsing, size checks etc
+    - Remove own defines of ether/proto types and don't overlap `struct in6_addr`
+  * Commits:
+    ae211e6 LINUX_SLL, netmask(), ether types
+    d847c97 Adding Netmask description to FUNCTIONS.md
+    4be804d Adding Netmask function.  Usage "netmask (<address_field>[, <IPv4-mask-length>[, <IPv6-mask-length>]])"
 * Fri Nov 05 2021 Jerry Lundström <lundstrom.jerry@gmail.com> 1.5.0-1
 - Release 1.5.0
   * This release fixes issues with CSV and JSON w.r.t. quoted strings. CSV
