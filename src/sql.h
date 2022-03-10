@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021, OARC, Inc.
+ * Copyright (c) 2017-2022, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -38,6 +38,12 @@
 #include <string>
 #include <sys/types.h>
 #include <vector>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#ifndef s6_addr32 // For *BSD
+#define s6_addr32 __u6_addr.__u6_addr32
+#endif
+#include <sys/socket.h>
 
 #include "refcountstring.h"
 #include "variant.h"
@@ -796,6 +802,89 @@ public:
 };
 
 ///////////////// Functions
+
+class Netmask_func : public OP {
+public:
+    Netmask_func(const OP& op)
+        : OP(op)
+    {
+    }
+    void evaluate(Row** rows, Variant& v)
+    {
+        Variant orig_ip;
+        m_param[0]->evaluate(rows, orig_ip);
+
+        if (!valid_masks)
+            set_masks(rows);
+
+        RefCountStringHandle src(orig_ip.get_text());
+        RefCountStringHandle dest(RefCountString::allocate(INET6_ADDRSTRLEN + 1));
+
+        if (strchr((*src)->data, ':')) {
+            struct in6_addr a6;
+            if (inet_pton(AF_INET6, (*src)->data, &a6) == 1) {
+                a6.s6_addr32[0] &= v6_mask[0];
+                a6.s6_addr32[1] &= v6_mask[1];
+                a6.s6_addr32[2] &= v6_mask[2];
+                a6.s6_addr32[3] &= v6_mask[3];
+                if (inet_ntop(AF_INET6, &a6, (*dest)->data, INET6_ADDRSTRLEN)) {
+                    v = *dest;
+                    return;
+                }
+            }
+        } else {
+            struct in_addr a4;
+            if (inet_pton(AF_INET, (*src)->data, &a4) == 1) {
+                a4.s_addr &= v4_mask;
+                if (inet_ntop(AF_INET, &a4, (*dest)->data, INET6_ADDRSTRLEN)) {
+                    v = *dest;
+                    return;
+                }
+            }
+        }
+
+        // Operation on non-IP address text
+        RefCountStringHandle empty(RefCountString::construct(""));
+        v = *empty;
+    }
+
+private:
+    void set_masks(Row** rows)
+    {
+        if (m_param[1]) {
+            Variant v4cidr;
+            m_param[1]->evaluate(rows, v4cidr);
+            int v4size = v4cidr.get_int();
+            if (v4size > -1 && v4size < 33) {
+                v4_mask = htonl(0xffffffff << (32 - v4size));
+            }
+        }
+        if (m_param[2]) {
+            Variant v6cidr;
+            m_param[2]->evaluate(rows, v6cidr);
+            int v6size = v6cidr.get_int();
+            if (v6size > -1 && v6size < 129) {
+                for (int i = 0; i < 4; i++) {
+                    if (v6size >= 32) {
+                        v6_mask[i] = 0xffffffff;
+                        v6size -= 32;
+                    } else if (v6size) {
+                        v6_mask[i] = htonl(0xffffffff << (32 - v6size));
+                        v6size     = 0;
+                    } else {
+                        v6_mask[i] = 0;
+                    }
+                }
+            }
+        }
+        valid_masks = true;
+    }
+
+    uint32_t v4_mask     = htonl(0xffffff00);
+    uint32_t v6_mask[4]  = { 0xffffffff, htonl(0xffff0000), 0, 0 };
+    bool     valid_masks = false;
+};
+
 class Truncate_func : public OP {
 public:
     Truncate_func(const OP& op)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021, OARC, Inc.
+ * Copyright (c) 2017-2022, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -1881,6 +1881,9 @@ OP* OP::compile(const std::vector<Table*>& tables, const std::vector<int>& searc
         } else if (cmpi(get_token(), "rsplit") && m_param[1]) {
             m_t = Coltype::_text;
             ret = new Rsplit_func(*this);
+        } else if (cmpi(get_token(), "netmask")) {
+            m_t = Coltype::_text;
+            ret = new Netmask_func(*this);
         } else if (cmpi(get_token(), "count")) {
             m_t = Coltype::_int;
             ret = new Count_func(*this, dest_table);

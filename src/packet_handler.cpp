@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021, OARC, Inc.
+ * Copyright (c) 2017-2022, OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -277,6 +277,8 @@ Packet::ParseResult Packet::parse(Packet_handler* handler, const std::vector<int
     bool base_layers_parsed;
     if (m_link_layer_type == 1)
         base_layers_parsed = parse_ethernet();
+    else if (m_link_layer_type == 113)
+        base_layers_parsed = parse_sll();
     else
         base_layers_parsed = parse_ip(m_data, m_len, 0);
 
@@ -291,18 +293,41 @@ bool Packet::parse_ethernet()
 {
     unsigned char* data = m_data;
     int            len  = m_len;
-    if (len < 14 + 5 * 4)
-        return false; // check for etherframe size + ipv4 header
+    if (len < 14)
+        return false; // check for etherframe size
 
     int ethertype = data[13] | (data[12] << 8);
     if (ethertype == 0x8100) {
-        // VLAN-tagged
+        if (len < 18)
+            return false; // check for etherframe size + VLAN tag
         ethertype = data[17] | (data[16] << 8);
         data += 18;
         len -= 18;
     } else {
         data += 14;
         len -= 14;
+    }
+
+    return parse_ip(data, len, ethertype);
+}
+
+bool Packet::parse_sll()
+{
+    unsigned char* data = m_data;
+    int            len  = m_len;
+    if (len < 16)
+        return false; // check for LINUX_SLL size
+
+    int ethertype = data[15] | (data[14] << 8);
+    if (ethertype == 0x8100) {
+        if (len < 20)
+            return false; // check for etherframe size + VLAN tag
+        ethertype = data[19] | (data[18] << 8);
+        data += 20;
+        len -= 20;
+    } else {
+        data += 16;
+        len -= 16;
     }
 
     return parse_ip(data, len, ethertype);

@@ -1,4 +1,4 @@
-# Copyright (c) 2017-2021, OARC, Inc.
+# Copyright (c) 2017-2022, OARC, Inc.
 # Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
 # All rights reserved.
 #
@@ -18,7 +18,7 @@
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.61)
-AC_INIT([packetq], [1.5.0], [admin@dns-oarc.net], [packetq], [https://github.com/DNS-OARC/packetq/issues])
+AC_INIT([packetq], [1.6.0], [admin@dns-oarc.net], [packetq], [https://github.com/DNS-OARC/packetq/issues])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/packetq.cpp])
 AC_CONFIG_HEADER([src/config.h])
