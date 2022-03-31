@@ -88,6 +88,7 @@ void Parse_dns::add_packet_columns()
     add_packet_column("ar_count", "", Coltype::_int, COLUMN_AR_COUNT);
     add_packet_column("qtype", "", Coltype::_int, COLUMN_QTYPE);
     add_packet_column("qclass", "", Coltype::_int, COLUMN_QCLASS);
+    add_packet_column("qlabel_count", "", Coltype::_int, COLUMN_QLABEL_COUNT);
     add_packet_column("atype", "", Coltype::_int, COLUMN_ATYPE);
     add_packet_column("aclass", "", Coltype::_int, COLUMN_ACLASS);
     add_packet_column("attl", "", Coltype::_int, COLUMN_ATTL);
@@ -239,6 +240,7 @@ void Parse_dns::on_table_created(Table* table, const std::vector<int>& columns)
     acc_ar_count       = table->get_accessor<int_column>("ar_count");
     acc_qtype          = table->get_accessor<int_column>("qtype");
     acc_qclass         = table->get_accessor<int_column>("qclass");
+    acc_qlabel_count   = table->get_accessor<int_column>("qlabel_count");
     acc_atype          = table->get_accessor<int_column>("atype");
     acc_aclass         = table->get_accessor<int_column>("aclass");
     acc_attl           = table->get_accessor<int_column>("attl");
@@ -365,6 +367,10 @@ Packet::ParseResult Parse_dns::parse(Packet& packet, const std::vector<int>& col
 
         case COLUMN_QCLASS:
             acc_qclass.value(r) = message.m_questions[0].qclass;
+            break;
+
+        case COLUMN_QLABEL_COUNT:
+            acc_qlabel_count.value(r) = message.m_questions[0].label_cnt;
             break;
 
         case COLUMN_QNAME:

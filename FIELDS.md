@@ -34,6 +34,7 @@ the dns table, presented as JSON identifiers.
       { "name": "ar_count","type": "int" },
       { "name": "qtype","type": "int" },
       { "name": "qclass","type": "int" },
+      { "name": "qlabel_count","type": "int" },
       { "name": "atype","type": "int" },
       { "name": "aclass","type": "int" },
       { "name": "attl","type": "int" },
