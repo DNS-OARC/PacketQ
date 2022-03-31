@@ -1884,6 +1884,14 @@ OP* OP::compile(const std::vector<Table*>& tables, const std::vector<int>& searc
         } else if (cmpi(get_token(), "netmask")) {
             m_t = Coltype::_text;
             ret = new Netmask_func(*this);
+#ifdef MAXMINDDB
+        } else if (cmpi(get_token(), "cc")) {
+            m_t = Coltype::_text;
+            ret = new Cc_func(*this);
+        } else if (cmpi(get_token(), "asn")) {
+            m_t = Coltype::_int;
+            ret = new Asn_func(*this);
+#endif /* MAXMIND */
         } else if (cmpi(get_token(), "count")) {
             m_t = Coltype::_int;
             ret = new Count_func(*this, dest_table);

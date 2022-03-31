@@ -50,6 +50,13 @@ AC_ARG_ENABLE([gcov], [AS_HELP_STRING([--enable-gcov], [Enable coverage testing]
 AM_CONDITIONAL([ENABLE_GCOV], [test "x$enable_gcov" != "xno"])
 AM_EXTRA_RECURSIVE_TARGETS([gcov])
 
+# Check for MaxMindDB
+AC_CHECK_LIB([maxminddb], [MMDB_open], [
+       AC_MSG_NOTICE([enabling MaxMindDB])
+       AS_VAR_APPEND(LDFLAGS, [" -lmaxminddb"])
+       AC_DEFINE([MAXMINDDB], [1], [Enable MaxMindDB])], [
+       AC_MSG_NOTICE([disabling MaxMindDB])])
+
 # Checks for libraries.
 AC_CHECK_LIB([z], [deflate])
 AC_CHECK_LIB([socket], socket)

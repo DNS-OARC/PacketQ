@@ -45,6 +45,10 @@
 #endif
 #include <sys/socket.h>
 
+#include "config.h"
+#ifdef MAXMINDDB
+#include <maxminddb.h>
+#endif /* MAXMINDDB */
 #include "refcountstring.h"
 #include "variant.h"
 
@@ -884,6 +888,194 @@ private:
     uint32_t v6_mask[4]  = { 0xffffffff, htonl(0xffff0000), 0, 0 };
     bool     valid_masks = false;
 };
+
+
+#ifdef MAXMINDDB
+#define MIN(_X,_Y) ((_X) < (_Y)) ? (_X) : (_Y)
+
+class Cc_func : public OP {
+public:
+    Cc_func(const OP& op)
+        : OP(op)
+    {
+        cc_initialize ();
+    }
+    ~Cc_func()
+    {
+        if (mmdb != NULL) {
+            MMDB_close (mmdb);
+            free (mmdb);
+        }
+        if (db_name != NULL)
+            free (db_name);
+        db_name = NULL;
+    }
+    void evaluate(Row** rows, Variant& v)
+    {
+        Variant orig_ip;
+        int retval;
+        char cc_str[3];
+        if ((cc_initialized == true) && (mmdb != NULL)) {
+            m_param[0]->evaluate(rows, orig_ip);
+            RefCountStringHandle ip_addr(orig_ip.get_text());
+            RefCountStringHandle cc_dest(RefCountString::allocate(3));
+            retval = cc_lookup ((*ip_addr)->data, cc_str, sizeof (cc_str));
+            if (retval == 0) {
+                memcpy ((*cc_dest)->data, cc_str, sizeof (cc_str));
+                v = *cc_dest;
+                return;
+            }
+        }
+        RefCountStringHandle empty(RefCountString::construct(""));
+        v = *empty;
+        return;
+    }
+
+private:
+    int cc_lookup (char *ip_addr, char *cc_str, size_t cc_len) {
+        int gai_error, mmdb_error;
+        MMDB_lookup_result_s mmdb_result;
+
+        if ((mmdb == NULL) || (ip_addr == NULL) || (cc_str == NULL))
+            return (-1);
+        mmdb_result = MMDB_lookup_string (mmdb, ip_addr, &gai_error, &mmdb_error);
+        if ((gai_error != 0) || (mmdb_error != 0))
+            return (-1);
+        if (mmdb_result.found_entry) {
+            int retval;
+            MMDB_entry_data_s entry_data;
+
+            retval = MMDB_get_value (&mmdb_result.entry, &entry_data, "country", "iso_code", NULL);
+            if (retval != MMDB_SUCCESS)
+                return (-1);
+            if ((entry_data.has_data == true) && (entry_data.type == MMDB_DATA_TYPE_UTF8_STRING)) {
+                memcpy (cc_str, entry_data.utf8_string, MIN (cc_len-1, entry_data.data_size));
+                cc_str[MIN (cc_len, entry_data.data_size)] = (char )0;
+                return (0);
+            }
+        }
+        return (-1);
+    }
+
+    void cc_initialize ()
+    {
+        char *maxmind_cc_db = getenv ("PACKETQ_MAXMIND_CC_DB");
+        int retval;
+
+        if (maxmind_cc_db != NULL) {
+            if (db_name != NULL) free (db_name);
+            db_name = strdup (maxmind_cc_db);
+        }
+        if (db_name == NULL) {
+            fprintf(stderr, "warning: MaxMind CC database not defined in environment variable \"PACKETQ_MAXMIND_CC_DB\"\n");
+            return;
+        }
+        mmdb = (MMDB_s *)malloc (sizeof (*mmdb));
+        if (mmdb == NULL) return;
+        retval = MMDB_open (db_name, MMDB_MODE_MMAP, mmdb);
+        if (retval != MMDB_SUCCESS) {
+            free (mmdb);
+            mmdb = NULL;
+            fprintf(stderr, "warning: cannot open MaxMind CC database %s\n", (maxmind_cc_db == NULL) ? "" : maxmind_cc_db);
+            return;
+        }
+        cc_initialized = true;
+        return;
+    }
+    bool cc_initialized = false;
+    char *db_name = NULL;
+    MMDB_s *mmdb = NULL;
+};
+
+class Asn_func : public OP {
+public:
+    Asn_func(const OP& op)
+        : OP(op)
+    {
+        asn_initialize ();
+    }
+    ~Asn_func()
+    {
+        if (mmdb != NULL) {
+            MMDB_close (mmdb);
+            free (mmdb);
+        }
+        if (db_name != NULL)
+            free (db_name);
+        db_name = NULL;
+    }
+    void evaluate(Row** rows, Variant& v)
+    {
+        Variant orig_ip;
+        int retval;
+        uint32_t asn;
+        if ((asn_initialized == true) && (mmdb != NULL)) {
+            m_param[0]->evaluate(rows, orig_ip);
+            RefCountStringHandle ip_addr(orig_ip.get_text());
+            retval = asn_lookup ((*ip_addr)->data, &asn);
+            if (retval == 0) {
+                v = (int_column) asn;
+                return;
+            }
+        }
+        v = -1;
+    }
+
+private:
+    int asn_lookup (char *ip_addr, uint32_t *asn) {
+        int gai_error, mmdb_error;
+        MMDB_lookup_result_s mmdb_result;
+
+        if ((mmdb == NULL) || (ip_addr == NULL) || (asn == NULL))
+            return (-1);
+        mmdb_result = MMDB_lookup_string (mmdb, ip_addr, &gai_error, &mmdb_error);
+        if ((gai_error != 0) || (mmdb_error != 0))
+            return (-1);
+        if (mmdb_result.found_entry) {
+            int retval;
+            MMDB_entry_data_s entry_data;
+
+            retval = MMDB_get_value (&mmdb_result.entry, &entry_data, "autonomous_system_number", NULL);
+            if (retval != MMDB_SUCCESS)
+                return (-1);
+            if ((entry_data.has_data == true) && (entry_data.type == MMDB_DATA_TYPE_UINT32)) {
+                *asn = entry_data.uint32;
+                return (0);
+            }
+        }
+        return (-1);
+    }
+
+    void asn_initialize ()
+    {
+        char *maxmind_asn_db = getenv ("PACKETQ_MAXMIND_ASN_DB");
+        int retval;
+
+        if (maxmind_asn_db != NULL) {
+            if (db_name != NULL) free (db_name);
+            db_name = strdup (maxmind_asn_db);
+        }
+        if (db_name == NULL) {
+            fprintf(stderr, "warning: MaxMind ASN database not defined in environment variable \"PACKETQ_MAXMIND_ASN_DB\"\n");
+            return;
+        }
+        mmdb = (MMDB_s *)malloc (sizeof (*mmdb));
+        if (mmdb == NULL) return;
+        retval = MMDB_open (db_name, MMDB_MODE_MMAP, mmdb);
+        if (retval != MMDB_SUCCESS) {
+            free (mmdb);
+            mmdb = NULL;
+            fprintf(stderr, "warning: cannot open MaxMind ASN database %s\n", (maxmind_asn_db == NULL) ? "" : maxmind_asn_db);
+            return;
+        }
+        asn_initialized = true;
+        return;
+    }
+    bool asn_initialized = false;
+    char *db_name = NULL;
+    MMDB_s *mmdb = NULL;
+};
+#endif
 
 class Truncate_func : public OP {
 public:

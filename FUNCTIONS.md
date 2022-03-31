@@ -49,6 +49,18 @@ in number of bits.
 
 Defaults to 24 for IPv4 and 48 for IPv6 (/24 and /48 respectively)
 
+### CC(address)
+
+Returns the 2-letter ISO country code associated with the address from a MaxMind database.
+The database must be specified in the environment variable "PACKETQ_MAXMIND_CC_DB".  Returns
+an empty string for lookup failures.
+
+### ASN(address)
+
+Returns the autonomous system number associated with the address from a MaxMind database as
+an integer.  The database must be specified in the environment variable "PACKETQ_MAXMIND_ASN_DB".
+ Returns -1 for lookup failures.
+
 ## String operations
 
 ### RSPLIT(string, n [, char])
