@@ -19,6 +19,8 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "sql.h"
 #include "output.h"
 #include "packet_handler.h"
@@ -30,6 +32,14 @@
 #include <vector>
 #ifdef WIN32
 #include <windows.h>
+#endif
+#ifdef HAVE_LIBMAXMINDDB
+#include <maxminddb.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+static MMDB_s* __cc_mmdb  = 0;
+static MMDB_s* __asn_mmdb = 0;
 #endif
 
 namespace packetq {
@@ -1884,14 +1894,12 @@ OP* OP::compile(const std::vector<Table*>& tables, const std::vector<int>& searc
         } else if (cmpi(get_token(), "netmask")) {
             m_t = Coltype::_text;
             ret = new Netmask_func(*this);
-#ifdef MAXMINDDB
         } else if (cmpi(get_token(), "cc")) {
             m_t = Coltype::_text;
             ret = new Cc_func(*this);
         } else if (cmpi(get_token(), "asn")) {
             m_t = Coltype::_int;
             ret = new Asn_func(*this);
-#endif /* MAXMIND */
         } else if (cmpi(get_token(), "count")) {
             m_t = Coltype::_int;
             ret = new Count_func(*this, dest_table);
@@ -2509,6 +2517,185 @@ void Trim_func::evaluate(Row** rows, Variant& v)
         RefCountStringHandle res(RefCountString::construct(s, start, end));
         v = *res;
     }
+}
+
+Cc_func::Cc_func(const OP& op)
+    : OP(op)
+{
+#ifdef HAVE_LIBMAXMINDDB
+    if (__cc_mmdb) {
+        return;
+    }
+
+    std::string db;
+    char*       env = getenv("PACKETQ_MAXMIND_CC_DB");
+    if (env) {
+        db = env;
+    }
+
+    if (db.empty()) {
+        std::list<std::string> paths = {
+            "/var/lib/GeoIP", "/usr/share/GeoIP", "/usr/local/share/GeoIP"
+        };
+
+        if ((env = getenv("PACKETQ_MAXMIND_PATH"))) {
+            paths.push_front(std::string(env));
+        }
+
+        std::list<std::string>::iterator i = paths.begin();
+        for (; i != paths.end(); i++) {
+            db = (*i) + "/GeoLite2-Country.mmdb";
+            struct stat s;
+            if (!stat(db.c_str(), &s)) {
+                break;
+            }
+        }
+        if (i == paths.end()) {
+            return;
+        }
+    }
+
+    MMDB_s* mmdb = new MMDB_s;
+    if (!mmdb) {
+        return;
+    }
+
+    int ret = MMDB_open(db.c_str(), 0, mmdb);
+    if (ret != MMDB_SUCCESS) {
+        fprintf(stderr, "Warning: cannot open MaxMind CC database \"%s\": %s\n", db.c_str(), MMDB_strerror(ret));
+        free(mmdb);
+        return;
+    }
+
+    __cc_mmdb = mmdb;
+#endif
+}
+
+void Cc_func::evaluate(Row** rows, Variant& v)
+{
+#ifdef HAVE_LIBMAXMINDDB
+    if (!__cc_mmdb) {
+        RefCountStringHandle res(RefCountString::construct(""));
+        v = *res;
+        return;
+    }
+
+    Variant str;
+    m_param[0]->evaluate(rows, str);
+    RefCountStringHandle str_handle(str.get_text());
+
+    int gai_error, ret;
+
+    MMDB_lookup_result_s mmdb_result = MMDB_lookup_string(__cc_mmdb, (*str_handle)->data, &gai_error, &ret);
+
+    if (gai_error || ret != MMDB_SUCCESS || !mmdb_result.found_entry) {
+        RefCountStringHandle res(RefCountString::construct(""));
+        v = *res;
+        return;
+    }
+
+    MMDB_entry_data_s entry_data;
+    ret = MMDB_get_value(&mmdb_result.entry, &entry_data, "country", "iso_code", NULL);
+
+    if (ret != MMDB_SUCCESS || !entry_data.has_data || entry_data.type != MMDB_DATA_TYPE_UTF8_STRING) {
+        RefCountStringHandle res(RefCountString::construct(""));
+        v = *res;
+        return;
+    }
+
+    RefCountStringHandle res(RefCountString::construct(entry_data.utf8_string, 0, entry_data.data_size));
+    v = *res;
+#else
+    RefCountStringHandle res(RefCountString::construct(""));
+    v = *res;
+#endif
+}
+
+Asn_func::Asn_func(const OP& op)
+    : OP(op)
+{
+#ifdef HAVE_LIBMAXMINDDB
+    if (__asn_mmdb) {
+        return;
+    }
+
+    std::string db;
+    char*       env = getenv("PACKETQ_MAXMIND_ASN_DB");
+    if (env) {
+        db = env;
+    }
+
+    if (db.empty()) {
+        std::list<std::string> paths = {
+            "/var/lib/GeoIP", "/usr/share/GeoIP", "/usr/local/share/GeoIP"
+        };
+
+        if ((env = getenv("PACKETQ_MAXMIND_PATH"))) {
+            paths.push_front(std::string(env));
+        }
+
+        std::list<std::string>::iterator i = paths.begin();
+        for (; i != paths.end(); i++) {
+            db = (*i) + "/GeoLite2-ASN.mmdb";
+            struct stat s;
+            if (!stat(db.c_str(), &s)) {
+                break;
+            }
+        }
+        if (i == paths.end()) {
+            return;
+        }
+    }
+
+    MMDB_s* mmdb = new MMDB_s;
+    if (!mmdb) {
+        return;
+    }
+
+    int ret = MMDB_open(db.c_str(), 0, mmdb);
+    if (ret != MMDB_SUCCESS) {
+        fprintf(stderr, "Warning: cannot open MaxMind ASN database \"%s\": %s\n", db.c_str(), MMDB_strerror(ret));
+        free(mmdb);
+        return;
+    }
+
+    __asn_mmdb = mmdb;
+#endif
+}
+
+void Asn_func::evaluate(Row** rows, Variant& v)
+{
+#ifdef HAVE_LIBMAXMINDDB
+    if (!__asn_mmdb) {
+        v = -1;
+        return;
+    }
+
+    Variant str;
+    m_param[0]->evaluate(rows, str);
+    RefCountStringHandle str_handle(str.get_text());
+
+    int gai_error, ret;
+
+    MMDB_lookup_result_s mmdb_result = MMDB_lookup_string(__asn_mmdb, (*str_handle)->data, &gai_error, &ret);
+
+    if (gai_error || ret != MMDB_SUCCESS || !mmdb_result.found_entry) {
+        v = -1;
+        return;
+    }
+
+    MMDB_entry_data_s entry_data;
+    ret = MMDB_get_value(&mmdb_result.entry, &entry_data, "autonomous_system_number", NULL);
+
+    if (ret != MMDB_SUCCESS || !entry_data.has_data || entry_data.type != MMDB_DATA_TYPE_UINT32) {
+        v = -1;
+        return;
+    }
+
+    v = (int_column)entry_data.uint32;
+#else
+    v = -1;
+#endif
 }
 
 DB g_db;

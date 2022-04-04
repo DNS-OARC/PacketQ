@@ -375,7 +375,7 @@ bool Packet::parse_transport(unsigned char* data, int len)
         data += dataoffs;
         len -= dataoffs;
         if (len < 0) {
-            fprintf(stderr, "warning: Found TCP packet with bad length\n");
+            fprintf(stderr, "Warning: Found TCP packet with bad length\n");
             return false;
         }
 
@@ -393,7 +393,7 @@ bool Packet::parse_transport(unsigned char* data, int len)
         len -= 8;
 
         if (len < 0) {
-            fprintf(stderr, "warning: Found UDP packet with bad length\n");
+            fprintf(stderr, "Warning: Found UDP packet with bad length\n");
             return false;
         }
     }

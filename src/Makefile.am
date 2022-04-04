@@ -25,6 +25,7 @@ SUBDIRS = test
 AM_CXXFLAGS = -I$(srcdir) \
   -I$(srcdir)/Murmur \
   -I$(top_srcdir) \
+  $(libmaxminddb_CFLAGS) \
   -std=c++0x \
   -Wall -Wno-parentheses -Wno-switch -Wno-sign-compare -Wno-char-subscripts
 
@@ -34,6 +35,7 @@ packetq_SOURCES = dns.cpp dns.h icmp.cpp icmp.h output.h packet_handler.cpp \
   packet_handler.h packetq.cpp packetq.h pcap.cpp pcap.h reader.cpp \
   reader.h refcountstring.h segzip.h server.cpp server.h sql.cpp sql.h \
   tcp.cpp tcp.h variant.h
+packetq_LDADD = $(libmaxminddb_LIBS)
 
 dist_packetq_SOURCES = Murmur/MurmurHash3.cpp Murmur/MurmurHash3.h
 
