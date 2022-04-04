@@ -38,16 +38,19 @@ General support and discussion:
 ## Dependencies
 
 PacketQ requires a couple of libraries beside a normal C++ compiling
-environment with Autoconf and Automake.
+environment with autoconf, automake, libtool and pkgconfig.
+
+PacketQ has an optional dependency on the MaxMindDB library (for the
+`CC()` and `ASN()` functions).
 
 To install the dependencies under Debian/Ubuntu:
 ```
-apt-get install -y zlib1g-dev
+apt-get install -y zlib1g-dev libmaxminddb-dev
 ```
 
 To install the dependencies under CentOS (with EPEL enabled):
 ```
-yum install -y zlib-devel
+yum install -y zlib-devel libmaxminddb-devel
 ```
 
 ## Build from GitHub

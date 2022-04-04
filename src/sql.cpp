@@ -2563,7 +2563,7 @@ Cc_func::Cc_func(const OP& op)
     int ret = MMDB_open(db.c_str(), 0, mmdb);
     if (ret != MMDB_SUCCESS) {
         fprintf(stderr, "Warning: cannot open MaxMind CC database \"%s\": %s\n", db.c_str(), MMDB_strerror(ret));
-        free(mmdb);
+        delete mmdb;
         return;
     }
 
@@ -2655,7 +2655,7 @@ Asn_func::Asn_func(const OP& op)
     int ret = MMDB_open(db.c_str(), 0, mmdb);
     if (ret != MMDB_SUCCESS) {
         fprintf(stderr, "Warning: cannot open MaxMind ASN database \"%s\": %s\n", db.c_str(), MMDB_strerror(ret));
-        free(mmdb);
+        delete mmdb;
         return;
     }
 
