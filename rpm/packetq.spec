@@ -15,6 +15,8 @@ BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  libtool
 BuildRequires:  gcc-c++
+BuildRequires:  pkgconfig
+BuildRequires:  libmaxminddb-devel
 
 %description
 packetq is a command line tool to run SQL queries directly on PCAP files,
