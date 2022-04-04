@@ -885,6 +885,20 @@ private:
     bool     valid_masks = false;
 };
 
+class Cc_func : public OP {
+public:
+    Cc_func(const OP& op);
+    ~Cc_func() { }
+    void evaluate(Row** rows, Variant& v);
+};
+
+class Asn_func : public OP {
+public:
+    Asn_func(const OP& op);
+    ~Asn_func() { }
+    void evaluate(Row** rows, Variant& v);
+};
+
 class Truncate_func : public OP {
 public:
     Truncate_func(const OP& op)

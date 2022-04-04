@@ -49,6 +49,21 @@ in number of bits.
 
 Defaults to 24 for IPv4 and 48 for IPv6 (/24 and /48 respectively)
 
+### CC(address)
+
+Returns the 2-letter ISO country code associated with the address from
+a MaxMind database (see MaxMind Database below on selecting database).
+
+Returns an empty string on lookup failures or if this feature was not
+built in.
+
+### ASN(address)
+
+Returns the autonomous system number associated with the address from
+a MaxMind database (see MaxMind Database below on selecting database).
+
+Returns -1 on lookup failures or if this feature was not built in.
+
 ## String operations
 
 ### RSPLIT(string, n [, char])
@@ -69,3 +84,17 @@ i.e: `trim('se.domains.se', 'se')` returns `.domains.`.
 ### LOWER(string)
 
 Turns `string` into lowercase.
+
+# MaxMind Database
+
+PacketQ will try to open MaxMind databases that resides in common path on
+major distributions, but you can also specify paths and database files
+using environment variables.
+
+`PACKETQ_MAXMIND_PATH` sets the path to look for the databases in addition
+to the common paths, it will try `GeoLite2-Country.mmdb` for `CC()` and
+`GeoLite2-ASN.mmdb` for `ASN()`.
+
+You can also specify the full path to the database file you wish to use
+for each function with `PACKETQ_MAXMIND_CC_DB` and `PACKETQ_MAXMIND_ASN_DB`,
+these settings will override path settings.

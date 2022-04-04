@@ -54,6 +54,7 @@ AM_EXTRA_RECURSIVE_TARGETS([gcov])
 AC_CHECK_LIB([z], [deflate])
 AC_CHECK_LIB([socket], socket)
 AC_CHECK_LIB([nsl], inet_ntop)
+PKG_CHECK_MODULES([libmaxminddb], [libmaxminddb], [AC_DEFINE([HAVE_LIBMAXMINDDB], [1], [Define to 1 if you have libmaxminddb.])], [:])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -81,8 +82,8 @@ AC_CHECK_HEADERS([syslog.h])
 AC_LANG([C])
 
 AC_CONFIG_FILES([
-    Makefile
-    src/Makefile
-    src/test/Makefile
+  Makefile
+  src/Makefile
+  src/test/Makefile
 ])
 AC_OUTPUT
