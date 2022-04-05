@@ -101,7 +101,7 @@ int g_comp = 0;
 
 void Ordering_terms::compile(const std::vector<Table*>& tables, const std::vector<int>& search_order, Query& q)
 {
-    for (std::vector<Ordering_terms::OP_dir>::iterator it = m_terms.begin(); it != m_terms.end(); it++) {
+    for (auto it = m_terms.begin(); it != m_terms.end(); it++) {
         OP* op   = it->m_op;
         it->m_op = op->compile(tables, search_order, q);
     }
@@ -120,7 +120,7 @@ public:
         Row** ia_rows = &ia;
         Row** ib_rows = &ib;
 
-        for (std::vector<Ordering_terms::OP_dir>::iterator it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
+        for (auto it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
             g_comp++;
 
             OP* op = it->m_op;
@@ -139,7 +139,7 @@ public:
         Row** ia_rows = &ia;
         Row** ib_rows = &ib;
 
-        for (std::vector<Ordering_terms::OP_dir>::iterator it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
+        for (auto it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
             g_comp++;
 
             OP* op = it->m_op;
@@ -156,7 +156,7 @@ public:
         Row** ia_rows = &ia;
         Row** ib_rows = &ib;
 
-        for (std::vector<Ordering_terms::OP_dir>::iterator it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
+        for (auto it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
             g_comp++;
 
             OP* op = it->m_op;
@@ -389,8 +389,8 @@ public:
         int table_size = (int)m_table.m_rows.size();
         if (table_size <= 1)
             return;
-        std::list<Row*>::iterator it    = m_table.m_rows.begin();
-        Tlink*                    links = new Tlink[table_size];
+        auto   it    = m_table.m_rows.begin();
+        Tlink* links = new Tlink[table_size];
 
         int i;
         for (i = 0; i < table_size; i++) {
@@ -469,9 +469,9 @@ void Table::merge_sort(Ordering_terms& order)
     Row** row_ptrs = new Row*[table_size];
     Spkt* spktpool = new Spkt[table_size * 2];
     Spkt* rows[2];
-    rows[0]                      = spktpool;
-    rows[1]                      = &spktpool[table_size];
-    std::list<Row*>::iterator it = m_rows.begin();
+    rows[0] = spktpool;
+    rows[1] = &spktpool[table_size];
+    auto it = m_rows.begin();
 
     int   i = 0;
     Spkt* r = rows[0];
@@ -569,9 +569,9 @@ void Table::merge_sort(Ordering_terms& order)
 
 void Table::limit(int limit, int offset)
 {
-    int                       count = 0;
-    std::list<Row*>::iterator e     = m_rows.end();
-    for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+    int  count = 0;
+    auto e     = m_rows.end();
+    for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
         if (e != m_rows.end()) {
             delete_row(*e);
             m_rows.erase(e);
@@ -649,7 +649,7 @@ void Table::xml()
         g_output.add_string("</th>");
     }
     g_output.add_string("</tr>\n");
-    for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+    for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
         g_output.add_string("<tr>");
         Row* r = *it;
 
@@ -752,7 +752,7 @@ void Table::json(bool trailing_comma)
     g_output.add_q_string("data");
     g_output.add_string(": [");
     bool outer_comma = false;
-    for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+    for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
         if (outer_comma)
             g_output.add_string(",\n      [");
         else
@@ -829,7 +829,7 @@ void Table::csv(bool format)
     int   max = 0;
     char* tmp = 0;
     if (format) {
-        for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+        for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
             Row* r = *it;
 
             for (int i = 0; i < cols; i++) {
@@ -899,7 +899,7 @@ void Table::csv(bool format)
         }
     }
     printf("\n");
-    for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+    for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
         Row* r = *it;
 
         for (int i = 0; i < cols; i++) {
@@ -973,7 +973,7 @@ void Table::dump()
     printf("\n");
     printrep((width + 2) * cols + 1, '*');
     printf("\n");
-    for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+    for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
         printf("|");
         Row* r = *it;
 
@@ -1025,15 +1025,15 @@ public:
 
     void dump()
     {
-        for (std::list<Token>::iterator it = m_tokens.begin(); it != m_tokens.end(); it++) {
+        for (auto it = m_tokens.begin(); it != m_tokens.end(); it++) {
             printf("Type %d: %s\n", it->get_type(), it->get_token());
         }
     }
 
     bool analyze(Query& q)
     {
-        std::list<Token>::iterator it = m_tokens.begin();
-        bool                       ok = true;
+        auto it = m_tokens.begin();
+        bool ok = true;
         while (ok) {
             ok = false;
             if (get_sample_stmt(q, it))
@@ -2115,7 +2115,7 @@ std::vector<OP*> find_unique_column_ops(std::vector<OP*> ops)
 void Query::replace_star_column_with_all_columns()
 {
     bool found_star = false;
-    for (std::vector<OP*>::iterator i = m_select.begin(); i != m_select.end(); ++i) {
+    for (auto i = m_select.begin(); i != m_select.end(); ++i) {
         if (strcmp((*i)->get_token(), "*") == 0) {
             found_star = true;
             break;
@@ -2239,7 +2239,7 @@ std::vector<Variant> process_group_by_key(Ordering_terms& group_by, Row** rows)
 bool Query::has_aggregate_functions()
 {
     // this assumes the ops have been compiled
-    for (std::vector<OP*>::iterator it = m_select.begin(); it != m_select.end(); it++)
+    for (auto it = m_select.begin(); it != m_select.end(); it++)
         if ((*it)->m_has_aggregate_function)
             return true;
 
@@ -2442,9 +2442,9 @@ bool DB::query(const char* q)
 
 Table* DB::get_table(const char* i_name)
 {
-    std::string                             name = lower(i_name);
-    Table*                                  t    = 0;
-    std::map<std::string, Table*>::iterator it   = m_tables.find(name);
+    std::string name = lower(i_name);
+    Table*      t    = 0;
+    auto        it   = m_tables.find(name);
     if (it != m_tables.end())
         t = it->second;
 
@@ -2542,7 +2542,7 @@ Cc_func::Cc_func(const OP& op)
             paths.push_front(std::string(env));
         }
 
-        std::list<std::string>::iterator i = paths.begin();
+        auto i = paths.begin();
         for (; i != paths.end(); i++) {
             db = (*i) + "/GeoLite2-Country.mmdb";
             struct stat s;
@@ -2634,7 +2634,7 @@ Asn_func::Asn_func(const OP& op)
             paths.push_front(std::string(env));
         }
 
-        std::list<std::string>::iterator i = paths.begin();
+        auto i = paths.begin();
         for (; i != paths.end(); i++) {
             db = (*i) + "/GeoLite2-ASN.mmdb";
             struct stat s;

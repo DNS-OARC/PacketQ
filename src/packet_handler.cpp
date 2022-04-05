@@ -102,9 +102,9 @@ public:
         bool merged = true;
         // this is algorithmically horrid (hope there wont be tonnes of fragments)
         while (merged) {
-            merged                          = false;
-            std::list<Range>::iterator it   = m_ranges.begin();
-            std::list<Range>::iterator last = it;
+            merged    = false;
+            auto it   = m_ranges.begin();
+            auto last = it;
             if (last == m_ranges.end())
                 break;
             it++;
