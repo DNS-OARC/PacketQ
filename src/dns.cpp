@@ -88,9 +88,11 @@ void Parse_dns::add_packet_columns()
     add_packet_column("ar_count", "", Coltype::_int, COLUMN_AR_COUNT);
     add_packet_column("qtype", "", Coltype::_int, COLUMN_QTYPE);
     add_packet_column("qclass", "", Coltype::_int, COLUMN_QCLASS);
+    add_packet_column("qlabels", "", Coltype::_int, COLUMN_QLABELS);
     add_packet_column("atype", "", Coltype::_int, COLUMN_ATYPE);
     add_packet_column("aclass", "", Coltype::_int, COLUMN_ACLASS);
     add_packet_column("attl", "", Coltype::_int, COLUMN_ATTL);
+    add_packet_column("alabels", "", Coltype::_int, COLUMN_ALABELS);
     add_packet_column("aa", "", Coltype::_bool, COLUMN_AA);
     add_packet_column("tc", "", Coltype::_bool, COLUMN_TC);
     add_packet_column("rd", "", Coltype::_bool, COLUMN_RD);
@@ -239,9 +241,11 @@ void Parse_dns::on_table_created(Table* table, const std::vector<int>& columns)
     acc_ar_count       = table->get_accessor<int_column>("ar_count");
     acc_qtype          = table->get_accessor<int_column>("qtype");
     acc_qclass         = table->get_accessor<int_column>("qclass");
+    acc_qlabels        = table->get_accessor<int_column>("qlabels");
     acc_atype          = table->get_accessor<int_column>("atype");
     acc_aclass         = table->get_accessor<int_column>("aclass");
     acc_attl           = table->get_accessor<int_column>("attl");
+    acc_alabels        = table->get_accessor<int_column>("alabels");
 
     acc_qr    = table->get_accessor<bool_column>("qr");
     acc_aa    = table->get_accessor<bool_column>("aa");
@@ -367,8 +371,12 @@ Packet::ParseResult Parse_dns::parse(Packet& packet, const std::vector<int>& col
             acc_qclass.value(r) = message.m_questions[0].qclass;
             break;
 
+        case COLUMN_QLABELS:
+            acc_qlabels.value(r) = message.m_questions[0].qname.labels;
+            break;
+
         case COLUMN_QNAME:
-            acc_qname.value(r) = RefCountString::construct(message.m_questions[0].qname);
+            acc_qname.value(r) = RefCountString::construct(message.m_questions[0].qname.fqdn);
             break;
 
         case COLUMN_EDNS0:
@@ -396,7 +404,7 @@ Packet::ParseResult Parse_dns::parse(Packet& packet, const std::vector<int>& col
             break;
 
         case COLUMN_ANAME:
-            acc_aname.value(r) = header.ancount ? RefCountString::construct(message.m_answer[0].name) : RefCountString::construct("");
+            acc_aname.value(r) = header.ancount ? RefCountString::construct(message.m_answer[0].name.fqdn) : RefCountString::construct("");
             break;
 
         case COLUMN_ATYPE:
@@ -409,6 +417,10 @@ Packet::ParseResult Parse_dns::parse(Packet& packet, const std::vector<int>& col
 
         case COLUMN_ATTL:
             acc_attl.value(r) = header.ancount ? message.m_answer[0].ttl : 0;
+            break;
+
+        case COLUMN_ALABELS:
+            acc_alabels.value(r) = header.ancount ? message.m_answer[0].name.labels : 0;
             break;
 
         case COLUMN_EDNS0_ECS:

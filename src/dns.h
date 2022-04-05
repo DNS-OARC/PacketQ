@@ -109,22 +109,40 @@ public:
             arcount = p.get_ushort(10);
         }
     };
+
+    class Name {
+    public:
+        char fqdn[512];
+        int  labels;
+
+        Name()
+            : fqdn { 0 }
+            , labels(0)
+        {
+        }
+
+        void reset(void)
+        {
+            fqdn[0] = 0;
+            labels  = 0;
+        }
+    };
+
     class Question {
     public:
-        char qname[0x2000];
+        Name qname;
         int  qtype;
         int  qclass;
 
         Question()
         {
-            qname[0] = 0;
-            qtype    = 0;
-            qclass   = 0;
+            qtype  = 0;
+            qclass = 0;
         }
 
         int parse(DNSMessage& m, int offs)
         {
-            offs  = m.parse_dname(qname, sizeof(qname), offs);
+            offs  = m.parse_dname(qname, offs);
             qtype = m.get_ushort(offs);
             offs += 2;
             qclass = m.get_ushort(offs);
@@ -135,7 +153,7 @@ public:
 
     class RR {
     public:
-        char         name[0x2000];
+        Name         name;
         int          type;
         int          rr_class;
         unsigned int ttl;
@@ -144,7 +162,6 @@ public:
 
         RR()
         {
-            name[0]  = 0;
             type     = 0;
             rr_class = 0;
             ttl      = 0;
@@ -154,7 +171,7 @@ public:
 
         int parse(DNSMessage& m, int offs)
         {
-            offs = m.parse_dname(name, sizeof(name), offs);
+            offs = m.parse_dname(name, offs);
             type = m.get_ushort(offs);
             if (type == 41) {
                 m.m_opt_rr     = this;
@@ -220,15 +237,18 @@ public:
 
         parse();
     }
-    int parse_dname(char* out, int size, int offs)
+    int parse_dname(Name& name, int offs)
     {
-        int p         = 0;
-        int savedoffs = 0;
-        int n         = get_ubyte(offs++);
+        int   p         = 0;
+        int   savedoffs = 0;
+        int   n         = get_ubyte(offs++);
+        char* out       = &name.fqdn[0];
+        int   size      = sizeof(name.fqdn);
         if (n == 0)
             out[p++] = '.';
 
         while (n > 0) {
+            name.labels++;
             while (n >= 192) {
                 if (savedoffs) {
                     out[p++] = 0;
@@ -342,8 +362,8 @@ public:
         while (cnt-- > 0) {
             offs = m_questions[q].parse(*this, offs);
             if (offs > m_length) {
-                m_questions[q].qname[0] = 0;
-                m_error                 = offs;
+                m_questions[q].qname.reset();
+                m_error = offs;
                 return;
             }
             q = 1; // not ++ ignore further Q's
@@ -438,8 +458,10 @@ public:
         COLUMN_AR_COUNT,
         COLUMN_QTYPE,
         COLUMN_QCLASS,
+        COLUMN_QLABELS,
         COLUMN_ATYPE,
         COLUMN_ACLASS,
+        COLUMN_ALABELS,
         COLUMN_ATTL,
         COLUMN_AA,
         COLUMN_TC,
@@ -489,9 +511,11 @@ private:
     Int_accessor  acc_ar_count;
     Int_accessor  acc_qtype;
     Int_accessor  acc_qclass;
+    Int_accessor  acc_qlabels;
     Int_accessor  acc_atype;
     Int_accessor  acc_aclass;
     Int_accessor  acc_attl;
+    Int_accessor  acc_alabels;
     Int_accessor  acc_edns0_ecs_family;
     Int_accessor  acc_edns0_ecs_source;
     Int_accessor  acc_edns0_ecs_scope;
