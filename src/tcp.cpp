@@ -162,7 +162,7 @@ public:
     int get_size()
     {
         int size = 0;
-        for (std::list<Data_segment>::iterator it = m_segments.begin();
+        for (auto it = m_segments.begin();
              it != m_segments.end(); it++) {
             size += it->m_datasize;
         }
@@ -172,7 +172,7 @@ public:
     void dump()
     {
         int start = 2;
-        for (std::list<Data_segment>::iterator it = m_segments.begin();
+        for (auto it = m_segments.begin();
              it != m_segments.end(); it++) {
             for (unsigned int i = start; i < it->m_datasize; i++) {
                 printf("%02x", it->m_data[i]);
@@ -188,7 +188,7 @@ public:
     unsigned char* get_buffer()
     {
         int p = 0;
-        for (std::list<Data_segment>::iterator it = m_segments.begin();
+        for (auto it = m_segments.begin();
              it != m_segments.end(); it++) {
             for (unsigned int i = 0; i < it->m_datasize; i++) {
                 m_buffer[p++] = it->m_data[i];

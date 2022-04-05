@@ -500,14 +500,14 @@ namespace httpd {
         }
         const char* get_param(const char* param)
         {
-            std::map<std::string, std::string>::iterator it = m_params.find(std::string(param));
+            auto it = m_params.find(std::string(param));
             if (it == m_params.end())
                 return 0;
             return it->second.c_str();
         }
         void add_param(std::string key, std::string val)
         {
-            std::map<std::string, std::string>::iterator it = m_params.find(key);
+            auto it = m_params.find(key);
             if (it == m_params.end()) {
                 m_params[key] = val;
                 m_counts[key] = 1;
