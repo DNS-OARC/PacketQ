@@ -19,6 +19,8 @@
  * along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "sql.h"
 #include "output.h"
 #include "packet_handler.h"
@@ -30,6 +32,14 @@
 #include <vector>
 #ifdef WIN32
 #include <windows.h>
+#endif
+#ifdef HAVE_LIBMAXMINDDB
+#include <maxminddb.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+static MMDB_s* __cc_mmdb  = 0;
+static MMDB_s* __asn_mmdb = 0;
 #endif
 
 namespace packetq {
@@ -91,7 +101,7 @@ int g_comp = 0;
 
 void Ordering_terms::compile(const std::vector<Table*>& tables, const std::vector<int>& search_order, Query& q)
 {
-    for (std::vector<Ordering_terms::OP_dir>::iterator it = m_terms.begin(); it != m_terms.end(); it++) {
+    for (auto it = m_terms.begin(); it != m_terms.end(); it++) {
         OP* op   = it->m_op;
         it->m_op = op->compile(tables, search_order, q);
     }
@@ -110,7 +120,7 @@ public:
         Row** ia_rows = &ia;
         Row** ib_rows = &ib;
 
-        for (std::vector<Ordering_terms::OP_dir>::iterator it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
+        for (auto it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
             g_comp++;
 
             OP* op = it->m_op;
@@ -129,7 +139,7 @@ public:
         Row** ia_rows = &ia;
         Row** ib_rows = &ib;
 
-        for (std::vector<Ordering_terms::OP_dir>::iterator it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
+        for (auto it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
             g_comp++;
 
             OP* op = it->m_op;
@@ -146,7 +156,7 @@ public:
         Row** ia_rows = &ia;
         Row** ib_rows = &ib;
 
-        for (std::vector<Ordering_terms::OP_dir>::iterator it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
+        for (auto it = m_order.m_terms.begin(); it != m_order.m_terms.end(); it++) {
             g_comp++;
 
             OP* op = it->m_op;
@@ -379,8 +389,8 @@ public:
         int table_size = (int)m_table.m_rows.size();
         if (table_size <= 1)
             return;
-        std::list<Row*>::iterator it    = m_table.m_rows.begin();
-        Tlink*                    links = new Tlink[table_size];
+        auto   it    = m_table.m_rows.begin();
+        Tlink* links = new Tlink[table_size];
 
         int i;
         for (i = 0; i < table_size; i++) {
@@ -459,9 +469,9 @@ void Table::merge_sort(Ordering_terms& order)
     Row** row_ptrs = new Row*[table_size];
     Spkt* spktpool = new Spkt[table_size * 2];
     Spkt* rows[2];
-    rows[0]                      = spktpool;
-    rows[1]                      = &spktpool[table_size];
-    std::list<Row*>::iterator it = m_rows.begin();
+    rows[0] = spktpool;
+    rows[1] = &spktpool[table_size];
+    auto it = m_rows.begin();
 
     int   i = 0;
     Spkt* r = rows[0];
@@ -559,9 +569,9 @@ void Table::merge_sort(Ordering_terms& order)
 
 void Table::limit(int limit, int offset)
 {
-    int                       count = 0;
-    std::list<Row*>::iterator e     = m_rows.end();
-    for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+    int  count = 0;
+    auto e     = m_rows.end();
+    for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
         if (e != m_rows.end()) {
             delete_row(*e);
             m_rows.erase(e);
@@ -639,7 +649,7 @@ void Table::xml()
         g_output.add_string("</th>");
     }
     g_output.add_string("</tr>\n");
-    for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+    for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
         g_output.add_string("<tr>");
         Row* r = *it;
 
@@ -742,7 +752,7 @@ void Table::json(bool trailing_comma)
     g_output.add_q_string("data");
     g_output.add_string(": [");
     bool outer_comma = false;
-    for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+    for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
         if (outer_comma)
             g_output.add_string(",\n      [");
         else
@@ -819,7 +829,7 @@ void Table::csv(bool format)
     int   max = 0;
     char* tmp = 0;
     if (format) {
-        for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+        for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
             Row* r = *it;
 
             for (int i = 0; i < cols; i++) {
@@ -889,7 +899,7 @@ void Table::csv(bool format)
         }
     }
     printf("\n");
-    for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+    for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
         Row* r = *it;
 
         for (int i = 0; i < cols; i++) {
@@ -963,7 +973,7 @@ void Table::dump()
     printf("\n");
     printrep((width + 2) * cols + 1, '*');
     printf("\n");
-    for (std::list<Row*>::iterator it = m_rows.begin(); it != m_rows.end(); it++) {
+    for (auto it = m_rows.begin(); it != m_rows.end(); it++) {
         printf("|");
         Row* r = *it;
 
@@ -1015,15 +1025,15 @@ public:
 
     void dump()
     {
-        for (std::list<Token>::iterator it = m_tokens.begin(); it != m_tokens.end(); it++) {
+        for (auto it = m_tokens.begin(); it != m_tokens.end(); it++) {
             printf("Type %d: %s\n", it->get_type(), it->get_token());
         }
     }
 
     bool analyze(Query& q)
     {
-        std::list<Token>::iterator it = m_tokens.begin();
-        bool                       ok = true;
+        auto it = m_tokens.begin();
+        bool ok = true;
         while (ok) {
             ok = false;
             if (get_sample_stmt(q, it))
@@ -1884,6 +1894,12 @@ OP* OP::compile(const std::vector<Table*>& tables, const std::vector<int>& searc
         } else if (cmpi(get_token(), "netmask")) {
             m_t = Coltype::_text;
             ret = new Netmask_func(*this);
+        } else if (cmpi(get_token(), "cc")) {
+            m_t = Coltype::_text;
+            ret = new Cc_func(*this);
+        } else if (cmpi(get_token(), "asn")) {
+            m_t = Coltype::_int;
+            ret = new Asn_func(*this);
         } else if (cmpi(get_token(), "count")) {
             m_t = Coltype::_int;
             ret = new Count_func(*this, dest_table);
@@ -2099,7 +2115,7 @@ std::vector<OP*> find_unique_column_ops(std::vector<OP*> ops)
 void Query::replace_star_column_with_all_columns()
 {
     bool found_star = false;
-    for (std::vector<OP*>::iterator i = m_select.begin(); i != m_select.end(); ++i) {
+    for (auto i = m_select.begin(); i != m_select.end(); ++i) {
         if (strcmp((*i)->get_token(), "*") == 0) {
             found_star = true;
             break;
@@ -2223,7 +2239,7 @@ std::vector<Variant> process_group_by_key(Ordering_terms& group_by, Row** rows)
 bool Query::has_aggregate_functions()
 {
     // this assumes the ops have been compiled
-    for (std::vector<OP*>::iterator it = m_select.begin(); it != m_select.end(); it++)
+    for (auto it = m_select.begin(); it != m_select.end(); it++)
         if ((*it)->m_has_aggregate_function)
             return true;
 
@@ -2426,9 +2442,9 @@ bool DB::query(const char* q)
 
 Table* DB::get_table(const char* i_name)
 {
-    std::string                             name = lower(i_name);
-    Table*                                  t    = 0;
-    std::map<std::string, Table*>::iterator it   = m_tables.find(name);
+    std::string name = lower(i_name);
+    Table*      t    = 0;
+    auto        it   = m_tables.find(name);
     if (it != m_tables.end())
         t = it->second;
 
@@ -2501,6 +2517,185 @@ void Trim_func::evaluate(Row** rows, Variant& v)
         RefCountStringHandle res(RefCountString::construct(s, start, end));
         v = *res;
     }
+}
+
+Cc_func::Cc_func(const OP& op)
+    : OP(op)
+{
+#ifdef HAVE_LIBMAXMINDDB
+    if (__cc_mmdb) {
+        return;
+    }
+
+    std::string db;
+    char*       env = getenv("PACKETQ_MAXMIND_CC_DB");
+    if (env) {
+        db = env;
+    }
+
+    if (db.empty()) {
+        std::list<std::string> paths = {
+            "/var/lib/GeoIP", "/usr/share/GeoIP", "/usr/local/share/GeoIP"
+        };
+
+        if ((env = getenv("PACKETQ_MAXMIND_PATH"))) {
+            paths.push_front(std::string(env));
+        }
+
+        auto i = paths.begin();
+        for (; i != paths.end(); i++) {
+            db = (*i) + "/GeoLite2-Country.mmdb";
+            struct stat s;
+            if (!stat(db.c_str(), &s)) {
+                break;
+            }
+        }
+        if (i == paths.end()) {
+            return;
+        }
+    }
+
+    MMDB_s* mmdb = new MMDB_s;
+    if (!mmdb) {
+        return;
+    }
+
+    int ret = MMDB_open(db.c_str(), 0, mmdb);
+    if (ret != MMDB_SUCCESS) {
+        fprintf(stderr, "Warning: cannot open MaxMind CC database \"%s\": %s\n", db.c_str(), MMDB_strerror(ret));
+        delete mmdb;
+        return;
+    }
+
+    __cc_mmdb = mmdb;
+#endif
+}
+
+void Cc_func::evaluate(Row** rows, Variant& v)
+{
+#ifdef HAVE_LIBMAXMINDDB
+    if (!__cc_mmdb) {
+        RefCountStringHandle res(RefCountString::construct(""));
+        v = *res;
+        return;
+    }
+
+    Variant str;
+    m_param[0]->evaluate(rows, str);
+    RefCountStringHandle str_handle(str.get_text());
+
+    int gai_error, ret;
+
+    MMDB_lookup_result_s mmdb_result = MMDB_lookup_string(__cc_mmdb, (*str_handle)->data, &gai_error, &ret);
+
+    if (gai_error || ret != MMDB_SUCCESS || !mmdb_result.found_entry) {
+        RefCountStringHandle res(RefCountString::construct(""));
+        v = *res;
+        return;
+    }
+
+    MMDB_entry_data_s entry_data;
+    ret = MMDB_get_value(&mmdb_result.entry, &entry_data, "country", "iso_code", NULL);
+
+    if (ret != MMDB_SUCCESS || !entry_data.has_data || entry_data.type != MMDB_DATA_TYPE_UTF8_STRING) {
+        RefCountStringHandle res(RefCountString::construct(""));
+        v = *res;
+        return;
+    }
+
+    RefCountStringHandle res(RefCountString::construct(entry_data.utf8_string, 0, entry_data.data_size));
+    v = *res;
+#else
+    RefCountStringHandle res(RefCountString::construct(""));
+    v = *res;
+#endif
+}
+
+Asn_func::Asn_func(const OP& op)
+    : OP(op)
+{
+#ifdef HAVE_LIBMAXMINDDB
+    if (__asn_mmdb) {
+        return;
+    }
+
+    std::string db;
+    char*       env = getenv("PACKETQ_MAXMIND_ASN_DB");
+    if (env) {
+        db = env;
+    }
+
+    if (db.empty()) {
+        std::list<std::string> paths = {
+            "/var/lib/GeoIP", "/usr/share/GeoIP", "/usr/local/share/GeoIP"
+        };
+
+        if ((env = getenv("PACKETQ_MAXMIND_PATH"))) {
+            paths.push_front(std::string(env));
+        }
+
+        auto i = paths.begin();
+        for (; i != paths.end(); i++) {
+            db = (*i) + "/GeoLite2-ASN.mmdb";
+            struct stat s;
+            if (!stat(db.c_str(), &s)) {
+                break;
+            }
+        }
+        if (i == paths.end()) {
+            return;
+        }
+    }
+
+    MMDB_s* mmdb = new MMDB_s;
+    if (!mmdb) {
+        return;
+    }
+
+    int ret = MMDB_open(db.c_str(), 0, mmdb);
+    if (ret != MMDB_SUCCESS) {
+        fprintf(stderr, "Warning: cannot open MaxMind ASN database \"%s\": %s\n", db.c_str(), MMDB_strerror(ret));
+        delete mmdb;
+        return;
+    }
+
+    __asn_mmdb = mmdb;
+#endif
+}
+
+void Asn_func::evaluate(Row** rows, Variant& v)
+{
+#ifdef HAVE_LIBMAXMINDDB
+    if (!__asn_mmdb) {
+        v = -1;
+        return;
+    }
+
+    Variant str;
+    m_param[0]->evaluate(rows, str);
+    RefCountStringHandle str_handle(str.get_text());
+
+    int gai_error, ret;
+
+    MMDB_lookup_result_s mmdb_result = MMDB_lookup_string(__asn_mmdb, (*str_handle)->data, &gai_error, &ret);
+
+    if (gai_error || ret != MMDB_SUCCESS || !mmdb_result.found_entry) {
+        v = -1;
+        return;
+    }
+
+    MMDB_entry_data_s entry_data;
+    ret = MMDB_get_value(&mmdb_result.entry, &entry_data, "autonomous_system_number", NULL);
+
+    if (ret != MMDB_SUCCESS || !entry_data.has_data || entry_data.type != MMDB_DATA_TYPE_UINT32) {
+        v = -1;
+        return;
+    }
+
+    v = (int_column)entry_data.uint32;
+#else
+    v = -1;
+#endif
 }
 
 DB g_db;

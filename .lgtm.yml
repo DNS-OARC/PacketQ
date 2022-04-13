@@ -12,6 +12,7 @@ extraction:
         - libtool
         - pkg-config
         - zlib1g-dev
+        - libmaxminddb-dev
     configure:
       command:
         - ./autogen.sh

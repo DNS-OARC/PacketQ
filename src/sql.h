@@ -168,9 +168,9 @@ public:
     RefCountString* get_value(const char* table, int key)
     {
         Item i;
-        i.m_function                             = table;
-        i.m_key                                  = key;
-        std::map<Item, std::string>::iterator it = m_lut.find(i);
+        i.m_function = table;
+        i.m_key      = key;
+        auto it      = m_lut.find(i);
         if (it != m_lut.end())
             return RefCountString::construct(it->second.c_str());
 
@@ -206,7 +206,7 @@ public:
     }
     ~Allocator()
     {
-        typename std::list<Buffer*>::iterator it = m_buffers.begin();
+        auto it = m_buffers.begin();
         while (it != m_buffers.end()) {
             delete *it;
             m_buffers.erase(it);
@@ -224,7 +224,7 @@ public:
 
         T* obj = m_curr_buffer->allocate();
         if (!obj) {
-            for (typename std::list<Buffer*>::iterator it = m_buffers.begin();
+            for (auto it = m_buffers.begin();
                  it != m_buffers.end();
                  it++) {
                 if ((*it)->m_has_space)
@@ -398,7 +398,7 @@ public:
     int get_col_index(const char* col)
     {
         int i = 0;
-        for (std::vector<Column*>::iterator it = m_cols.begin(); it != m_cols.end(); it++) {
+        for (auto it = m_cols.begin(); it != m_cols.end(); it++) {
             if (cmpii(m_cols[i]->m_name, col))
                 return i;
             i++;
@@ -883,6 +883,20 @@ private:
     uint32_t v4_mask     = htonl(0xffffff00);
     uint32_t v6_mask[4]  = { 0xffffffff, htonl(0xffff0000), 0, 0 };
     bool     valid_masks = false;
+};
+
+class Cc_func : public OP {
+public:
+    Cc_func(const OP& op);
+    ~Cc_func() { }
+    void evaluate(Row** rows, Variant& v);
+};
+
+class Asn_func : public OP {
+public:
+    Asn_func(const OP& op);
+    ~Asn_func() { }
+    void evaluate(Row** rows, Variant& v);
 };
 
 class Truncate_func : public OP {
@@ -1807,7 +1821,7 @@ public:
     }
     ~Ordering_terms()
     {
-        std::vector<OP_dir>::iterator it = m_terms.begin();
+        auto it = m_terms.begin();
         while (it != m_terms.end()) {
             delete it->m_op;
             it->m_op = 0;
