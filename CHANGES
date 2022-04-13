@@ -1,3 +1,25 @@
+2022-04-13 Jerry Lundström
+
+    Release 1.7.0
+
+    This release adds two new columns for the number of labels in the
+    query and in the first answer, and two new functions for looking up
+    country code and autonomous system number (ASN) of addresses using
+    MaxMind databases (see `FUNCTIONS.md` on how to specify database
+    to use).
+
+    - New column `qlabels`, number of labels in `qname`
+    - New column `alabels`, number of labels in `aname`
+    - New function `CC(address)`, the 2-letter ISO country code associated with the address
+    - New function `ASN(address)`, the ASN associated with the address
+
+    64d1d72 Couting labels
+    b3b970d Adding field qlabel_count as the count of the number of labels in the query
+    0866f45 auto
+    53c27ca SonarCloud, LGTM, packages
+    1e5f986 MaxMind DB
+    3967c31 Adding country-code and ASN lookup from MaxMind DB as functions on address strings
+
 2022-03-10 Jerry Lundström
 
     Release 1.6.0
