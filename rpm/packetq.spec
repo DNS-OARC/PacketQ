@@ -1,5 +1,5 @@
 Name:           packetq
-Version:        1.6.0
+Version:        1.7.0
 Release:        1%{?dist}
 Summary:        A tool that provides a basic SQL-frontend to PCAP-files
 Group:          Productivity/Networking/DNS/Utilities
@@ -56,6 +56,24 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Apr 13 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 1.7.0-1
+- Release 1.7.0
+  * This release adds two new columns for the number of labels in the
+    query and in the first answer, and two new functions for looking up
+    country code and autonomous system number (ASN) of addresses using
+    MaxMind databases (see `FUNCTIONS.md` on how to specify database
+    to use).
+    - New column `qlabels`, number of labels in `qname`
+    - New column `alabels`, number of labels in `aname`
+    - New function `CC(address)`, the 2-letter ISO country code associated with the address
+    - New function `ASN(address)`, the ASN associated with the address
+  * Commits:
+    64d1d72 Couting labels
+    b3b970d Adding field qlabel_count as the count of the number of labels in the query
+    0866f45 auto
+    53c27ca SonarCloud, LGTM, packages
+    1e5f986 MaxMind DB
+    3967c31 Adding country-code and ASN lookup from MaxMind DB as functions on address strings
 * Thu Mar 10 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 1.6.0-1
 - Release 1.6.0
   * This release adds a new SQL function for masking addresses and adds
