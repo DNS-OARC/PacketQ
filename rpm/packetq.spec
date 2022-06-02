@@ -1,5 +1,5 @@
 Name:           packetq
-Version:        1.7.0
+Version:        1.7.1
 Release:        1%{?dist}
 Summary:        A tool that provides a basic SQL-frontend to PCAP-files
 Group:          Productivity/Networking/DNS/Utilities
@@ -56,6 +56,12 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Jun 02 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 1.7.1-1
+- Release 1.7.1
+  * This patch release fixes a bug in the domain name parsing that cuts
+    off very long names.
+  * Commits:
+    4ec95e7 FQDN parsing
 * Wed Apr 13 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 1.7.0-1
 - Release 1.7.0
   * This release adds two new columns for the number of labels in the
