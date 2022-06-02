@@ -112,7 +112,7 @@ public:
 
     class Name {
     public:
-        char fqdn[512];
+        char fqdn[2048]; // escaping needs *4 the space
         int  labels;
 
         Name()
@@ -243,7 +243,6 @@ public:
         int   savedoffs = 0;
         int   n         = get_ubyte(offs++);
         char* out       = &name.fqdn[0];
-        int   size      = sizeof(name.fqdn);
         if (n == 0)
             out[p++] = '.';
 
@@ -262,7 +261,8 @@ public:
             }
 
             // if the string is too long restart and mess it up
-            if (n + 20 + p > size / 2)
+            // check if we can fit a fully escaped label + . and reserve for zeroing it later
+            if (p + (n * 4) + 1 > sizeof(name.fqdn) - 1)
                 p = 0;
 
             while (n-- > 0) {
