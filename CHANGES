@@ -1,3 +1,12 @@
+2022-06-02 Jerry Lundström
+
+    Release 1.7.1
+
+    This patch release fixes a bug in the domain name parsing that cuts
+    off very long names.
+
+    4ec95e7 FQDN parsing
+
 2022-04-13 Jerry Lundström
 
     Release 1.7.0
