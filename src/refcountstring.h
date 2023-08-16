@@ -33,7 +33,7 @@
 struct RefCountString {
     // data
     int  count;
-    char data[sizeof(int)]; // this is a dummy, actual array will be larger
+    char data[];
 
     // implementation
     void inc_refcount()
@@ -50,9 +50,7 @@ struct RefCountString {
 
     static RefCountString* allocate(int data_length)
     {
-        std::size_t size = sizeof(RefCountString) - sizeof(char[sizeof(int)]) + data_length * sizeof(char);
-
-        void* chunk = std::calloc(1, size);
+        void* chunk = std::calloc(1, sizeof(RefCountString) + data_length);
         if (!chunk)
             throw std::bad_alloc();
 

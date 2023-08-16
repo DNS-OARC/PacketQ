@@ -48,7 +48,7 @@ To install the dependencies under Debian/Ubuntu:
 apt-get install -y zlib1g-dev libmaxminddb-dev
 ```
 
-To install the dependencies under CentOS (with EPEL enabled):
+To install the dependencies under CentOS (with EPEL/PowerTools enabled):
 ```
 yum install -y zlib-devel libmaxminddb-devel
 ```
