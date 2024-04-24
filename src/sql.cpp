@@ -415,13 +415,13 @@ public:
         }
         Tlink* p = result.m_fl[0];
         it       = m_table.m_rows.begin();
-        int cnt  = 0;
+        // int cnt  = 0;
         while (p) {
             *it++ = p->row;
-            cnt++;
+            // cnt++;
             Tlink* e = p->get_eq();
             while (e) {
-                cnt++;
+                // cnt++;
                 *it++ = e->row;
                 e     = e->get_eq();
             }
