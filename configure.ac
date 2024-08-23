@@ -27,7 +27,10 @@ AC_CONFIG_HEADER([src/config.h])
 AC_PROG_CXX
 
 # Check --enable-warn-all
-AC_ARG_ENABLE([warn-all], [AS_HELP_STRING([--enable-warn-all], [Enable all compiler warnings])], [AX_CXXFLAGS_WARN_ALL()])
+AC_ARG_ENABLE([warn-all], [AS_HELP_STRING([--enable-warn-all], [Enable all compiler warnings])], [
+	AX_CXXFLAGS_WARN_ALL()
+	AS_VAR_APPEND(CXXFLAGS, [" -Wno-vla"])
+])
 
 # Check --with-extra-cxxflags
 AC_ARG_WITH([extra-cxxflags], [AS_HELP_STRING([--with-extra-cxxflags=CXXFLAGS], [Add extra CXXFLAGS])], [
