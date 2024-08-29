@@ -2556,7 +2556,7 @@ Cc_func::Cc_func(const OP& op)
         }
     }
 
-    MMDB_s* mmdb = new MMDB_s;
+    MMDB_s* mmdb = new(std::nothrow) MMDB_s;
     if (!mmdb) {
         return;
     }
@@ -2648,7 +2648,7 @@ Asn_func::Asn_func(const OP& op)
         }
     }
 
-    MMDB_s* mmdb = new MMDB_s;
+    MMDB_s* mmdb = new(std::nothrow) MMDB_s;
     if (!mmdb) {
         return;
     }
