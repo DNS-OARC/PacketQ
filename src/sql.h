@@ -668,7 +668,6 @@ public:
                 }
             m_name += ")";
         }
-        // m_name+=")";
         return m_name.c_str();
     }
     Coltype::Type ret_type() { return m_t; }

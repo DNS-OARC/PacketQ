@@ -415,24 +415,15 @@ public:
         }
         Tlink* p = result.m_fl[0];
         it       = m_table.m_rows.begin();
-        // int cnt  = 0;
         while (p) {
-            *it++ = p->row;
-            // cnt++;
+            *it++    = p->row;
             Tlink* e = p->get_eq();
             while (e) {
-                // cnt++;
                 *it++ = e->row;
                 e     = e->get_eq();
             }
             p = p->m_next;
         };
-        // CID 1436254 Dereference after null check
-        // Code disabled, it makes no sense
-        // if(cnt != table_size)
-        // {
-        //     p++;
-        // }
 
         delete[] links;
     }
