@@ -113,7 +113,7 @@ See also the [full list of contributors](https://github.com/DNS-OARC/PacketQ/gra
 
 ## Copyright
 
-Copyright (c) 2017-2022, OARC, Inc.
+Copyright (c) 2017-2024 OARC, Inc.
 
 Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
 
