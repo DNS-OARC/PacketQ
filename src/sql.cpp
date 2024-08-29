@@ -891,8 +891,9 @@ void Table::csv(bool format)
 
         printf("%s", csv_qoute_string(m_cols[i]->m_name).c_str());
         if (i < cols - 1) {
-            if (format) {
-                printf("%s,", &tmp[csv_qoute_string(m_cols[i]->m_name).length() + max - col_len[i] + 1]);
+            size_t pos = csv_qoute_string(m_cols[i]->m_name).length() + max - col_len[i] + 1;
+            if (format && pos < max) {
+                printf("%s,", &tmp[pos]);
             } else {
                 printf(",");
             }
