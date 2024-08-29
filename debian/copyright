@@ -1,14 +1,10 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: drool
-Source: https://github.com/DNS-OARC/drool
+Upstream-Name: PacketQ
+Source: https://github.com/DNS-OARC/PacketQ
 
 Files: *
-Copyright: 2017-2022, OARC, Inc.
+Copyright: 2017-2024 OARC, Inc.
            2011-2017, IIS - The Internet Foundation in Sweden
-License: GPLv3
-
-Files: debian/*
-Copyright: 2022 Jerry Lundström <lundstrom.jerry@gmail.com>
 License: GPLv3
 
 Files: src/Murmur/MurmurHash3.*

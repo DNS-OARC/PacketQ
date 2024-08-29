@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022, OARC, Inc.
+ * Copyright (c) 2017-2024 OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -668,7 +668,6 @@ public:
                 }
             m_name += ")";
         }
-        //m_name+=")";
         return m_name.c_str();
     }
     Coltype::Type ret_type() { return m_t; }

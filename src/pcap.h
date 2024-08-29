@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022, OARC, Inc.
+ * Copyright (c) 2017-2024 OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -178,7 +178,7 @@ public:
                 m_packetbuffer = 0;
             }
             m_packetbuffer_len = len + 4096;
-            m_packetbuffer     = new unsigned char[m_packetbuffer_len];
+            m_packetbuffer     = new (std::nothrow) unsigned char[m_packetbuffer_len];
             if (!m_packetbuffer)
                 m_packetbuffer_len = 0;
         }

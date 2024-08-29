@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022, OARC, Inc.
+ * Copyright (c) 2017-2024 OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -130,8 +130,8 @@ public:
     }
     /// add a datasegment to the stream
     /** If the segment has the expected sequence number
-         *  the segment will be added to the list
-         */
+     *  the segment will be added to the list
+     */
     void add(bool syn, unsigned int seq, Data_segment& s)
     {
         m_content = true;
@@ -183,8 +183,8 @@ public:
     }
     /// returns the data in the stream
     /** The returned data is located in a static buffer shared by all streams
-         *  the data is valid until the next call to get_buffer()
-         */
+     *  the data is valid until the next call to get_buffer()
+     */
     unsigned char* get_buffer()
     {
         int p = 0;

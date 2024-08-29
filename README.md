@@ -1,6 +1,6 @@
 # PacketQ
 
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/DNS-OARC/PacketQ.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DNS-OARC/PacketQ/alerts/) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3APacketQ&metric=bugs)](https://sonarcloud.io/dashboard?id=dns-oarc%3APacketQ) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3APacketQ&metric=security_rating)](https://sonarcloud.io/dashboard?id=dns-oarc%3APacketQ)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3APacketQ&metric=bugs)](https://sonarcloud.io/summary/new_code?id=dns-oarc%3APacketQ) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3APacketQ&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=dns-oarc%3APacketQ)
 
 `packetq` is a command line tool to run SQL queries directly on PCAP files,
 the results can be outputted as JSON (default), formatted/compact CSV and XML.
@@ -48,7 +48,7 @@ To install the dependencies under Debian/Ubuntu:
 apt-get install -y zlib1g-dev libmaxminddb-dev
 ```
 
-To install the dependencies under CentOS (with EPEL enabled):
+To install the dependencies under CentOS (with EPEL/PowerTools enabled):
 ```
 yum install -y zlib-devel libmaxminddb-devel
 ```
@@ -113,7 +113,7 @@ See also the [full list of contributors](https://github.com/DNS-OARC/PacketQ/gra
 
 ## Copyright
 
-Copyright (c) 2017-2022, OARC, Inc.
+Copyright (c) 2017-2024 OARC, Inc.
 
 Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
 

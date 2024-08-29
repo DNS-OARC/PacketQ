@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022, OARC, Inc.
+ * Copyright (c) 2017-2024 OARC, Inc.
  * Copyright (c) 2011-2017, IIS - The Internet Foundation in Sweden
  * All rights reserved.
  *
@@ -415,24 +415,15 @@ public:
         }
         Tlink* p = result.m_fl[0];
         it       = m_table.m_rows.begin();
-        int cnt  = 0;
         while (p) {
-            *it++ = p->row;
-            cnt++;
+            *it++    = p->row;
             Tlink* e = p->get_eq();
             while (e) {
-                cnt++;
                 *it++ = e->row;
                 e     = e->get_eq();
             }
             p = p->m_next;
         };
-        // CID 1436254 Dereference after null check
-        // Code disabled, it makes no sense
-        // if(cnt != table_size)
-        // {
-        //     p++;
-        // }
 
         delete[] links;
     }
@@ -531,8 +522,7 @@ void Table::merge_sort(Ordering_terms& order)
             if (p2 + l2 > table_size)
                 l2 = table_size - p2;
 
-            int i = start;
-
+            i = start;
             while (cnt-- > 0) {
                 if (l1 <= 0) {
                     d[i++] = s[p2++];
@@ -891,8 +881,9 @@ void Table::csv(bool format)
 
         printf("%s", csv_qoute_string(m_cols[i]->m_name).c_str());
         if (i < cols - 1) {
-            if (format) {
-                printf("%s,", &tmp[csv_qoute_string(m_cols[i]->m_name).length() + max - col_len[i] + 1]);
+            size_t pos = csv_qoute_string(m_cols[i]->m_name).length() + max - col_len[i] + 1;
+            if (format && pos < max) {
+                printf("%s,", &tmp[pos]);
             } else {
                 printf(",");
             }
@@ -2555,7 +2546,7 @@ Cc_func::Cc_func(const OP& op)
         }
     }
 
-    MMDB_s* mmdb = new MMDB_s;
+    MMDB_s* mmdb = new (std::nothrow) MMDB_s;
     if (!mmdb) {
         return;
     }
@@ -2647,7 +2638,7 @@ Asn_func::Asn_func(const OP& op)
         }
     }
 
-    MMDB_s* mmdb = new MMDB_s;
+    MMDB_s* mmdb = new (std::nothrow) MMDB_s;
     if (!mmdb) {
         return;
     }

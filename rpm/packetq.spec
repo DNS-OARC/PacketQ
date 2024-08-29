@@ -1,5 +1,5 @@
 Name:           packetq
-Version:        1.7.1
+Version:        1.7.2
 Release:        1%{?dist}
 Summary:        A tool that provides a basic SQL-frontend to PCAP-files
 Group:          Productivity/Networking/DNS/Utilities
@@ -56,6 +56,31 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Aug 29 2024 Jerry Lundström <lundstrom.jerry@gmail.com> 1.7.2-1
+- Release 1.7.2
+  * This patch release fixes various issues reported by CI/code analysis
+    tools.
+  * Fixes:
+    - `RefCountString`: Use anonymous array for `data`
+    - `sql`: Fix heap overflow [[sonarcloud](https://sonarcloud.io/project/issues?open=AZF-b0jIXv-Y5-GmvUlN&id=dns-oarc%3APacketQ)]
+    - Fix CodeQL issues:
+      - https://github.com/DNS-OARC/PacketQ/security/code-scanning/35
+      - https://github.com/DNS-OARC/PacketQ/security/code-scanning/37
+      - https://github.com/DNS-OARC/PacketQ/security/code-scanning/38
+      - https://github.com/DNS-OARC/PacketQ/security/code-scanning/39
+      - https://github.com/DNS-OARC/PacketQ/security/code-scanning/40
+      - https://github.com/DNS-OARC/PacketQ/security/code-scanning/5
+  * Commits:
+    68b5385 Cleanup
+    1dfd47b CodeQL, code format
+    6224234 CodeQL fixes
+    6771f3a Copyright
+    3283c43 Heap overflow
+    1ff69df Badges
+    d4e93ec Workflow
+    75283cc Doc
+    25adefa Add CodeQL workflow for GitHub code scanning
+    bb7be53 Fix COPR
 * Thu Jun 02 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 1.7.1-1
 - Release 1.7.1
   * This patch release fixes a bug in the domain name parsing that cuts
