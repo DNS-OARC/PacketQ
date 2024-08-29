@@ -531,8 +531,7 @@ void Table::merge_sort(Ordering_terms& order)
             if (p2 + l2 > table_size)
                 l2 = table_size - p2;
 
-            int i = start;
-
+            i = start;
             while (cnt-- > 0) {
                 if (l1 <= 0) {
                     d[i++] = s[p2++];
@@ -2556,7 +2555,7 @@ Cc_func::Cc_func(const OP& op)
         }
     }
 
-    MMDB_s* mmdb = new(std::nothrow) MMDB_s;
+    MMDB_s* mmdb = new (std::nothrow) MMDB_s;
     if (!mmdb) {
         return;
     }
@@ -2648,7 +2647,7 @@ Asn_func::Asn_func(const OP& op)
         }
     }
 
-    MMDB_s* mmdb = new(std::nothrow) MMDB_s;
+    MMDB_s* mmdb = new (std::nothrow) MMDB_s;
     if (!mmdb) {
         return;
     }
