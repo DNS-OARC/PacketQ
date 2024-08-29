@@ -230,7 +230,7 @@ namespace httpd {
         }
         void process(bool read)
         {
-            //m_serv means this is a listening socket
+            // m_serv means this is a listening socket
             if (m_serv)
                 return;
             if (!read) {
@@ -1165,7 +1165,7 @@ void start_server(int port, bool fork_me, const std::string& pcaproot, const std
         if (cnt < max_conn) {
             int c = server.get_connection();
             if (c > -1) {
-                Http_socket* s = new(std::nothrow) Http_socket(c);
+                Http_socket* s = new (std::nothrow) Http_socket(c);
                 if (s && s->failed()) {
                     syslog(LOG_ERR | LOG_USER, "failed to create socket");
                     delete s;

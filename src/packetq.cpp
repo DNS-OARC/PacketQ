@@ -139,7 +139,7 @@ int getopt_long(int argc, char* argv[], const char* str, option* opt, int* optio
 
 void sigproc(int sig)
 {
-    //ignore sig pipe
+    // ignore sig pipe
     signal(SIGPIPE, sigproc);
 }
 
