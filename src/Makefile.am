@@ -25,9 +25,7 @@ SUBDIRS = test
 AM_CXXFLAGS = -I$(srcdir) \
   -I$(srcdir)/Murmur \
   -I$(top_srcdir) \
-  $(libmaxminddb_CFLAGS) \
-  -std=c++0x \
-  -Wall -Wno-parentheses -Wno-switch -Wno-sign-compare -Wno-char-subscripts
+  $(libmaxminddb_CFLAGS)
 
 bin_PROGRAMS = packetq
 
