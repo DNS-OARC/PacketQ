@@ -1,5 +1,5 @@
 Name:           packetq
-Version:        1.7.2
+Version:        1.7.3
 Release:        1%{?dist}
 Summary:        A tool that provides a basic SQL-frontend to PCAP-files
 Group:          Productivity/Networking/DNS/Utilities
@@ -56,6 +56,14 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Sep 04 2024 Jerry Lundström <lundstrom.jerry@gmail.com> 1.7.3-1
+- Release 1.7.3
+  * This patch release fixes memory alignment issues and the handling of
+    TCP segments. Many thanks to Ray Bellis (ISC) for reporting this and
+    helping greatly with fixing it!
+  * Commits:
+    d8a06a3 C++11
+    8c99466 Memory align, TCP assemble
 * Thu Aug 29 2024 Jerry Lundström <lundstrom.jerry@gmail.com> 1.7.2-1
 - Release 1.7.2
   * This patch release fixes various issues reported by CI/code analysis
