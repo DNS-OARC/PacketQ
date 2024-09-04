@@ -18,13 +18,14 @@
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.61)
-AC_INIT([packetq], [1.7.2], [admin@dns-oarc.net], [packetq], [https://github.com/DNS-OARC/packetq/issues])
+AC_INIT([packetq], [1.7.3], [admin@dns-oarc.net], [packetq], [https://github.com/DNS-OARC/packetq/issues])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/packetq.cpp])
 AC_CONFIG_HEADER([src/config.h])
 
 # Checks for programs.
 AC_PROG_CXX
+AS_VAR_APPEND(CXXFLAGS, [" -std=c++11"])
 
 # Check --enable-warn-all
 AC_ARG_ENABLE([warn-all], [AS_HELP_STRING([--enable-warn-all], [Enable all compiler warnings])], [
