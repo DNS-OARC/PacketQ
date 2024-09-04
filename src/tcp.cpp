@@ -33,14 +33,6 @@ namespace packetq {
 class Stream_id {
 public:
     /// constructor
-    Stream_id()
-        : m_src_port(0)
-        , m_dst_port(0)
-    {
-        memset(&m_src_ip, 0, sizeof(m_src_ip));
-        memset(&m_dst_ip, 0, sizeof(m_dst_ip));
-    }
-    /// constructor taking source and destination adresses
     Stream_id(in6addr_t& src_ip,
         in6addr_t&       dst_ip,
         unsigned short   src_port,
@@ -55,15 +47,7 @@ public:
     /// < comparison operator for the std::map
     bool operator<(const Stream_id& rhs) const
     {
-        if (memcmp(&m_src_ip.__in6_u.__u6_addr8, &rhs.m_src_ip.__in6_u.__u6_addr8, sizeof(m_src_ip.__in6_u.__u6_addr8)) < 0)
-            return true;
-        if (memcmp(&m_dst_ip.__in6_u.__u6_addr8, &rhs.m_dst_ip.__in6_u.__u6_addr8, sizeof(m_dst_ip.__in6_u.__u6_addr8)) < 0)
-            return true;
-        if (m_src_port < rhs.m_src_port)
-            return true;
-        if (m_dst_port < rhs.m_dst_port)
-            return true;
-        return false;
+        return memcmp(this, &rhs, sizeof(*this)) < 0;
     }
 
 private:
@@ -127,6 +111,10 @@ public:
         m_content = false;
         m_nseq    = false;
         m_seq     = 0;
+    }
+    ~Stream()
+    {
+        m_segments.clear();
     }
     /// add a datasegment to the stream
     /** If the segment has the expected sequence number
@@ -255,7 +243,11 @@ assemble_tcp(
 
     data = 0;
     if (str.has_content()) {
-        int            size     = str.get_size();
+        int size = str.get_size();
+        if (size < 2) {
+            // need at least dnslen
+            return 0;
+        }
         unsigned char* buffer   = str.get_buffer();
         int            dns_size = (int(buffer[0]) << 8) | buffer[1];
 

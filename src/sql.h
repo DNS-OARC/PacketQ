@@ -216,7 +216,7 @@ public:
 
     void add_buffer()
     {
-        m_curr_buffer = new Buffer(*this);
+        m_curr_buffer = new _Buffer(*this);
         m_buffers.push_back(m_curr_buffer);
     }
     T* allocate()
@@ -243,28 +243,30 @@ public:
     }
     void deallocate(T* item)
     {
-        Buffer** buffptr = (Buffer**)item;
+        _Buffer** buffptr = (_Buffer**)item;
         buffptr[-1]->deallocate(item);
     }
 
 private:
-    class Buffer {
+    class _Buffer {
     private:
-        Buffer& operator=(const Buffer& other);
-        Buffer(Buffer&& other) noexcept;
-        Buffer const& operator=(Buffer&& other);
+        _Buffer& operator=(const _Buffer& other);
+        _Buffer(_Buffer&& other) noexcept;
+        _Buffer const& operator=(_Buffer&& other);
 
     public:
         friend class Allocator;
-        Buffer(Allocator& allocator)
+        _Buffer(Allocator& allocator)
             : m_allocator(allocator)
         {
             m_has_space = true;
             m_used      = 0;
-            m_stride    = (sizeof(Buffer*) + m_allocator.m_size);
-            m_memory    = (char*)calloc(m_stride, m_allocator.m_buffersize);
+            m_stride    = (sizeof(_Buffer*) + m_allocator.m_size);
+            // align size of m_stride to that of a pointer
+            m_stride = ((m_stride / sizeof(void*)) + 1) * sizeof(void*);
+            m_memory = (char*)calloc(m_stride, m_allocator.m_buffersize);
         }
-        ~Buffer()
+        ~_Buffer()
         {
             free(m_memory);
         }
@@ -277,10 +279,10 @@ private:
                 m_free_list.pop();
             }
             if (!obj && m_used < m_allocator.m_buffersize) {
-                char*    ptr = &m_memory[m_stride * m_used++];
-                Buffer** b   = (Buffer**)ptr;
-                *b           = this;
-                obj          = (T*)(&b[1]);
+                char*     ptr = &m_memory[m_stride * m_used++];
+                _Buffer** b   = (_Buffer**)ptr;
+                *b            = this;
+                obj           = (T*)(&b[1]);
             }
             m_has_space = true;
             if (!obj)
@@ -302,8 +304,8 @@ private:
         char*          m_memory;
     };
 
-    Buffer*            m_curr_buffer;
-    std::list<Buffer*> m_buffers;
+    _Buffer*            m_curr_buffer;
+    std::list<_Buffer*> m_buffers;
 
     int m_buffersize;
     int m_size;
@@ -452,7 +454,7 @@ public:
     std::vector<int>     m_text_column_offsets;
 };
 
-#define ROW_DUMMY_SIZE 4
+#define ROW_DUMMY_SIZE sizeof(void*)
 
 class Row {
 public:
