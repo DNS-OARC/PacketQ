@@ -25,6 +25,7 @@ AC_CONFIG_HEADER([src/config.h])
 
 # Checks for programs.
 AC_PROG_CXX
+AS_VAR_APPEND(CXXFLAGS, [" -std=c++11"])
 
 # Check --enable-warn-all
 AC_ARG_ENABLE([warn-all], [AS_HELP_STRING([--enable-warn-all], [Enable all compiler warnings])], [
