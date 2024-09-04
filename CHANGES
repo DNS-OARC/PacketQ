@@ -1,3 +1,14 @@
+2024-09-04 Jerry Lundström
+
+    Release 1.7.3
+
+    This patch release fixes memory alignment issues and the handling of
+    TCP segments. Many thanks to Ray Bellis (ISC) for reporting this and
+    helping greatly with fixing it!
+
+    d8a06a3 C++11
+    8c99466 Memory align, TCP assemble
+
 2024-08-29 Jerry Lundström
 
     Release 1.7.2

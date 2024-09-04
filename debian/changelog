@@ -1,3 +1,16 @@
+packetq (1.7.3-1~unstable+1) unstable; urgency=low
+
+  * Release 1.7.3
+
+    This patch release fixes memory alignment issues and the handling of
+    TCP segments. Many thanks to Ray Bellis (ISC) for reporting this and
+    helping greatly with fixing it!
+
+    d8a06a3 C++11
+    8c99466 Memory align, TCP assemble
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Wed, 04 Sep 2024 14:46:27 +0200
+
 packetq (1.7.2-1~unstable+1) unstable; urgency=low
 
   * Release 1.7.2
