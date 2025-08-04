@@ -18,7 +18,7 @@
 # along with PacketQ.  If not, see <http://www.gnu.org/licenses/>.
 
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
-CLEANFILES = *.gcda *.gcno *.gcov
+CLEANFILES = *.gcda *.gcno *.gcov */*.gcda */*.gcno */*.gcov
 
 SUBDIRS = test
 
