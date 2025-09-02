@@ -6,8 +6,8 @@ Build-Depends: debhelper (>= 10), build-essential, automake, autoconf,
  zlib1g-dev, netbase, libtool, pkg-config, libmaxminddb-dev
 Standards-Version: 3.9.4
 Homepage: https://www.dns-oarc.net/tools/packetq
-Vcs-Git: https://github.com/DNS-OARC/PacketQ.git
-Vcs-Browser: https://github.com/DNS-OARC/PacketQ
+Vcs-Git: https://codeberg.org/DNS-OARC/PacketQ.git
+Vcs-Browser: https://codeberg.org/DNS-OARC/PacketQ
 
 Package: packetq
 Architecture: any

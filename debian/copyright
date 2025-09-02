@@ -1,6 +1,6 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: PacketQ
-Source: https://github.com/DNS-OARC/PacketQ
+Source: https://codeberg.org/DNS-OARC/PacketQ
 
 Files: *
 Copyright: 2017-2024 OARC, Inc.
