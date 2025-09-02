@@ -30,7 +30,7 @@ More information may be found here:
 - https://www.dns-oarc.net/tools/packetq
 
 Issues should be reported here:
-- https://github.com/DNS-OARC/PacketQ/issues
+- https://codeberg.org/DNS-OARC/PacketQ/issues
 
 General support and discussion:
 - Mattermost: https://chat.dns-oarc.net/community/channels/oarc-software
@@ -56,7 +56,7 @@ yum install -y zlib-devel libmaxminddb-devel
 ## Build from GitHub
 
 ```
-git clone https://github.com/DNS-OARC/PacketQ.git
+git clone https://codeberg.org/DNS-OARC/PacketQ.git
 cd PacketQ
 ./autogen.sh
 ./configure [options]
@@ -109,7 +109,7 @@ packetq -d -p8080 -w html/ -r pcap/
 - Petr Špaček [@pspacek](https://github.com/pspacek)
 - Ken Renard [@kdrenard](https://github.com/kdrenard)
 
-See also the [full list of contributors](https://github.com/DNS-OARC/PacketQ/graphs/contributors).
+See also the [full list of contributors](https://codeberg.org/DNS-OARC/PacketQ/activity/contributors).
 
 ## Copyright
 
